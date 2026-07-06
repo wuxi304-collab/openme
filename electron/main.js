@@ -63,9 +63,13 @@ function renderCadDocument(filePath) {
   const executable = getCadHostPath();
   if (!fs.existsSync(executable)) return Promise.resolve({ success: false, message: "ACadSharp CadHost 尚未构建" });
   return new Promise((resolve) => {
-    execFile(executable, ["--render-svg", filePath], { windowsHide: true, timeout: 120000, maxBuffer: 128 * 1024 * 1024 }, (error, stdout, stderr) => {
-      if (error) return resolve({ success: false, message: stderr.trim() || error.message });
-      resolve({ success: true, svg: stdout });
+    execFile(executable, ["--render-svg", filePath], { windowsHide: true, timeout: 120000, maxBuffer: 128 * 1024 * 1024, encoding: "buffer" }, (error, stdout, stderr) => {
+      const decode = (value) => {
+        try { return new TextDecoder("utf-8", { fatal: true }).decode(value); }
+        catch { return new TextDecoder("gbk").decode(value); }
+      };
+      if (error) return resolve({ success: false, message: decode(stderr).trim() || error.message });
+      resolve({ success: true, svg: decode(stdout) });
     });
   });
 }
@@ -462,5 +466,6 @@ ipcMain.handle("plan-cad-change", async (_, input) => {
     return { success: false, message: error.message };
   }
 });
+
 
 
