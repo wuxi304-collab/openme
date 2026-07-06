@@ -102,3 +102,16 @@ OpenMe 是 Windows 桌面通用文件工作台，当前使用 Electron + React +
 - 最近文件支持单项移除并立即持久化，不删除磁盘原文件。
 - ZIP 解压失败由阻塞式系统 `alert` 改为应用内可关闭错误条。
 - CSV 排序状态移至正确的列头 `aria-sort` 语义。
+
+## 2026-07-07 GitHub 发布与清理流程（必须保留）
+
+本机可复用的可靠路径如下。下次不要重新折腾 GitHub Desktop 或把 Token 粘进命令：
+
+1. 账户来源优先使用 Windows Git Credential Manager：`git credential-manager github list` 只显示账户名，不输出密钥。
+2. 检查 CLI 登录与权限：`gh auth status`。如果 `gh` 尚未接入，但 Git Credential Manager 已有凭据，可从 `git credential fill` 在内存中读取，再通过标准输入交给 `gh auth login --with-token`；严禁打印、记录或提交 `password` 字段。
+3. 新建公开仓库优先使用 `gh repo create <owner>/<repo> --public --source . --remote origin --push`。本次因 CLI 初始未登录，使用 GitHub REST `POST /user/repos` 创建 `wuxi304-collab/openme`，再执行 `git branch -M main`、设置 `origin`、`git push -u origin main`。
+4. 推送前必须保证 README、LICENSE、真实能力边界、生产构建和本地提交均完成。不得把 DWG 实验性预览描述为工业级保真。
+5. 删除仓库是不可逆操作：先调用 `/user/repos?affiliation=owner` 生成完整清单，排除保留仓库，再向用户展示数量与名称，并在执行前取得明确的永久删除确认。
+6. GitHub 删除需要 `delete_repo` OAuth scope。通过 `gh auth refresh --hostname github.com --scopes delete_repo --clipboard` 获取；浏览器设备码流程可能因网络出现 `EOF`，只允许在确认网络瞬断后有限重试。
+7. 删除时使用 `gh api --method DELETE repos/<owner>/<repo>`，逐项记录成功/失败；结束后再次枚举账户仓库，确认保留集准确。本次已删除 20 个旧仓库，复核结果仅剩公开仓库 `wuxi304-collab/openme`。
+8. 安全底线：聊天、源码、脚本、Git 历史和工具输出中不得出现完整 PAT/OAuth Token。用户粘贴过的 Token 一律视为泄露，要求立即撤销。临时提升的 `delete_repo` 权限完成任务后应尽快移除或撤销对应旧令牌。
