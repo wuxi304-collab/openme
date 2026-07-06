@@ -1,10 +1,13 @@
-export type FileCategory = "code" | "markdown" | "json" | "csv" | "image" | "svg" | "pdf" | "office" | "archive" | "epub" | "cad" | "dwg" | "other";
+export type FileCategory = "code" | "markdown" | "json" | "csv" | "image" | "svg" | "pdf" | "office" | "archive" | "epub" | "audio" | "video" | "font" | "cad" | "dwg" | "other";
 
 const CODE_EXTS = [".txt", ".js", ".ts", ".jsx", ".tsx", ".py", ".rs", ".go", ".java", ".c", ".cpp", ".h", ".css", ".html", ".scss", ".less", ".xml", ".yml", ".yaml", ".ini", ".log", ".sh", ".bat", ".ps1", ".vue", ".svelte", ".env", ".sql", ".gradle", ".toml", ".cfg", ".conf", ".properties"];
 const MARKDOWN_EXTS = [".md", ".mdtxt", ".mdx"];
 const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
 const OFFICE_EXTS = [".docx", ".xlsx", ".pptx"];
 const ARCHIVE_EXTS = [".zip"];
+const AUDIO_EXTS = [".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac"];
+const VIDEO_EXTS = [".mp4", ".webm", ".ogv", ".m4v"];
+const FONT_EXTS = [".ttf", ".otf", ".woff", ".woff2"];
 const CAD_EXTS = [".stl", ".obj", ".gltf", ".glb", ".step", ".stp", ".iges", ".igs"];
 
 function extname(filePath: string): string {
@@ -19,6 +22,9 @@ export function detectCategory(filePath: string): FileCategory {
   if (ext === ".svg") return "svg";
   if (ext === ".pdf") return "pdf";
   if (ext === ".epub") return "epub";
+  if (AUDIO_EXTS.includes(ext)) return "audio";
+  if (VIDEO_EXTS.includes(ext)) return "video";
+  if (FONT_EXTS.includes(ext)) return "font";
   if (IMAGE_EXTS.includes(ext)) return "image";
   if (MARKDOWN_EXTS.includes(ext)) return "markdown";
   if (ext === ".json") return "json";
@@ -49,4 +55,5 @@ export function detectLanguage(filePath: string): string {
   };
   return langs[ext] || "plaintext";
 }
+
 

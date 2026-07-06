@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   openFileDialog: () => ipcRenderer.invoke("open-file-dialog"),
   openInSystem: (path) => ipcRenderer.invoke("open-in-system", path),
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
+  getMediaUrl: (path) => ipcRenderer.invoke("get-media-url", path),
+  readEpub: (path) => ipcRenderer.invoke("read-epub", path),
   getCadEngineStatus: () => ipcRenderer.invoke("get-cad-engine-status"),
   inspectCadDocument: (path) => ipcRenderer.invoke("inspect-cad-document", path),
   renderCadDocument: (path) => ipcRenderer.invoke("render-cad-document", path),
@@ -28,6 +30,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   saveAiConfig: (config) => ipcRenderer.invoke("save-ai-config", config),
   planCadChange: (input) => ipcRenderer.invoke("plan-cad-change", input),
 });
+
 
 
 

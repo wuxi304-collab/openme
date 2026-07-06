@@ -1,8 +1,10 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, protocol, net } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const { execFile } = require("child_process");
+const { pathToFileURL } = require("url");
+const { readEpub } = require("./epub");
 
 // Allow managed environments to place Chromium state in an explicitly writable directory.
 if (process.env.OPENME_USER_DATA_DIR) {
@@ -10,6 +12,7 @@ if (process.env.OPENME_USER_DATA_DIR) {
 }
 
 app.setAppUserModelId("com.openme.desktop");
+protocol.registerSchemesAsPrivileged([{ scheme: "openme-media", privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } }]);
 
 let mainWindow = null;
 
@@ -29,7 +32,11 @@ function detectFileType(extension) {
     ".txt": "text", ".md": "text", ".json": "text", ".csv": "text", ".xml": "text", ".yml": "text", ".yaml": "text", ".ini": "text", ".log": "text",
     ".js": "code", ".ts": "code", ".jsx": "code", ".tsx": "code", ".py": "code", ".rs": "code", ".go": "code", ".java": "code", ".c": "code", ".cpp": "code", ".h": "code", ".css": "code", ".html": "code",
     ".doc": "document", ".docx": "document", ".xls": "document", ".xlsx": "document", ".ppt": "document", ".pptx": "document",
-    ".zip": "archive", ".rar": "archive", ".7z": "archive", ".tar": "archive", ".gz": "archive",
+    ".zip": "archive",
+    ".epub": "epub",
+    ".mp3": "audio", ".wav": "audio", ".ogg": "audio", ".m4a": "audio", ".aac": "audio", ".flac": "audio",
+    ".mp4": "video", ".webm": "video", ".ogv": "video", ".m4v": "video",
+    ".ttf": "font", ".otf": "font", ".woff": "font", ".woff2": "font",
   };
   return map[ext] || "other";
 }
@@ -147,6 +154,11 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  protocol.handle("openme-media", (request) => {
+    const mediaPath = new URL(request.url).searchParams.get("path");
+    if (!mediaPath || !fs.existsSync(mediaPath) || !fs.statSync(mediaPath).isFile()) return new Response("Not found", { status: 404 });
+    return net.fetch(pathToFileURL(mediaPath).toString());
+  });
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -376,6 +388,16 @@ ipcMain.handle("get-cad-engine-status", () => findCadEngine());
 ipcMain.handle("inspect-cad-document", (_, filePath) => inspectCadDocument(filePath));
 ipcMain.handle("render-cad-document", (_, filePath) => renderCadDocument(filePath));
 
+ipcMain.handle("get-media-url", async (_, filePath) => {
+  const resolved = path.resolve(filePath);
+  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) throw new Error("媒体文件不存在");
+  return `openme-media://local/?path=${encodeURIComponent(resolved)}`;
+});
+
+ipcMain.handle("read-epub", async (_, filePath) => {
+  try { return { success: true, book: await readEpub(filePath) }; }
+  catch (e) { return { success: false, message: e.message }; }
+});
 ipcMain.handle("get-app-version", () => app.getVersion());
 
 ipcMain.handle("window-minimize", () => mainWindow?.minimize());
@@ -484,6 +506,10 @@ ipcMain.handle("plan-cad-change", async (_, input) => {
     return { success: false, message: error.message };
   }
 });
+
+
+
+
 
 
 

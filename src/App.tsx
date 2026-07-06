@@ -16,6 +16,9 @@ import OfficeViewer from "./components/viewers/OfficeViewer";
 import ZipViewer from "./components/viewers/ZipViewer";
 import CadViewer from "./components/viewers/CadViewer";
 import CadAssistant from "./components/viewers/CadAssistant";
+import MediaViewer from "./components/viewers/MediaViewer";
+import FontViewer from "./components/viewers/FontViewer";
+import EpubViewer from "./components/viewers/EpubViewer";
 
 const MAX_RECENT = 50;
 const DwgViewer = React.lazy(() => import("./components/viewers/DwgViewer"));
@@ -34,6 +37,8 @@ declare global {
       openFileDialog: () => Promise<string[]>;
       openInSystem: (path: string) => Promise<void>;
       getAppVersion: () => Promise<string>;
+      getMediaUrl: (path: string) => Promise<string>;
+      readEpub: (path: string) => Promise<{ success: boolean; book?: { title: string; creator?: string; language?: string; cover?: { data: string; mimeType: string } | null; chapters: { title: string; text: string }[] }; message?: string }>;
       getCadEngineStatus: () => Promise<{ available: boolean; kind: string; name: string; capabilities: string[]; quality: string; fallback: boolean; message?: string }>;
       inspectCadDocument: (path: string) => Promise<{ success: boolean; document?: { document?: { entityCount?: number; layerCount?: number; blockCount?: number }; entityTypes?: Record<string, number> }; message?: string }>;
       renderCadDocument: (path: string) => Promise<{ success: boolean; svg?: string; message?: string }>;
@@ -131,10 +136,12 @@ export default function App() {
             ...t, isLoading: false, officeData: res.success ? { type: "excel", sheets: res.sheets ?? [] } : undefined, error: res.success ? undefined : res.message ?? "Excel 转换失败"
           } : t));
         } else {
-          setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false } : t));
+          setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, officeData: { type: "pptx" } } : t));
         }
-      } else if (category === "svg" || category === "image" || category === "pdf" || category === "cad") {
-        const maxSize = category === "pdf" || category === "cad" ? 100 * 1024 * 1024 : 50 * 1024 * 1024;
+      } else if (category === "audio" || category === "video" || category === "epub") {
+        setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false } : t));
+      } else if (category === "svg" || category === "image" || category === "pdf" || category === "cad" || category === "font") {
+        const maxSize = category === "pdf" || category === "cad" ? 100 * 1024 * 1024 : category === "font" ? 25 * 1024 * 1024 : 50 * 1024 * 1024;
         const res = await window.electronAPI.readBinary(fileInfo.path, maxSize);
         setTabs((prev) => prev.map((t) => t.id === id ? {
           ...t, isLoading: false,
@@ -265,7 +272,7 @@ export default function App() {
 }
 
 function EmptyState({ onOpenDialog }: { onOpenDialog: () => void }) {
-  const formats = ["MD", "JSON", "PDF", "DOCX", "XLSX", "ZIP", "CAD"];
+  const formats = ["PDF", "DOCX", "XLSX", "EPUB", "MP3", "MP4", "FONT", "ZIP"];
   return (
     <section className="empty-workspace" aria-labelledby="empty-title">
       <div className="sky-grid" aria-hidden="true">
@@ -501,24 +508,12 @@ function TabContent({ tab, onChange }: { tab: FileTabState; onChange: (content: 
         </div>
       );
     case "epub":
-      return (
-        <div className="flex-1 flex items-center justify-center p-6">
-          <UnsupportedCard
-            icon={
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E8855D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <path d="M9 13h6M9 17h4" />
-              </svg>
-            }
-            accentColor="#E8855D"
-            title="电子书文件 (EPUB)"
-            subtitle={tab.name}
-            description="EPUB 格式暂不支持内置预览，请使用系统阅读器打开"
-            onOpenInSystem={() => window.electronAPI.openInSystem(tab.path)}
-          />
-        </div>
-      );
+      return <div className="flex-1 min-h-0 p-4"><EpubViewer filePath={tab.path} /></div>;
+    case "audio":
+    case "video":
+      return <div className="flex-1 min-h-0 p-4"><MediaViewer filePath={tab.path} kind={tab.category} /></div>;
+    case "font":
+      return <div className="flex-1 min-h-0 p-4">{tab.binaryData ? <FontViewer base64Data={tab.binaryData} fileName={tab.name} /> : <div className="viewer-error"><strong>字体无法加载</strong></div>}</div>;
     case "dwg":
       return (
         <div className="cad-workspace">
@@ -561,6 +556,9 @@ function getMimeType(ext: string): string {
   };
   return map[ext.toLowerCase()] ?? "application/octet-stream";
 }
+
+
+
 
 
 

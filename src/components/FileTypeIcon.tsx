@@ -23,6 +23,9 @@ const CONFIG: Record<string, IconConfig> = {
   document: { top: "#55c8ff", bottom: "#196fb8", ink: "#fff", label: "DOC",  mini: "D", shadow: "#104777" },
   archive:  { top: "#ffbf55", bottom: "#e57920", ink: "#fff", label: "ZIP",  mini: "Z", shadow: "#8d4613" },
   epub:     { top: "#ff9981", bottom: "#da563c", ink: "#fff", label: "EPUB", mini: "E", shadow: "#8a3425" },
+  audio:    { top: "#68d7a8", bottom: "#23885c", ink: "#fff", label: "AUD",  mini: "♪", shadow: "#15563a" },
+  video:    { top: "#8ea2ff", bottom: "#4557bd", ink: "#fff", label: "VID",  mini: "▶", shadow: "#293574" },
+  font:     { top: "#f3d36b", bottom: "#b77818", ink: "#3d2a08", label: "FONT", mini: "A", shadow: "#70480d" },
   cad:      { top: "#a8bdc7", bottom: "#536d79", ink: "#fff", label: "CAD",  mini: "C", shadow: "#32434a" },
   dwg:      { top: "#ffad55", bottom: "#e36320", ink: "#fff", label: "DWG",  mini: "D", shadow: "#913b14" },
   other:    { top: "#aebdc4", bottom: "#71858e", ink: "#fff", label: "???",  mini: "?", shadow: "#43545b" },
@@ -51,4 +54,5 @@ export default function FileTypeIcon({ type, size = 34 }: { type: FileCategory; 
     </span>
   );
 }
+
 

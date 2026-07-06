@@ -25,10 +25,13 @@ export interface FileTabState {
   category: FileCategory;
   content: string | null;
   binaryData?: string;
+  mediaUrl?: string;
   mimeType?: string;
   isDirty: boolean;
   isLoading: boolean;
   officeData?: any;
   error?: string;
 }
+
+
 
