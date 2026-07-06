@@ -29,4 +29,6 @@ export interface FileTabState {
   isDirty: boolean;
   isLoading: boolean;
   officeData?: any;
+  error?: string;
 }
+

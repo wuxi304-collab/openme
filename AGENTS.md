@@ -54,3 +54,22 @@ OpenMe 是 Windows 桌面通用文件工作台，当前使用 Electron + React +
 - 这些图包含 SolidWorks/CAXA/GstarCAD 风格扩展块。纯开源解析链只能近似显示，继续调整 SVG/CSS 无法补齐未实现的专有显示语义。
 - 不得再把 ACadSharp SVG 描述成“精准预览”；它只能叫“工程预览/结构预览”。
 - 下一条可验收路线：使用 Autodesk 免费且非试用的 DWG TrueView 作为原生保真查看器，OpenMe 保留语义分析和 LLM 修改计划；若要求直接嵌入 OpenMe 画布，则需要 ODA/RealDWG 商业 SDK。
+
+## 2026-07-06 非 CAD 格式审计与打磨
+
+支持等级必须按真实能力描述：
+
+- **完整浏览**：PNG/JPEG/GIF/BMP/WebP、纯文本/代码、JSON、CSV、ZIP。图片支持缩放拖拽和尺寸；JSON 支持独立节点展开；CSV 支持搜索、排序、分页和畸形行提示；ZIP 只承诺 `.zip`，包含路径穿越防护、2 GB/100,000 项安全上限和 2 MB 单文件文本预览上限。
+- **高保真浏览但功能未齐全**：PDF 使用本地打包的 PDF.js worker，可离线逐页渲染和缩放；尚无文本层、全文搜索、表单填写和批注。
+- **安全近似预览**：SVG 通过图片上下文展示；Markdown 和 DOCX 在无脚本 sandbox iframe 中显示。DOCX 由 Mammoth 提取内容，不承诺 Word 分页、浮动对象和复杂样式一致。
+- **数据预览**：XLSX 使用 `read-excel-file` 只读解析，显示工作表和单元格值；不承诺公式计算、图表、宏、条件格式、合并样式与打印布局。已移除存在高危公告的 `xlsx` 包。
+- **仅外部打开**：PPT/PPTX、DOC/XLS 旧二进制格式、RAR/7Z/TAR/GZ、EPUB。UI 不得再把这些格式标成内置支持。
+- **3D 近似预览**：STL/OBJ/glTF/GLB/STEP/IGES 依赖 Three.js/OCCT 导入能力；材质、装配语义和复杂 STEP 实体需要单独样本回归。
+
+安全修复：
+
+- 移除 Markdown、DOCX、SVG 对主 DOM 的直接 HTML 注入。
+- ZIP 解压改为逐项等待写入并校验目标路径，修复“返回成功但仍在写入”和 Zip Slip。
+- PDF worker 从 CDN 改为安装包内资源。
+- 关闭未保存标签前确认；允许保存空文件；各转换失败进入明确错误状态。
+- 生产依赖审计仍有 1 个高危项，来源为冻结的 `@mlightcad/cad-simple-viewer -> lodash-es`，仅保留在 CAD 兼容画布，待 CAD 引擎替换时删除。

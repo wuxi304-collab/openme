@@ -39,7 +39,7 @@ declare global {
       renderCadDocument: (path: string) => Promise<{ success: boolean; svg?: string; message?: string }>;
       listZipContents: (path: string) => Promise<{ success: boolean; entries?: { name: string; isDir: boolean; size: number }[]; message?: string }>;
       readZipEntry: (path: string, entryName: string) => Promise<{ success: boolean; data?: string; message?: string }>;
-      unzipFile: (path: string, targetDir: string) => Promise<{ success: boolean; message?: string }>;
+      unzipFile: (path: string, targetDir: string) => Promise<{ success: boolean; destination?: string; message?: string }>;
       selectFolderDialog: () => Promise<string | null>;
       windowMinimize: () => Promise<void>;
       windowMaximize: () => Promise<void>;
@@ -79,7 +79,7 @@ export default function App() {
 
   const handleSaveCurrent = useCallback(async () => {
     const tab = activeTab;
-    if (!tab || !tab.isDirty || !tab.content) return;
+    if (!tab || !tab.isDirty || tab.content === null) return;
     const result = await window.electronAPI.saveFile(tab.path, tab.content);
     if (result.success) {
       setTabs((prev) => prev.map((t) => t.id === tab.id ? { ...t, isDirty: false } : t));
@@ -123,22 +123,24 @@ export default function App() {
         if (ext === ".docx") {
           const res = await window.electronAPI.convertDocx(fileInfo.path);
           setTabs((prev) => prev.map((t) => t.id === id ? {
-            ...t, isLoading: false, officeData: { type: "docx", html: res.html ?? "" }
+            ...t, isLoading: false, officeData: res.success ? { type: "docx", html: res.html ?? "" } : undefined, error: res.success ? undefined : res.message ?? "Word 转换失败"
           } : t));
         } else if (ext === ".xlsx") {
           const res = await window.electronAPI.convertExcel(fileInfo.path);
           setTabs((prev) => prev.map((t) => t.id === id ? {
-            ...t, isLoading: false, officeData: { type: "excel", sheets: res.sheets ?? [] }
+            ...t, isLoading: false, officeData: res.success ? { type: "excel", sheets: res.sheets ?? [] } : undefined, error: res.success ? undefined : res.message ?? "Excel 转换失败"
           } : t));
         } else {
           setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false } : t));
         }
       } else if (category === "svg" || category === "image" || category === "pdf" || category === "cad") {
-        const res = await window.electronAPI.readBinary(fileInfo.path);
+        const maxSize = category === "pdf" || category === "cad" ? 100 * 1024 * 1024 : 50 * 1024 * 1024;
+        const res = await window.electronAPI.readBinary(fileInfo.path, maxSize);
         setTabs((prev) => prev.map((t) => t.id === id ? {
           ...t, isLoading: false,
           binaryData: res.success ? res.data : undefined,
           mimeType: getMimeType(fileInfo.extension),
+          error: res.success ? undefined : res.message ?? "无法读取文件",
         } : t));
       } else {
         const res = await window.electronAPI.readFileContent(fileInfo.path);
@@ -149,8 +151,8 @@ export default function App() {
           mimeType: res.mimeType,
         } : t));
       }
-    } catch {
-      setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, content: "[ 读取失败 ]" } : t));
+    } catch (error) {
+      setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, error: error instanceof Error ? error.message : "读取失败" } : t));
     }
   }, [tabs]);
 
@@ -178,6 +180,8 @@ export default function App() {
   }, [openFileInTab]);
 
   const handleCloseTab = useCallback((tabId: string) => {
+    const closingTab = tabs.find((tab) => tab.id === tabId);
+    if (closingTab?.isDirty && !window.confirm(`“${closingTab.name}”有未保存修改，仍要关闭吗？`)) return;
     setTabs((prev) => {
       const idx = prev.findIndex((t) => t.id === tabId);
       const newTabs = prev.filter((t) => t.id !== tabId);
@@ -187,7 +191,7 @@ export default function App() {
       }
       return newTabs;
     });
-  }, [activeTabId]);
+  }, [activeTabId, tabs]);
 
   const handleOpenDialog = useCallback(async () => {
     try {
@@ -212,7 +216,7 @@ export default function App() {
   const handleContentChange = useCallback((content: string) => {
     if (!activeTabId) return;
     setTabs((prev) => prev.map((t) => t.id === activeTabId ? { ...t, content, isDirty: true } : t));
-  }, [activeTabId]);
+  }, [activeTabId, tabs]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -418,6 +422,7 @@ function UnsupportedCard({
 }
 
 function TabContent({ tab, onChange }: { tab: FileTabState; onChange: (content: string) => void }) {
+  if (tab.error) return <div className="viewer-error" role="alert"><strong>无法预览</strong><p>{tab.error}</p><button type="button" onClick={() => window.electronAPI.openInSystem(tab.path)}>用系统程序打开</button></div>;
   switch (tab.category) {
     case "code":
       return (
@@ -556,6 +561,9 @@ function getMimeType(ext: string): string {
   };
   return map[ext.toLowerCase()] ?? "application/octet-stream";
 }
+
+
+
 
 
 

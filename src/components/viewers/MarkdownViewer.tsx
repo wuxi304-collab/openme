@@ -52,7 +52,7 @@ export default function MarkdownViewer({ content, onChange }: Props) {
                 border: mode === m ? "none" : "1.5px solid rgba(0,0,0,0.1)",
                 cursor: "pointer",
                 boxShadow: mode === m ? "0 2px 8px rgba(229,37,33,0.3)" : "none",
-                transition: "all 0.15s",
+                transition: "transform var(--dur-press) var(--ease-out), color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out)",
               }}
             >
               {m === "edit" ? "编辑" : m === "split" ? "分栏" : "预览"}
@@ -74,10 +74,11 @@ export default function MarkdownViewer({ content, onChange }: Props) {
         )}
         {(mode === "preview" || mode === "split") && (
           <div className="flex-1 overflow-auto p-5" style={{ fontFamily: "var(--font-sans)" }}>
-            <div className="mario-prose max-w-none" dangerouslySetInnerHTML={{ __html: html }} />
+            <iframe className="markdown-preview-frame" title="Markdown 预览" sandbox="" srcDoc={`<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'"><style>body{margin:0;padding:4px 8px;color:#263238;font:14px/1.7 system-ui,sans-serif;overflow-wrap:anywhere}pre,code{font-family:Consolas,monospace}pre{padding:12px;background:#f3f1ea;border-radius:8px;overflow:auto}img{max-width:100%}table{border-collapse:collapse}th,td{border:1px solid #ddd;padding:5px 8px}a{color:#1565c0}</style>${html}`} />
           </div>
         )}
       </div>
     </div>
   );
 }
+

@@ -11,6 +11,8 @@ if errorlevel 1 (
   exit /b 1
 )
 set "NPM_CONFIG_USERCONFIG=%~dp0.npmrc"
+set "ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/"
+set "ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/"
 set "npm_config_cache=%~dp0.npm-cache"
 echo [1/8] 关闭正在运行的旧版 OpenMe...
 taskkill /f /im OpenMe.exe >nul 2>&1
@@ -53,3 +55,4 @@ echo.
 echo 部署失败，请把本窗口最后 40 行发给 Codex。
 pause
 exit /b 1
+

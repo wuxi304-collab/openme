@@ -4,6 +4,7 @@ interface ZipEntry {
   name: string;
   isDir: boolean;
   size: number;
+  safe?: boolean;
 }
 
 interface Props {
@@ -101,7 +102,7 @@ export default function ZipViewer({ zipPath }: Props) {
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#56d4dd", borderTopColor: "transparent" }} />
-            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>正在读取压缩包...</p>
+            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>正在读取压缩包…</p>
           </div>
         </div>
       </div>
@@ -131,7 +132,7 @@ export default function ZipViewer({ zipPath }: Props) {
           className="flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-medium transition-opacity disabled:opacity-50"
           style={{ background: "#56d4dd", color: "#fff" }}
         >
-          {unzipping ? "解压中..." : "解压到文件夹"}
+          {unzipping ? "解压中…" : "解压到文件夹"}
         </button>
       </div>
 
@@ -188,7 +189,7 @@ export default function ZipViewer({ zipPath }: Props) {
             ) : previewContent !== null ? (
               <div className="flex flex-col h-full">
                 <div className="px-3 py-1.5 border-b flex-shrink-0" style={{ borderColor: "var(--border-muted)", background: "var(--bg-surface)" }}>
-                  <span className="text-[10px] uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>预览: {getFileName(selectedEntry)}</span>
+                  <span className="text-[10px] uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>预览：{getFileName(selectedEntry)}</span>
                 </div>
                 <pre
                   className="flex-1 overflow-auto p-3 text-[11px] leading-relaxed"
@@ -225,3 +226,4 @@ export default function ZipViewer({ zipPath }: Props) {
     </div>
   );
 }
+

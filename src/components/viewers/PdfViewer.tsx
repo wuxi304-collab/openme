@@ -1,91 +1,64 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
-interface Props {
-  base64Data: string;
-}
-
-const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.5, 2.0];
+interface Props { base64Data: string; }
+const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 
 export default function PdfViewer({ base64Data }: Props) {
-  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [pdfDocument, setPdfDocument] = useState<any>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [zoom, setZoom] = useState(1.0);
+  const [zoom, setZoom] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [rendering, setRendering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    let disposed = false; let task: any;
     (async () => {
       try {
-        const pdfjsLib = await import("pdfjs-dist");
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
-        const data = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
-        const doc = await pdfjsLib.getDocument({ data }).promise;
-        if (!cancelled) {
-          setPdfDoc(doc);
-          setTotalPages(doc.numPages);
-          setLoading(false);
-        }
-      } catch (e: any) {
-        if (!cancelled) { setError(e.message); setLoading(false); }
-      }
+        const pdfjs = await import("pdfjs-dist");
+        pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+        const data = Uint8Array.from(atob(base64Data), (character) => character.charCodeAt(0));
+        task = pdfjs.getDocument({ data });
+        const document = await task.promise;
+        if (!disposed) { setPdfDocument(document); setTotalPages(document.numPages); setPage(1); setLoading(false); }
+      } catch (reason) { if (!disposed) { setError(reason instanceof Error ? reason.message : "PDF 加载失败"); setLoading(false); } }
     })();
-    return () => { cancelled = true; };
+    return () => { disposed = true; task?.destroy(); };
   }, [base64Data]);
 
   useEffect(() => {
-    if (!pdfDoc || !canvasRef.current) return;
+    if (!pdfDocument || !canvasRef.current) return;
+    let disposed = false; let renderTask: any;
     (async () => {
       try {
-        const p = await pdfDoc.getPage(page);
-        const vp = p.getViewport({ scale: zoom * 1.5 });
-        const canvas = canvasRef.current!;
-        const ctx = canvas.getContext("2d")!;
-        canvas.height = vp.height;
-        canvas.width = vp.width;
-        await p.render({ canvasContext: ctx, viewport: vp }).promise;
-      } catch { /* render cancelled */ }
+        setRendering(true);
+        const pdfPage = await pdfDocument.getPage(page);
+        if (disposed) return;
+        const viewport = pdfPage.getViewport({ scale: zoom * Math.max(1, window.devicePixelRatio) });
+        const canvas = canvasRef.current!; const context = canvas.getContext("2d");
+        if (!context) throw new Error("无法初始化 PDF 画布");
+        canvas.width = Math.floor(viewport.width); canvas.height = Math.floor(viewport.height);
+        canvas.style.width = `${viewport.width / Math.max(1, window.devicePixelRatio)}px`;
+        canvas.style.height = `${viewport.height / Math.max(1, window.devicePixelRatio)}px`;
+        renderTask = pdfPage.render({ canvasContext: context, viewport });
+        await renderTask.promise;
+      } catch (reason: any) { if (!disposed && reason?.name !== "RenderingCancelledException") setError(reason?.message ?? "页面渲染失败"); }
+      finally { if (!disposed) setRendering(false); }
     })();
-  }, [pdfDoc, page, zoom]);
+    return () => { disposed = true; renderTask?.cancel(); };
+  }, [pdfDocument, page, zoom]);
 
-  const goTo = (n: number) => setPage(Math.min(totalPages, Math.max(1, n)));
-
+  const goTo = (value: number) => setPage(Math.min(totalPages || 1, Math.max(1, value)));
   return (
     <div className="flex flex-col h-full overflow-hidden rounded-lg border" style={{ borderColor: "var(--border-default)", background: "var(--bg-base)" }}>
       <div className="flex items-center justify-between px-3 py-1.5 border-b" style={{ borderColor: "var(--border-muted)", background: "var(--bg-surface)" }}>
-        <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "var(--text-muted)" }}>PDF</span>
-        <div className="flex items-center gap-3">
-          <button onClick={() => goTo(page - 1)} disabled={page <= 1}
-            className="text-[11px] px-2 py-0.5 rounded disabled:opacity-40" style={{ color: "var(--text-muted)", background: "var(--bg-elevated)" }}>上一页</button>
-          <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-            <input type="number" min={1} max={totalPages} value={page}
-              onChange={(e) => goTo(parseInt(e.target.value) || 1)}
-              className="w-12 text-center outline-none rounded px-1 py-0.5"
-              style={{ background: "var(--bg-elevated)", color: "var(--text-primary)", fontSize: "11px" }} />
-            / {totalPages}
-          </span>
-          <button onClick={() => goTo(page + 1)} disabled={page >= totalPages}
-            className="text-[11px] px-2 py-0.5 rounded disabled:opacity-40" style={{ color: "var(--text-muted)", background: "var(--bg-elevated)" }}>下一页</button>
-          <select value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))}
-            className="text-[11px] rounded px-2 py-0.5 outline-none"
-            style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
-            {ZOOM_LEVELS.map((z) => <option key={z} value={z}>{Math.round(z * 100)}%</option>)}
-          </select>
-        </div>
+        <span className="viewer-label">PDF</span>
+        <div className="viewer-tools"><button type="button" onClick={() => goTo(page - 1)} disabled={page <= 1}>上一页</button><label className="pdf-page-field"><span className="sr-only">页码</span><input type="number" min={1} max={totalPages} value={page} onChange={(event) => goTo(Number(event.target.value) || 1)} /> / {totalPages}</label><button type="button" onClick={() => goTo(page + 1)} disabled={page >= totalPages}>下一页</button><select aria-label="缩放比例" value={zoom} onChange={(event) => setZoom(Number(event.target.value))}>{ZOOM_LEVELS.map((level) => <option key={level} value={level}>{Math.round(level * 100)}%</option>)}</select></div>
       </div>
-      <div className="flex-1 overflow-auto flex items-start justify-center p-4">
-        {loading && (
-          <div className="flex flex-col items-center justify-center h-full gap-3">
-            <div className="w-8 h-8 rounded-full border-2" style={{ borderColor: "var(--accent)", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
-            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>正在加载 PDF...</p>
-          </div>
-        )}
-        {error && <p style={{ color: "var(--error)", fontSize: "12px" }}>加载失败: {error}</p>}
-        {!loading && !error && <canvas ref={canvasRef} className="shadow-lg" style={{ maxWidth: "100%", height: "auto" }} />}
-      </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="pdf-stage"><canvas ref={canvasRef} className="pdf-page-canvas" />{(loading || rendering) && !error && <div className="viewer-busy" role="status"><span className="dwg-loader" />{loading ? "正在打开 PDF…" : "正在绘制页面…"}</div>}{error && <div className="viewer-error" role="alert"><strong>PDF 无法预览</strong><p>{error}</p></div>}</div>
     </div>
   );
 }

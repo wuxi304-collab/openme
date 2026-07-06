@@ -100,7 +100,7 @@ export default function CodeEditor({ content, language, onChange }: Props) {
           }}
           loading={
             <div className="flex items-center justify-center h-full" style={{ background: "#0d1117" }}>
-              <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>加载编辑器...</span>
+              <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>加载编辑器…</span>
             </div>
           }
         />
@@ -108,3 +108,4 @@ export default function CodeEditor({ content, language, onChange }: Props) {
     </div>
   );
 }
+

@@ -27,8 +27,8 @@
     "pdfjs-dist": "^4.9.155",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "three": "^0.172.0",
-    "xlsx": "^0.18.5"
+    "read-excel-file": "^9.2.0",
+    "three": "^0.172.0"
   },
   "devDependencies": {
     "@types/papaparse": "^5.3.15",

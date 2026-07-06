@@ -237,7 +237,7 @@ export default function CadViewer({ base64Data, filePath }: Props) {
           <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(13,17,23,0.7)" }}>
             <div className="flex flex-col items-center gap-3">
               <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }} />
-              <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>加载 3D 模型...</p>
+              <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>加载 3D 模型…</p>
             </div>
           </div>
         )}
@@ -259,3 +259,4 @@ export default function CadViewer({ base64Data, filePath }: Props) {
     </div>
   );
 }
+

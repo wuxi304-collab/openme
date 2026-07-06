@@ -1,10 +1,10 @@
 export type FileCategory = "code" | "markdown" | "json" | "csv" | "image" | "svg" | "pdf" | "office" | "archive" | "epub" | "cad" | "dwg" | "other";
 
-const CODE_EXTS = [".js", ".ts", ".jsx", ".tsx", ".py", ".rs", ".go", ".java", ".c", ".cpp", ".h", ".css", ".html", ".scss", ".less", ".xml", ".yml", ".yaml", ".ini", ".log", ".sh", ".bat", ".ps1", ".vue", ".svelte", ".env", ".sql", ".gradle", ".toml", ".cfg", ".conf", ".properties"];
+const CODE_EXTS = [".txt", ".js", ".ts", ".jsx", ".tsx", ".py", ".rs", ".go", ".java", ".c", ".cpp", ".h", ".css", ".html", ".scss", ".less", ".xml", ".yml", ".yaml", ".ini", ".log", ".sh", ".bat", ".ps1", ".vue", ".svelte", ".env", ".sql", ".gradle", ".toml", ".cfg", ".conf", ".properties"];
 const MARKDOWN_EXTS = [".md", ".mdtxt", ".mdx"];
 const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
-const OFFICE_EXTS = [".docx", ".xlsx", ".pptx", ".doc", ".xls", ".ppt"];
-const ARCHIVE_EXTS = [".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz", ".tgz"];
+const OFFICE_EXTS = [".docx", ".xlsx", ".pptx"];
+const ARCHIVE_EXTS = [".zip"];
 const CAD_EXTS = [".stl", ".obj", ".gltf", ".glb", ".step", ".stp", ".iges", ".igs"];
 
 function extname(filePath: string): string {
@@ -49,3 +49,4 @@ export function detectLanguage(filePath: string): string {
   };
   return langs[ext] || "plaintext";
 }
+

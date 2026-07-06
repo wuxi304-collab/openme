@@ -51,10 +51,11 @@ export default function OfficeViewer({ data }: Props) {
         <div className="flex items-center px-3 py-1.5 border-b" style={{ borderColor: "var(--border-muted)", background: "var(--bg-surface)" }}>
           <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "var(--text-muted)" }}>Word 文档</span>
         </div>
-        <div
-          className="flex-1 overflow-auto p-6"
-          style={{ fontFamily: "var(--font-sans)", fontSize: "13px", lineHeight: "1.8", color: "var(--text-secondary)" }}
-          dangerouslySetInnerHTML={{ __html: data.html }}
+        <iframe
+          className="office-doc-frame"
+          title="Word 文档预览"
+          sandbox=""
+          srcDoc={`<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'"><style>body{box-sizing:border-box;max-width:850px;margin:24px auto;padding:48px 56px;background:#fff;color:#222;font:14px/1.75 system-ui,sans-serif;box-shadow:0 8px 30px #0002}img{max-width:100%}table{border-collapse:collapse;max-width:100%}td,th{border:1px solid #ccc;padding:5px 8px}</style>${data.html}`}
         />
       </div>
     );
@@ -98,3 +99,4 @@ export default function OfficeViewer({ data }: Props) {
     </div>
   );
 }
+

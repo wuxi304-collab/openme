@@ -265,15 +265,14 @@ ipcMain.handle("convert-docx", async (_, filePath) => {
 
 ipcMain.handle("convert-excel", async (_, filePath) => {
   try {
-    const XLSX = require("xlsx");
-    const workbook = XLSX.readFile(filePath);
-    const sheets = workbook.SheetNames.map((name) => {
-      const sheet = workbook.Sheets[name];
-      return {
-        name,
-        data: XLSX.utils.sheet_to_json(sheet, { header: 1 }),
-      };
-    });
+    const stats = await fs.promises.stat(filePath);
+    if (stats.size > 50 * 1024 * 1024) return { success: false, message: "Excel 文件超过 50 MB 预览限制" };
+    const { default: readWorkbook } = await import("read-excel-file/node");
+    const workbook = await readWorkbook(filePath);
+    const sheets = workbook.map(({ sheet, data }) => ({
+      name: sheet,
+      data: data.map((row) => row.map((cell) => cell == null ? "" : cell instanceof Date ? cell.toLocaleString("zh-CN") : String(cell))),
+    }));
     return { success: true, sheets };
   } catch (e) {
     return { success: false, message: e.message };
@@ -297,17 +296,25 @@ ipcMain.handle("open-in-system", async (_, filePath) => {
   }
 });
 
+function safeArchiveRelativePath(entryName) {
+  const normalized = path.posix.normalize(String(entryName).replace(/\\/g, "/"));
+  if (!normalized || normalized === "." || normalized.startsWith("../") || path.posix.isAbsolute(normalized)) return null;
+  return normalized;
+}
+
 ipcMain.handle("list-zip-contents", async (_, filePath) => {
   try {
     const JSZip = require("jszip");
-    const data = fs.readFileSync(filePath);
+    const data = await fs.promises.readFile(filePath);
     const zip = await JSZip.loadAsync(data);
     const entries = Object.entries(zip.files).map(([name, file]) => ({
       name,
       isDir: file.dir,
-      size: file._data ? file._data.uncompressedSize : 0,
+      size: file._data?.uncompressedSize ?? 0,
+      safe: Boolean(safeArchiveRelativePath(name)),
     }));
-    return { success: true, entries };
+    const totalSize = entries.reduce((sum, entry) => sum + entry.size, 0);
+    return { success: true, entries, totalSize };
   } catch (e) {
     return { success: false, message: e.message };
   }
@@ -316,16 +323,27 @@ ipcMain.handle("list-zip-contents", async (_, filePath) => {
 ipcMain.handle("unzip-file", async (_, filePath, targetDir) => {
   try {
     const JSZip = require("jszip");
-    const data = fs.readFileSync(filePath);
+    const data = await fs.promises.readFile(filePath);
     const zip = await JSZip.loadAsync(data);
-    await zip.forEach((relativePath, file) => {
-      const dest = path.join(targetDir, relativePath);
-      if (!file.dir) {
-        fs.mkdirSync(path.dirname(dest), { recursive: true });
-        file.nodefs.createReadStream().pipe(fs.createWriteStream(dest));
+    const archiveName = path.basename(filePath, path.extname(filePath));
+    const destinationRoot = path.resolve(targetDir, archiveName);
+    const files = Object.entries(zip.files);
+    const totalSize = files.reduce((sum, [, file]) => sum + (file._data?.uncompressedSize ?? 0), 0);
+    if (files.length > 100000) throw new Error("压缩包文件过多（超过 100,000 项）");
+    if (totalSize > 2 * 1024 * 1024 * 1024) throw new Error("解压后体积超过 2 GB 安全限制");
+    await fs.promises.mkdir(destinationRoot, { recursive: true });
+    for (const [entryName, file] of files) {
+      const relativePath = safeArchiveRelativePath(entryName);
+      if (!relativePath) throw new Error(`压缩包包含不安全路径：${entryName}`);
+      const destination = path.resolve(destinationRoot, ...relativePath.split("/"));
+      if (destination !== destinationRoot && !destination.startsWith(destinationRoot + path.sep)) throw new Error(`路径越界：${entryName}`);
+      if (file.dir) await fs.promises.mkdir(destination, { recursive: true });
+      else {
+        await fs.promises.mkdir(path.dirname(destination), { recursive: true });
+        await fs.promises.writeFile(destination, await file.async("nodebuffer"));
       }
-    });
-    return { success: true };
+    }
+    return { success: true, destination: destinationRoot };
   } catch (e) {
     return { success: false, message: e.message };
   }
@@ -334,17 +352,17 @@ ipcMain.handle("unzip-file", async (_, filePath, targetDir) => {
 ipcMain.handle("read-zip-entry", async (_, filePath, entryName) => {
   try {
     const JSZip = require("jszip");
-    const data = fs.readFileSync(filePath);
+    const data = await fs.promises.readFile(filePath);
     const zip = await JSZip.loadAsync(data);
     const file = zip.file(entryName);
-    if (!file) return { success: false, message: "File not found in archive" };
-    const content = await file.async("base64");
-    return { success: true, data: content };
+    if (!file || file.dir) return { success: false, message: "压缩包内未找到该文件" };
+    const size = file._data?.uncompressedSize ?? 0;
+    if (size > 2 * 1024 * 1024) return { success: false, message: "文件超过 2 MB 预览限制" };
+    return { success: true, data: await file.async("base64") };
   } catch (e) {
     return { success: false, message: e.message };
   }
 });
-
 ipcMain.handle("select-folder-dialog", async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: "选择解压目标文件夹",
@@ -466,6 +484,9 @@ ipcMain.handle("plan-cad-change", async (_, input) => {
     return { success: false, message: error.message };
   }
 });
+
+
+
 
 
 
