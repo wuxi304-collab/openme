@@ -1,0 +1,15 @@
+node_modules/
+dist/
+release/
+.npm-cache/
+.tools/
+*.log
+.env
+.env.*
+!.env.example
+cad-host/bin/
+cad-host/obj/
+cad-host/publish/
+cad-host/*.svg
+.DS_Store
+Thumbs.db

@@ -1,0 +1,80 @@
+{
+  "name": "openme-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "description": "OpenMe - Universal File Opener",
+  "main": "electron/main.js",
+  "author": "you",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "electron": "electron .",
+    "electron:dev": "concurrently \"vite\" \"electron .\"",
+    "dist": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "@mlightcad/cad-simple-viewer": "^1.5.7",
+    "@mlightcad/libredwg-web": "^0.7.7",
+    "@monaco-editor/react": "^4.7.0",
+    "electron-log": "^5.2.4",
+    "highlight.js": "^11.10.0",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.8.0",
+    "marked": "^15.0.0",
+    "occt-import-js": "^0.0.23",
+    "papaparse": "^5.5.2",
+    "pdfjs-dist": "^4.9.155",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.172.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.3.15",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.172.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "electron": "^34.1.0",
+    "electron-builder": "^25.1.8",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  },
+  "build": {
+    "appId": "com.openme.desktop",
+    "productName": "OpenMe",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "public/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/icons/icon.ico"
+    },
+    "extraResources": [
+      {
+        "from": "cad-host/publish",
+        "to": "cad-host",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,565 @@
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { FileInfo, FileTabState, RecentFilesStore } from "./types";
+import { detectCategory, detectLanguage } from "./utils/fileTypeDetector";
+import Sidebar from "./components/layout/Sidebar";
+import TitleBar from "./components/layout/TitleBar";
+import StatusBar from "./components/layout/StatusBar";
+import FileTabs from "./components/layout/FileTabs";
+import CodeEditor from "./components/viewers/CodeEditor";
+import MarkdownViewer from "./components/viewers/MarkdownViewer";
+import JsonViewer from "./components/viewers/JsonViewer";
+import CsvViewer from "./components/viewers/CsvViewer";
+import ImageViewer from "./components/viewers/ImageViewer";
+import SvgViewer from "./components/viewers/SvgViewer";
+import PdfViewer from "./components/viewers/PdfViewer";
+import OfficeViewer from "./components/viewers/OfficeViewer";
+import ZipViewer from "./components/viewers/ZipViewer";
+import CadViewer from "./components/viewers/CadViewer";
+import CadAssistant from "./components/viewers/CadAssistant";
+
+const MAX_RECENT = 50;
+const DwgViewer = React.lazy(() => import("./components/viewers/DwgViewer"));
+
+declare global {
+  interface Window {
+    electronAPI: {
+      getFileInfo: (path: string) => Promise<FileInfo>;
+      loadRecentFiles: () => Promise<RecentFilesStore>;
+      saveRecentFiles: (store: { files: FileInfo[]; version: number }) => Promise<void>;
+      readFileContent: (path: string, maxSize?: number) => Promise<{ type: string; data?: string; mimeType?: string; message?: string }>;
+      saveFile: (path: string, content: string) => Promise<{ success: boolean; message?: string }>;
+      readBinary: (path: string, maxSize?: number) => Promise<{ success: boolean; data?: string; message?: string }>;
+      convertDocx: (path: string) => Promise<{ success: boolean; html?: string; message?: string }>;
+      convertExcel: (path: string) => Promise<{ success: boolean; sheets?: any[]; message?: string }>;
+      openFileDialog: () => Promise<string[]>;
+      openInSystem: (path: string) => Promise<void>;
+      getAppVersion: () => Promise<string>;
+      getCadEngineStatus: () => Promise<{ available: boolean; kind: string; name: string; capabilities: string[]; quality: string; fallback: boolean; message?: string }>;
+      inspectCadDocument: (path: string) => Promise<{ success: boolean; document?: { document?: { entityCount?: number; layerCount?: number; blockCount?: number }; entityTypes?: Record<string, number> }; message?: string }>;
+      renderCadDocument: (path: string) => Promise<{ success: boolean; svg?: string; message?: string }>;
+      listZipContents: (path: string) => Promise<{ success: boolean; entries?: { name: string; isDir: boolean; size: number }[]; message?: string }>;
+      readZipEntry: (path: string, entryName: string) => Promise<{ success: boolean; data?: string; message?: string }>;
+      unzipFile: (path: string, targetDir: string) => Promise<{ success: boolean; message?: string }>;
+      selectFolderDialog: () => Promise<string | null>;
+      windowMinimize: () => Promise<void>;
+      windowMaximize: () => Promise<void>;
+      windowClose: () => Promise<void>;
+      windowIsMaximized: () => Promise<boolean>;
+      getAiConfig: () => Promise<{ configured: boolean; model: string; baseUrl: string }>;
+      saveAiConfig: (config: { apiKey: string; model: string; baseUrl: string }) => Promise<{ success: boolean; message?: string }>;
+      planCadChange: (input: { filePath: string; fileName: string; request: string }) => Promise<{ success: boolean; plan?: unknown; message?: string }>;
+    };
+  }
+}
+
+export default function App() {
+  const [recentFiles, setRecentFiles] = useState<FileInfo[]>([]);
+  const [tabs, setTabs] = useState<FileTabState[]>([]);
+  const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    window.electronAPI.loadRecentFiles()
+      .then((store) => setRecentFiles(store.files))
+      .catch(console.error);
+  }, []);
+
+  const filteredFiles = useMemo(() => {
+    if (!searchQuery.trim()) return recentFiles;
+    const q = searchQuery.toLowerCase();
+    return recentFiles.filter(
+      (f) =>
+        f.name.toLowerCase().includes(q) ||
+        f.path.toLowerCase().includes(q) ||
+        f.extension.toLowerCase().includes(q)
+    );
+  }, [recentFiles, searchQuery]);
+
+  const activeTab = useMemo(() => tabs.find((t) => t.id === activeTabId) ?? null, [tabs, activeTabId]);
+
+  const handleSaveCurrent = useCallback(async () => {
+    const tab = activeTab;
+    if (!tab || !tab.isDirty || !tab.content) return;
+    const result = await window.electronAPI.saveFile(tab.path, tab.content);
+    if (result.success) {
+      setTabs((prev) => prev.map((t) => t.id === tab.id ? { ...t, isDirty: false } : t));
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        handleSaveCurrent();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleSaveCurrent]);
+
+  const openFileInTab = useCallback(async (fileInfo: FileInfo) => {
+    const existingTab = tabs.find((t) => t.path === fileInfo.path);
+    if (existingTab) {
+      setActiveTabId(existingTab.id);
+      return;
+    }
+    const category = detectCategory(fileInfo.path);
+    const id = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const newTab: FileTabState = {
+      id,
+      path: fileInfo.path,
+      name: fileInfo.name,
+      category,
+      content: null,
+      isDirty: false,
+      isLoading: true,
+    };
+    setTabs((prev) => [...prev, newTab]);
+    setActiveTabId(id);
+
+    try {
+      if (category === "office") {
+        const ext = fileInfo.extension.toLowerCase();
+        if (ext === ".docx") {
+          const res = await window.electronAPI.convertDocx(fileInfo.path);
+          setTabs((prev) => prev.map((t) => t.id === id ? {
+            ...t, isLoading: false, officeData: { type: "docx", html: res.html ?? "" }
+          } : t));
+        } else if (ext === ".xlsx") {
+          const res = await window.electronAPI.convertExcel(fileInfo.path);
+          setTabs((prev) => prev.map((t) => t.id === id ? {
+            ...t, isLoading: false, officeData: { type: "excel", sheets: res.sheets ?? [] }
+          } : t));
+        } else {
+          setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false } : t));
+        }
+      } else if (category === "svg" || category === "image" || category === "pdf" || category === "cad") {
+        const res = await window.electronAPI.readBinary(fileInfo.path);
+        setTabs((prev) => prev.map((t) => t.id === id ? {
+          ...t, isLoading: false,
+          binaryData: res.success ? res.data : undefined,
+          mimeType: getMimeType(fileInfo.extension),
+        } : t));
+      } else {
+        const res = await window.electronAPI.readFileContent(fileInfo.path);
+        setTabs((prev) => prev.map((t) => t.id === id ? {
+          ...t, isLoading: false,
+          content: res.type === "text" ? res.data ?? null : null,
+          binaryData: res.type === "binary" ? res.data : undefined,
+          mimeType: res.mimeType,
+        } : t));
+      }
+    } catch {
+      setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, content: "[ 读取失败 ]" } : t));
+    }
+  }, [tabs]);
+
+  const addToRecent = async (file: FileInfo) => {
+    const updated = [file, ...recentFiles.filter((f) => f.path !== file.path)].slice(0, MAX_RECENT);
+    setRecentFiles(updated);
+    await window.electronAPI.saveRecentFiles({ files: updated, version: 1 });
+  };
+
+  const handleFilePaths = useCallback(async (paths: string[]) => {
+    for (const p of paths) {
+      try {
+        const fileInfo = await window.electronAPI.getFileInfo(p);
+        fileInfo.file_type = detectCategory(p) as any;
+        await addToRecent(fileInfo);
+        await openFileInTab(fileInfo);
+      } catch (e) {
+        console.error("Open file error:", e);
+      }
+    }
+  }, [recentFiles, openFileInTab]);
+
+  const handleSelectFile = useCallback(async (file: FileInfo) => {
+    await openFileInTab(file);
+  }, [openFileInTab]);
+
+  const handleCloseTab = useCallback((tabId: string) => {
+    setTabs((prev) => {
+      const idx = prev.findIndex((t) => t.id === tabId);
+      const newTabs = prev.filter((t) => t.id !== tabId);
+      if (activeTabId === tabId) {
+        if (newTabs.length > 0) setActiveTabId(newTabs[Math.min(idx, newTabs.length - 1)].id);
+        else setActiveTabId(null);
+      }
+      return newTabs;
+    });
+  }, [activeTabId]);
+
+  const handleOpenDialog = useCallback(async () => {
+    try {
+      const paths = await window.electronAPI.openFileDialog();
+      if (paths?.length) handleFilePaths(paths);
+    } catch (e) {
+      console.error("Dialog error:", e);
+    }
+  }, [handleFilePaths]);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "o") {
+        event.preventDefault();
+        handleOpenDialog();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleOpenDialog]);
+
+  const handleContentChange = useCallback((content: string) => {
+    if (!activeTabId) return;
+    setTabs((prev) => prev.map((t) => t.id === activeTabId ? { ...t, content, isDirty: true } : t));
+  }, [activeTabId]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const paths = Array.from(e.dataTransfer.files).map((f: any) => f.path).filter(Boolean);
+    if (paths.length) handleFilePaths(paths);
+  }, [handleFilePaths]);
+
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+
+  return (
+    <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
+      <TitleBar />
+      <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} />
+
+      <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
+        <Sidebar
+          files={filteredFiles}
+          selectedPath={activeTab?.path ?? null}
+          onSelect={handleSelectFile}
+          searchQuery={searchQuery}
+          onOpenDialog={handleOpenDialog}
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+
+        <main
+          className="flex-1 flex flex-col min-w-0 overflow-hidden"
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+        >
+          {tabs.length === 0 ? (
+            <EmptyState onOpenDialog={handleOpenDialog} />
+          ) : activeTab ? (
+            activeTab.isLoading ? (
+              <LoadingState />
+            ) : (
+              <TabContent tab={activeTab} onChange={handleContentChange} />
+            )
+          ) : null}
+        </main>
+      </div>
+
+      <StatusBar activeTab={activeTab ? { name: activeTab.name, size: undefined, content: activeTab.content ?? undefined } : null} />
+    </div>
+  );
+}
+
+function EmptyState({ onOpenDialog }: { onOpenDialog: () => void }) {
+  const formats = ["MD", "JSON", "PDF", "DOCX", "XLSX", "ZIP", "CAD"];
+  return (
+    <section className="empty-workspace" aria-labelledby="empty-title">
+      <div className="sky-grid" aria-hidden="true">
+        <span className="pixel-cloud cloud-one" /><span className="pixel-cloud cloud-two" />
+        <span className="floating-coin coin-one" /><span className="floating-coin coin-two" />
+        <span className="scenery-hill hill-one" /><span className="scenery-hill hill-two" />
+      </div>
+      <div className="welcome-panel">
+        <div className="welcome-eyebrow"><span className="eyebrow-line" />OPENME DESKTOP<span className="eyebrow-line" /></div>
+        <div className="hero-mark" aria-hidden="true"><i /><span>?</span></div>
+        <h1 id="empty-title">下一关，从一个文件开始</h1>
+        <p>拖进来直接预览，或从电脑里选一个。文件只在本地处理。</p>
+        <div className="empty-actions">
+          <button type="button" className="hero-open-button" onClick={onOpenDialog}><span aria-hidden="true">↗</span>选择文件</button>
+          <span className="drop-hint">也可以拖放到这里</span>
+        </div>
+        <div className="format-row" aria-label="支持的文件格式">{formats.map((format) => <span key={format}>{format}</span>)}</div>
+      </div>
+      <div className="workspace-ground" aria-hidden="true"><span className="ground-pipe" /><span className="ground-bricks" /></div>
+    </section>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          background: "rgba(255,255,255,0.96)",
+          backdropFilter: "blur(20px)",
+          borderRadius: 20,
+          boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
+          border: "1px solid rgba(255,255,255,0.8)",
+          padding: "28px 40px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 16,
+        }}
+      >
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+          <div className="loading-dot" />
+          <div className="loading-dot" />
+          <div className="loading-dot" />
+        </div>
+        <p
+          style={{
+            fontFamily: "'Fredoka One', sans-serif",
+            fontSize: 16,
+            color: "#37474F",
+            letterSpacing: "0.02em",
+          }}
+        >
+          正在加载文件...
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function UnsupportedCard({
+  icon,
+  accentColor,
+  title,
+  subtitle,
+  description,
+  onOpenInSystem,
+}: {
+  icon: React.ReactNode;
+  accentColor: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  onOpenInSystem: () => void;
+}) {
+  return (
+    <div
+      className="animate-bounce-in"
+      style={{
+        background: "rgba(255,255,255,0.97)",
+        backdropFilter: "blur(20px)",
+        borderRadius: 20,
+        boxShadow: "0 16px 48px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,1)",
+        border: "1px solid rgba(255,255,255,0.8)",
+        padding: "36px 44px",
+        maxWidth: 420,
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 16,
+        textAlign: "center",
+      }}
+    >
+      <div
+        style={{
+          width: 68,
+          height: 68,
+          borderRadius: 18,
+          background: `${accentColor}15`,
+          border: `2px solid ${accentColor}30`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: `0 4px 16px ${accentColor}20`,
+        }}
+      >
+        {icon}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <h3
+          style={{
+            fontFamily: "'Fredoka One', sans-serif",
+            fontSize: 20,
+            color: "#1A1A2E",
+            lineHeight: 1.2,
+          }}
+        >
+          {title}
+        </h3>
+        <p style={{ fontSize: 12, fontWeight: 700, color: accentColor, letterSpacing: "0.02em" }}>
+          {subtitle}
+        </p>
+        <p style={{ fontSize: 12, color: "#607D8B", lineHeight: 1.6, fontWeight: 500 }}>
+          {description}
+        </p>
+      </div>
+      <button
+        onClick={onOpenInSystem}
+        className="btn-mario"
+        style={{
+          fontSize: 13,
+          padding: "10px 28px",
+          background: `linear-gradient(180deg, ${accentColor}dd 0%, ${accentColor} 100%)`,
+          boxShadow: `0 4px 0 ${accentColor}88, 0 6px 20px ${accentColor}40`,
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+          <polyline points="15 3 21 3 21 9" />
+          <line x1="10" y1="14" x2="21" y2="3" />
+        </svg>
+        用系统程序打开
+      </button>
+    </div>
+  );
+}
+
+function TabContent({ tab, onChange }: { tab: FileTabState; onChange: (content: string) => void }) {
+  switch (tab.category) {
+    case "code":
+      return (
+        <div className="flex-1 min-h-0 p-4">
+          <CodeEditor
+            content={tab.content ?? ""}
+            language={detectLanguage(tab.path)}
+            onChange={onChange}
+          />
+        </div>
+      );
+    case "markdown":
+      return (
+        <div className="flex-1 min-h-0 p-4">
+          <MarkdownViewer content={tab.content ?? ""} onChange={onChange} />
+        </div>
+      );
+    case "json":
+      return (
+        <div className="flex-1 min-h-0 p-4">
+          <JsonViewer content={tab.content ?? ""} onChange={onChange} />
+        </div>
+      );
+    case "csv":
+      return (
+        <div className="flex-1 min-h-0 p-4">
+          <CsvViewer content={tab.content ?? ""} />
+        </div>
+      );
+    case "image":
+      return (
+        <div className="flex-1 min-h-0 p-4">
+          {tab.binaryData ? <ImageViewer base64Data={tab.binaryData} mimeType={tab.mimeType ?? "image/png"} /> : (
+            <div className="flex items-center justify-center h-full" style={{ color: "var(--text-muted)" }}>无法加载图片</div>
+          )}
+        </div>
+      );
+    case "svg":
+      return (
+        <div className="flex-1 min-h-0 p-4">
+          {tab.binaryData ? <SvgViewer base64Data={tab.binaryData} /> : (
+            <div className="flex items-center justify-center h-full" style={{ color: "var(--text-muted)" }}>无法加载 SVG</div>
+          )}
+        </div>
+      );
+    case "pdf":
+      return (
+        <div className="flex-1 min-h-0 p-4">
+          {tab.binaryData ? <PdfViewer base64Data={tab.binaryData} /> : (
+            <div className="flex items-center justify-center h-full" style={{ color: "var(--text-muted)" }}>无法加载 PDF</div>
+          )}
+        </div>
+      );
+    case "office":
+      return (
+        <div className="flex-1 min-h-0 p-4">
+          {tab.officeData ? <OfficeViewer data={tab.officeData as any} /> : (
+            <div className="flex items-center justify-center h-full" style={{ color: "var(--text-muted)" }}>正在转换 Office 文件...</div>
+          )}
+        </div>
+      );
+    case "archive":
+      return (
+        <div className="flex-1 min-h-0 p-4">
+          <ZipViewer zipPath={tab.path} />
+        </div>
+      );
+    case "cad":
+      return (
+        <div className="flex-1 min-h-0 p-4">
+          {tab.binaryData ? (
+            <CadViewer base64Data={tab.binaryData} filePath={tab.path} />
+          ) : (
+            <div className="flex items-center justify-center h-full" style={{ color: "var(--text-muted)" }}>无法加载 3D 模型</div>
+          )}
+        </div>
+      );
+    case "epub":
+      return (
+        <div className="flex-1 flex items-center justify-center p-6">
+          <UnsupportedCard
+            icon={
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E8855D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <path d="M9 13h6M9 17h4" />
+              </svg>
+            }
+            accentColor="#E8855D"
+            title="电子书文件 (EPUB)"
+            subtitle={tab.name}
+            description="EPUB 格式暂不支持内置预览，请使用系统阅读器打开"
+            onOpenInSystem={() => window.electronAPI.openInSystem(tab.path)}
+          />
+        </div>
+      );
+    case "dwg":
+      return (
+        <div className="cad-workspace">
+          <div className="cad-stage">
+            <React.Suspense fallback={<LoadingState />}>
+              <DwgViewer filePath={tab.path} fileName={tab.name} />
+            </React.Suspense>
+          </div>
+          <CadAssistant filePath={tab.path} fileName={tab.name} />
+        </div>
+      );
+    default:
+      return (
+        <div className="flex-1 flex items-center justify-center p-6">
+          <UnsupportedCard
+            icon={
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#90A4AE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <circle cx="12" cy="15" r="1" />
+                <path d="M12 12v1" />
+              </svg>
+            }
+            accentColor="#78909C"
+            title="未知文件格式"
+            subtitle={tab.name}
+            description="该格式暂不支持内置预览，请使用系统程序打开"
+            onOpenInSystem={() => window.electronAPI.openInSystem(tab.path)}
+          />
+        </div>
+      );
+  }
+}
+
+function getMimeType(ext: string): string {
+  const map: Record<string, string> = {
+    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+    ".gif": "image/gif", ".bmp": "image/bmp", ".webp": "image/webp",
+    ".svg": "image/svg+xml", ".pdf": "application/pdf",
+  };
+  return map[ext.toLowerCase()] ?? "application/octet-stream";
+}
+
+
+
+
+
+
+
