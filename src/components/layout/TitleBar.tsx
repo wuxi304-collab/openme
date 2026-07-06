@@ -10,7 +10,7 @@ export default function TitleBar() {
   return (
     <header className="app-titlebar">
       <div className="titlebar-brand no-drag">
-        <img className="brand-token" src="./openme.svg" alt="" aria-hidden="true" /><span>OPENME</span>
+        <img className="brand-token" src="./openme-logo-64.png" alt="" aria-hidden="true" /><span>OPENME</span>
         <span className="titlebar-separator" aria-hidden="true" /><span className="titlebar-context">文件工作台</span>
       </div>
       <div className="titlebar-level" aria-label="当前工作区"><span className="level-pip" aria-hidden="true" />WORLD 1–1</div>

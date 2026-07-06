@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/openme.svg" alt="OpenMe logo" width="104" height="104">
+  <img src="public/openme-logo.png" alt="OpenMe logo" width="104" height="104">
   <h1>OpenMe</h1>
   <p><strong>打开文件，不必先猜该用哪个软件。</strong></p>
   <p><a href="#中文">中文</a> · <a href="#english">English</a> · <a href="#日本語">日本語</a></p>
