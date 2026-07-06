@@ -15,6 +15,7 @@ app.setAppUserModelId("com.openme.desktop");
 protocol.registerSchemesAsPrivileged([{ scheme: "openme-media", privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } }]);
 
 let mainWindow = null;
+let hasUnsavedChanges = false;
 
 const isDev = !app.isPackaged && process.env.OPENME_USE_DIST !== "1";
 
@@ -148,6 +149,21 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
   }
 
+  mainWindow.on("close", (event) => {
+    if (!hasUnsavedChanges) return;
+    const choice = dialog.showMessageBoxSync(mainWindow, {
+      type: "warning",
+      title: "还有未保存修改",
+      message: "关闭 OpenMe？",
+      detail: "未保存的文本、代码或 Markdown 修改将丢失。",
+      buttons: ["继续编辑", "放弃并关闭"],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true,
+    });
+    if (choice === 0) event.preventDefault();
+    else hasUnsavedChanges = false;
+  });
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
@@ -400,6 +416,7 @@ ipcMain.handle("read-epub", async (_, filePath) => {
 });
 ipcMain.handle("get-app-version", () => app.getVersion());
 
+ipcMain.handle("set-dirty-state", (_, dirty) => { hasUnsavedChanges = Boolean(dirty); });
 ipcMain.handle("window-minimize", () => mainWindow?.minimize());
 ipcMain.handle("window-maximize", () => {
   if (mainWindow?.isMaximized()) mainWindow.unmaximize();
@@ -506,6 +523,7 @@ ipcMain.handle("plan-cad-change", async (_, input) => {
     return { success: false, message: error.message };
   }
 });
+
 
 
 

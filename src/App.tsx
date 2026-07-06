@@ -5,22 +5,22 @@ import Sidebar from "./components/layout/Sidebar";
 import TitleBar from "./components/layout/TitleBar";
 import StatusBar from "./components/layout/StatusBar";
 import FileTabs from "./components/layout/FileTabs";
-import CodeEditor from "./components/viewers/CodeEditor";
-import MarkdownViewer from "./components/viewers/MarkdownViewer";
 import JsonViewer from "./components/viewers/JsonViewer";
-import CsvViewer from "./components/viewers/CsvViewer";
 import ImageViewer from "./components/viewers/ImageViewer";
 import SvgViewer from "./components/viewers/SvgViewer";
-import PdfViewer from "./components/viewers/PdfViewer";
-import OfficeViewer from "./components/viewers/OfficeViewer";
-import ZipViewer from "./components/viewers/ZipViewer";
-import CadViewer from "./components/viewers/CadViewer";
 import CadAssistant from "./components/viewers/CadAssistant";
-import MediaViewer from "./components/viewers/MediaViewer";
-import FontViewer from "./components/viewers/FontViewer";
-import EpubViewer from "./components/viewers/EpubViewer";
 
 const MAX_RECENT = 50;
+const CodeEditor = React.lazy(() => import("./components/viewers/CodeEditor"));
+const MarkdownViewer = React.lazy(() => import("./components/viewers/MarkdownViewer"));
+const CsvViewer = React.lazy(() => import("./components/viewers/CsvViewer"));
+const PdfViewer = React.lazy(() => import("./components/viewers/PdfViewer"));
+const OfficeViewer = React.lazy(() => import("./components/viewers/OfficeViewer"));
+const ZipViewer = React.lazy(() => import("./components/viewers/ZipViewer"));
+const CadViewer = React.lazy(() => import("./components/viewers/CadViewer"));
+const MediaViewer = React.lazy(() => import("./components/viewers/MediaViewer"));
+const FontViewer = React.lazy(() => import("./components/viewers/FontViewer"));
+const EpubViewer = React.lazy(() => import("./components/viewers/EpubViewer"));
 const DwgViewer = React.lazy(() => import("./components/viewers/DwgViewer"));
 
 declare global {
@@ -46,6 +46,7 @@ declare global {
       readZipEntry: (path: string, entryName: string) => Promise<{ success: boolean; data?: string; message?: string }>;
       unzipFile: (path: string, targetDir: string) => Promise<{ success: boolean; destination?: string; message?: string }>;
       selectFolderDialog: () => Promise<string | null>;
+      setDirtyState: (dirty: boolean) => Promise<void>;
       windowMinimize: () => Promise<void>;
       windowMaximize: () => Promise<void>;
       windowClose: () => Promise<void>;
@@ -81,6 +82,9 @@ export default function App() {
   }, [recentFiles, searchQuery]);
 
   const activeTab = useMemo(() => tabs.find((t) => t.id === activeTabId) ?? null, [tabs, activeTabId]);
+
+  const hasDirtyTabs = tabs.some((tab) => tab.isDirty);
+  useEffect(() => { window.electronAPI.setDirtyState(hasDirtyTabs).catch(() => undefined); }, [hasDirtyTabs]);
 
   const handleSaveCurrent = useCallback(async () => {
     const tab = activeTab;
@@ -428,23 +432,22 @@ function UnsupportedCard({
   );
 }
 
+function ViewerBoundary({ children }: { children: React.ReactNode }) {
+  return <React.Suspense fallback={<LoadingState />}>{children}</React.Suspense>;
+}
 function TabContent({ tab, onChange }: { tab: FileTabState; onChange: (content: string) => void }) {
   if (tab.error) return <div className="viewer-error" role="alert"><strong>无法预览</strong><p>{tab.error}</p><button type="button" onClick={() => window.electronAPI.openInSystem(tab.path)}>用系统程序打开</button></div>;
   switch (tab.category) {
     case "code":
       return (
         <div className="flex-1 min-h-0 p-4">
-          <CodeEditor
-            content={tab.content ?? ""}
-            language={detectLanguage(tab.path)}
-            onChange={onChange}
-          />
+          <ViewerBoundary><CodeEditor content={tab.content ?? ""} language={detectLanguage(tab.path)} onChange={onChange} /></ViewerBoundary>
         </div>
       );
     case "markdown":
       return (
         <div className="flex-1 min-h-0 p-4">
-          <MarkdownViewer content={tab.content ?? ""} onChange={onChange} />
+          <ViewerBoundary><MarkdownViewer content={tab.content ?? ""} onChange={onChange} /></ViewerBoundary>
         </div>
       );
     case "json":
@@ -456,7 +459,7 @@ function TabContent({ tab, onChange }: { tab: FileTabState; onChange: (content: 
     case "csv":
       return (
         <div className="flex-1 min-h-0 p-4">
-          <CsvViewer content={tab.content ?? ""} />
+          <ViewerBoundary><CsvViewer content={tab.content ?? ""} /></ViewerBoundary>
         </div>
       );
     case "image":
@@ -478,7 +481,7 @@ function TabContent({ tab, onChange }: { tab: FileTabState; onChange: (content: 
     case "pdf":
       return (
         <div className="flex-1 min-h-0 p-4">
-          {tab.binaryData ? <PdfViewer base64Data={tab.binaryData} /> : (
+          {tab.binaryData ? <ViewerBoundary><PdfViewer base64Data={tab.binaryData} /></ViewerBoundary> : (
             <div className="flex items-center justify-center h-full" style={{ color: "var(--text-muted)" }}>无法加载 PDF</div>
           )}
         </div>
@@ -486,7 +489,7 @@ function TabContent({ tab, onChange }: { tab: FileTabState; onChange: (content: 
     case "office":
       return (
         <div className="flex-1 min-h-0 p-4">
-          {tab.officeData ? <OfficeViewer data={tab.officeData as any} /> : (
+          {tab.officeData ? <ViewerBoundary><OfficeViewer data={tab.officeData as any} /></ViewerBoundary> : (
             <div className="flex items-center justify-center h-full" style={{ color: "var(--text-muted)" }}>正在转换 Office 文件...</div>
           )}
         </div>
@@ -494,26 +497,26 @@ function TabContent({ tab, onChange }: { tab: FileTabState; onChange: (content: 
     case "archive":
       return (
         <div className="flex-1 min-h-0 p-4">
-          <ZipViewer zipPath={tab.path} />
+          <ViewerBoundary><ZipViewer zipPath={tab.path} /></ViewerBoundary>
         </div>
       );
     case "cad":
       return (
         <div className="flex-1 min-h-0 p-4">
           {tab.binaryData ? (
-            <CadViewer base64Data={tab.binaryData} filePath={tab.path} />
+            <ViewerBoundary><CadViewer base64Data={tab.binaryData} filePath={tab.path} /></ViewerBoundary>
           ) : (
             <div className="flex items-center justify-center h-full" style={{ color: "var(--text-muted)" }}>无法加载 3D 模型</div>
           )}
         </div>
       );
     case "epub":
-      return <div className="flex-1 min-h-0 p-4"><EpubViewer filePath={tab.path} /></div>;
+      return <div className="flex-1 min-h-0 p-4"><ViewerBoundary><EpubViewer filePath={tab.path} /></ViewerBoundary></div>;
     case "audio":
     case "video":
-      return <div className="flex-1 min-h-0 p-4"><MediaViewer filePath={tab.path} kind={tab.category} /></div>;
+      return <div className="flex-1 min-h-0 p-4"><ViewerBoundary><MediaViewer filePath={tab.path} kind={tab.category} /></ViewerBoundary></div>;
     case "font":
-      return <div className="flex-1 min-h-0 p-4">{tab.binaryData ? <FontViewer base64Data={tab.binaryData} fileName={tab.name} /> : <div className="viewer-error"><strong>字体无法加载</strong></div>}</div>;
+      return <div className="flex-1 min-h-0 p-4">{tab.binaryData ? <ViewerBoundary><FontViewer base64Data={tab.binaryData} fileName={tab.name} /></ViewerBoundary> : <div className="viewer-error"><strong>字体无法加载</strong></div>}</div>;
     case "dwg":
       return (
         <div className="cad-workspace">
@@ -556,6 +559,10 @@ function getMimeType(ext: string): string {
   };
   return map[ext.toLowerCase()] ?? "application/octet-stream";
 }
+
+
+
+
 
 
 

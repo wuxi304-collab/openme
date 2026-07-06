@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   unzipFile: (path, targetDir) => ipcRenderer.invoke("unzip-file", path, targetDir),
   readZipEntry: (path, entryName) => ipcRenderer.invoke("read-zip-entry", path, entryName),
   selectFolderDialog: () => ipcRenderer.invoke("select-folder-dialog"),
+  setDirtyState: (dirty) => ipcRenderer.invoke("set-dirty-state", dirty),
   windowMinimize: () => ipcRenderer.invoke("window-minimize"),
   windowMaximize: () => ipcRenderer.invoke("window-maximize"),
   windowClose: () => ipcRenderer.invoke("window-close"),
@@ -30,6 +31,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   saveAiConfig: (config) => ipcRenderer.invoke("save-ai-config", config),
   planCadChange: (input) => ipcRenderer.invoke("plan-cad-change", input),
 });
+
 
 
 

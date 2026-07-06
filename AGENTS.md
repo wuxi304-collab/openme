@@ -81,3 +81,10 @@ OpenMe 是 Windows 桌面通用文件工作台，当前使用 Electron + React +
 - **视频**：新增 MP4/WebM/OGV/M4V 分类和本地流式播放。H.264/AV1/HEVC 等是否可用取决于 Electron 构建和系统环境；不承诺 MOV/HEVC。
 - **字体**：新增 TTF/OTF/WOFF/WOFF2 预览，支持自定义中英文试排和 18–120 px 字号调整，单文件上限 25 MB。
 - EPUB 解析器独立为 `electron/epub.js`，已用最小 EPUB 回归样本验证章节、中文和脚本剔除。
+
+## 2026-07-07 性能与数据安全打磨
+
+- 重型查看器全部改为 React 按需加载：首页 JavaScript 从约 956 KB 降至约 229 KB（gzip 约 72 KB）；Monaco、Markdown、CSV、PDF、Office、ZIP、3D、EPUB、媒体、字体仅在首次打开对应格式时加载。
+- XLSX 工作表改为每页 500 行，补充行号、粘性表头与空工作表状态，避免大表一次创建数万 DOM 节点。
+- 新增主进程级未保存状态保护：关闭按钮、Alt+F4 和系统窗口关闭都会提示，避免文本/代码/Markdown 修改丢失。
+- EPUB 在当前应用会话中记住每本书的章节位置，并显示章节阅读进度。
