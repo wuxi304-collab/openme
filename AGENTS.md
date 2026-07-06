@@ -43,3 +43,14 @@ OpenMe 是 Windows 桌面通用文件工作台，当前使用 Electron + React +
 - 不直接覆盖用户 CAD 原文件。修改流程必须是：分析 → 生成计划 → 用户确认 → 另存副本 → 校验。
 - 发布前依次执行 CAD sidecar 构建、`npm run build`、三图回归和打包。
 - 如果追求 AutoCAD 级 DWG 保真，开源栈不能作保证；应把系统已安装的 AutoCAD Core Console 作为可选最高优先级引擎，而不是捆绑试用 SDK。
+
+## 2026-07-06 三图二次验收结论
+
+用户确认三张真实 DWG 在 ACadSharp SVG 与 LibreDWG Web 下仍未达到可用保真度。进一步检查结果：
+
+- 三图完整内容位于模型空间，不是选错布局；纸空间为空或仅有一个视口。
+- DWG 内嵌预览均只有 180×85，不能作为正式预览。
+- 本机未安装 AutoCAD、DWG TrueView、浩辰、中望、BricsCAD 或 ODA 原生引擎。
+- 这些图包含 SolidWorks/CAXA/GstarCAD 风格扩展块。纯开源解析链只能近似显示，继续调整 SVG/CSS 无法补齐未实现的专有显示语义。
+- 不得再把 ACadSharp SVG 描述成“精准预览”；它只能叫“工程预览/结构预览”。
+- 下一条可验收路线：使用 Autodesk 免费且非试用的 DWG TrueView 作为原生保真查看器，OpenMe 保留语义分析和 LLM 修改计划；若要求直接嵌入 OpenMe 画布，则需要 ODA/RealDWG 商业 SDK。

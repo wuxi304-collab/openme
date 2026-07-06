@@ -13,3 +13,4 @@ cad-host/publish/
 cad-host/*.svg
 .DS_Store
 Thumbs.db
+cad-host/previews/
