@@ -63,6 +63,7 @@ export default function App() {
   const [tabs, setTabs] = useState<FileTabState[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
     window.electronAPI.loadRecentFiles()
@@ -84,6 +85,7 @@ export default function App() {
   const activeTab = useMemo(() => tabs.find((t) => t.id === activeTabId) ?? null, [tabs, activeTabId]);
 
   const hasDirtyTabs = tabs.some((tab) => tab.isDirty);
+  useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(timer); }, [toast]);
   useEffect(() => { window.electronAPI.setDirtyState(hasDirtyTabs).catch(() => undefined); }, [hasDirtyTabs]);
 
   const handleSaveCurrent = useCallback(async () => {
@@ -92,7 +94,8 @@ export default function App() {
     const result = await window.electronAPI.saveFile(tab.path, tab.content);
     if (result.success) {
       setTabs((prev) => prev.map((t) => t.id === tab.id ? { ...t, isDirty: false } : t));
-    }
+      setToast({ kind: "success", message: `已保存 ${tab.name}` });
+    } else setToast({ kind: "error", message: result.message ?? "保存失败" });
   }, [activeTab]);
 
   useEffect(() => {
@@ -270,7 +273,8 @@ export default function App() {
         </main>
       </div>
 
-      <StatusBar activeTab={activeTab ? { name: activeTab.name, size: undefined, content: activeTab.content ?? undefined } : null} />
+      <StatusBar activeTab={activeTab ? { name: activeTab.name, size: undefined, content: activeTab.content ?? undefined, isDirty: activeTab.isDirty } : null} />
+      {toast && <div className={`app-toast is-${toast.kind}`} role="status" aria-live="polite"><i aria-hidden="true">{toast.kind === "success" ? "✓" : "!"}</i>{toast.message}</div>}
     </div>
   );
 }
@@ -559,6 +563,8 @@ function getMimeType(ext: string): string {
   };
   return map[ext.toLowerCase()] ?? "application/octet-stream";
 }
+
+
 
 
 
