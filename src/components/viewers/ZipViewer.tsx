@@ -40,6 +40,7 @@ export default function ZipViewer({ zipPath }: Props) {
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [unzipping, setUnzipping] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -78,6 +79,7 @@ export default function ZipViewer({ zipPath }: Props) {
 
   const handleUnzip = async () => {
     setUnzipping(true);
+    setActionError(null);
     try {
       const targetDir = await window.electronAPI.selectFolderDialog();
       if (!targetDir) { setUnzipping(false); return; }
@@ -87,9 +89,9 @@ export default function ZipViewer({ zipPath }: Props) {
         const finalDir = targetDir + (targetDir.endsWith("\\") || targetDir.endsWith("/") ? "" : "\\") + folderName;
         await window.electronAPI.openInSystem(finalDir);
       } else {
-        alert("解压失败: " + res.message);
+        setActionError("解压失败：" + res.message);
       }
-    } catch (e: any) { alert("解压失败: " + e.message); }
+    } catch (e: any) { setActionError("解压失败：" + e.message); }
     finally { setUnzipping(false); }
   };
 
@@ -136,6 +138,7 @@ export default function ZipViewer({ zipPath }: Props) {
         </button>
       </div>
 
+      {actionError && <div className="archive-action-error" role="alert"><span>{actionError}</span><button type="button" aria-label="关闭错误提示" onClick={() => setActionError(null)}>×</button></div>}
       <div className="flex flex-1 min-h-0">
         {/* File list */}
         <div className="flex-1 overflow-auto border-r" style={{ borderColor: "var(--border-muted)" }}>
@@ -226,4 +229,5 @@ export default function ZipViewer({ zipPath }: Props) {
     </div>
   );
 }
+
 

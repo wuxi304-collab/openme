@@ -5,6 +5,7 @@ import Sidebar from "./components/layout/Sidebar";
 import TitleBar from "./components/layout/TitleBar";
 import StatusBar from "./components/layout/StatusBar";
 import FileTabs from "./components/layout/FileTabs";
+import CommandPalette, { type CommandItem } from "./components/CommandPalette";
 import JsonViewer from "./components/viewers/JsonViewer";
 import ImageViewer from "./components/viewers/ImageViewer";
 import SvgViewer from "./components/viewers/SvgViewer";
@@ -64,6 +65,7 @@ export default function App() {
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  const [commandOpen, setCommandOpen] = useState(false);
 
   useEffect(() => {
     window.electronAPI.loadRecentFiles()
@@ -193,6 +195,13 @@ export default function App() {
     await openFileInTab(file);
   }, [openFileInTab]);
 
+  const handleRemoveRecent = useCallback(async (file: FileInfo) => {
+    const updated = recentFiles.filter((item) => item.path !== file.path);
+    setRecentFiles(updated);
+    await window.electronAPI.saveRecentFiles({ files: updated, version: 1 });
+    setToast({ kind: "success", message: `已从最近文件移除 ${file.name}` });
+  }, [recentFiles]);
+
   const handleCloseTab = useCallback((tabId: string) => {
     const closingTab = tabs.find((tab) => tab.id === tabId);
     if (closingTab?.isDirty && !window.confirm(`“${closingTab.name}”有未保存修改，仍要关闭吗？`)) return;
@@ -240,6 +249,30 @@ export default function App() {
 
   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
+  const activateRelativeTab = useCallback((direction: 1 | -1) => {
+    if (tabs.length < 2) return;
+    const current = Math.max(0, tabs.findIndex((tab) => tab.id === activeTabId));
+    setActiveTabId(tabs[(current + direction + tabs.length) % tabs.length].id);
+  }, [tabs, activeTabId]);
+
+  const commands = useMemo<CommandItem[]>(() => [
+    { id: "open", label: "打开文件", detail: "从电脑选择一个或多个文件", shortcut: "Ctrl O", run: handleOpenDialog },
+    { id: "save", label: "保存当前文件", detail: activeTab?.name ?? "没有打开文件", shortcut: "Ctrl S", disabled: !activeTab?.isDirty, run: handleSaveCurrent },
+    { id: "system", label: "用系统程序打开", detail: activeTab?.path ?? "没有打开文件", disabled: !activeTab, run: () => { if (activeTab) window.electronAPI.openInSystem(activeTab.path); } },
+    { id: "next", label: "切换到下个标签", detail: `${tabs.length} 个已打开标签`, shortcut: "Ctrl Tab", disabled: tabs.length < 2, run: () => activateRelativeTab(1) },
+    { id: "close", label: "关闭当前标签", detail: activeTab?.name ?? "没有打开文件", shortcut: "Ctrl W", disabled: !activeTab, run: () => { if (activeTab) handleCloseTab(activeTab.id); } },
+  ], [handleOpenDialog, handleSaveCurrent, activeTab, tabs.length, activateRelativeTab, handleCloseTab]);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "k") { event.preventDefault(); setCommandOpen((value) => !value); return; }
+      if (commandOpen) return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "w") { event.preventDefault(); if (activeTab) handleCloseTab(activeTab.id); }
+      if ((event.ctrlKey || event.metaKey) && event.key === "Tab") { event.preventDefault(); activateRelativeTab(event.shiftKey ? -1 : 1); }
+    };
+    window.addEventListener("keydown", handler, true); return () => window.removeEventListener("keydown", handler, true);
+  }, [commandOpen, activeTab, handleCloseTab, activateRelativeTab]);
+
   return (
     <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
       <TitleBar />
@@ -250,7 +283,7 @@ export default function App() {
           files={filteredFiles}
           selectedPath={activeTab?.path ?? null}
           onSelect={handleSelectFile}
-          searchQuery={searchQuery}
+                    onRemove={handleRemoveRecent}
           onOpenDialog={handleOpenDialog}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
@@ -275,6 +308,7 @@ export default function App() {
 
       <StatusBar activeTab={activeTab ? { name: activeTab.name, size: undefined, content: activeTab.content ?? undefined, isDirty: activeTab.isDirty } : null} />
       {toast && <div className={`app-toast is-${toast.kind}`} role="status" aria-live="polite"><i aria-hidden="true">{toast.kind === "success" ? "✓" : "!"}</i>{toast.message}</div>}
+      <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
     </div>
   );
 }
@@ -563,6 +597,9 @@ function getMimeType(ext: string): string {
   };
   return map[ext.toLowerCase()] ?? "application/octet-stream";
 }
+
+
+
 
 
 

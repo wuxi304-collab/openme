@@ -41,10 +41,12 @@ export default function CsvViewer({ content }: Props) {
         <label className="viewer-search"><span className="sr-only">搜索表格</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索单元格…" autoComplete="off" /></label>
       </div>
       <div className="flex-1 overflow-auto">
-        {parsed.headers.length === 0 ? <div className="viewer-error"><strong>CSV 为空</strong><p>文件中没有可显示的行。</p></div> : <table className="csv-table"><thead><tr><th className="csv-row-number">#</th>{parsed.headers.map((header, index) => <th key={index}><button type="button" onClick={() => handleSort(index)} aria-sort={sort.column === index ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}>{header}<span aria-hidden="true">{sort.column === index ? (sort.direction === "asc" ? "▲" : "▼") : ""}</span></button></th>)}</tr></thead><tbody>{pageRows.map((row, rowIndex) => <tr key={page * PAGE_SIZE + rowIndex}><td className="csv-row-number">{page * PAGE_SIZE + rowIndex + 1}</td>{parsed.headers.map((_, columnIndex) => <td key={columnIndex} title={row[columnIndex] ?? ""}>{row[columnIndex] ?? ""}</td>)}</tr>)}</tbody></table>}
+        {parsed.headers.length === 0 ? <div className="viewer-error"><strong>CSV 为空</strong><p>文件中没有可显示的行。</p></div> : <table className="csv-table"><thead><tr><th className="csv-row-number">#</th>{parsed.headers.map((header, index) => <th key={index} aria-sort={sort.column === index ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}><button type="button" onClick={() => handleSort(index)}>{header}<span aria-hidden="true">{sort.column === index ? (sort.direction === "asc" ? "▲" : "▼") : ""}</span></button></th>)}</tr></thead><tbody>{pageRows.map((row, rowIndex) => <tr key={page * PAGE_SIZE + rowIndex}><td className="csv-row-number">{page * PAGE_SIZE + rowIndex + 1}</td>{parsed.headers.map((_, columnIndex) => <td key={columnIndex} title={row[columnIndex] ?? ""}>{row[columnIndex] ?? ""}</td>)}</tr>)}</tbody></table>}
         {parsed.headers.length > 0 && pageRows.length === 0 && <div className="viewer-error"><strong>没有匹配项</strong><p>换个关键词试试。</p></div>}
       </div>
       <div className="csv-pagination"><button type="button" onClick={() => setPage((value) => Math.max(0, value - 1))} disabled={page === 0}>上一页</button><span>{page + 1} / {totalPages}</span><button type="button" onClick={() => setPage((value) => Math.min(totalPages - 1, value + 1))} disabled={page >= totalPages - 1}>下一页</button></div>
     </div>
   );
 }
+
+

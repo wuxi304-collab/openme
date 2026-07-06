@@ -51,7 +51,7 @@ export default function OfficeViewer({ data }: Props) {
         <div className="excel-sheet-tabs" style={{ borderColor: "var(--border-muted)", background: "var(--bg-surface)" }}>
           <span className="text-[10px] uppercase tracking-widest font-semibold mr-2" style={{ color: "var(--text-muted)" }}>Excel</span>
           {sheets.map((s, i) => (
-            <button key={i} onClick={() => setActiveSheet(i)}
+            <button type="button" key={i} onClick={() => setActiveSheet(i)}
               className="px-2 py-0.5 rounded text-[10px] transition-colors"
               style={{
                 background: i === activeSheet ? "var(--accent-dim)" : "transparent",
@@ -81,5 +81,6 @@ export default function OfficeViewer({ data }: Props) {
     </div>
   );
 }
+
 
 
