@@ -10,11 +10,12 @@
 
   <img src="public/readme-china-red-line.svg" alt="China red separator" width="520">
 
+  <p><strong>OpenMe 启吾</strong></p>
   <p><strong>打开文件，不必先猜该用哪个软件。</strong></p>
   <p><strong>Open Anything. Understand Everything.</strong></p>
 
   <p>本地优先文件工作台 · 诚实格式支持 · 可扩展能力包</p>
-  <p>格物 · 开卷 · 归档 · 知新</p>
+  <p>启吾 · 格物 · 开卷 · 归档 · 知新</p>
 
   <p>
     <a href="#快速开始">快速开始</a> ·
@@ -37,11 +38,11 @@
   <strong>中国无锡发起，面向全球的本地优先文件工作平台。</strong>
 </div>
 
-## 为什么是 OpenMe
+## 为什么是 OpenMe 启吾
 
 日常工作里的文件不是按软件分类来的。客户发来的可能是一份 PDF、一张表、一个压缩包、几张图片、一段视频、一个 DWG 图纸，或者一组混在一起的项目资料。
 
-OpenMe 要解决的不是“再造一个文件查看器”，而是把文件处理变成一条清楚的路径：
+OpenMe 启吾要解决的不是“再造一个文件查看器”，而是把文件处理变成一条清楚的路径：
 
 ```text
 Open
@@ -50,7 +51,9 @@ Open
   -> Act
 ```
 
-| 问题 | OpenMe 的处理方式 |
+“启吾”的含义不是装饰性的中文名，而是产品目标：打开文件，也打开自己对文件的理解。
+
+| 问题 | OpenMe 启吾的处理方式 |
 | --- | --- |
 | 不知道该用什么软件打开 | 先用统一工作台打开，无法高质量内置预览时交给系统程序。 |
 | 不知道文件内容是否可靠 | 明确显示支持等级、格式边界和风险提示。 |
@@ -60,7 +63,7 @@ Open
 
 ## Baseline：文件格式支持
 
-OpenMe 的 baseline 是文件格式支持。
+OpenMe 启吾的 baseline 是文件格式支持。
 
 不是简单写“支持很多格式”，而是每一种格式都进入统一注册中心：
 
@@ -79,7 +82,7 @@ supportLevel
 boundary
 ```
 
-也就是说，OpenMe 的格式支持必须回答两个问题：
+也就是说，OpenMe 启吾的格式支持必须回答两个问题：
 
 ```text
 能做到什么？
@@ -92,10 +95,11 @@ boundary
 
 ## 产品气质
 
-OpenMe 的中国文化元素不靠装饰，而靠秩序。
+OpenMe 启吾的中国文化元素不靠装饰，而靠秩序。
 
 | 词 | 产品含义 |
 | --- | --- |
+| 启吾 | 打开文件，也打开自己对文件的理解。 |
 | 格物 | 先看清文件结构、格式边界和风险。 |
 | 开卷 | 让文档、表格、图纸、图片、音视频先能被打开。 |
 | 归档 | 把散落资料放回一个可管理的工作台。 |
@@ -214,7 +218,7 @@ electron/
 
 ## English
 
-OpenMe is a local-first desktop workspace for opening, inspecting and understanding everyday files.
+OpenMe Qiwu is a local-first desktop workspace for opening, inspecting and understanding everyday files.
 
 It starts from a strict baseline: honest file format support. Each format should map to a registry entry, a support level and an explicit boundary.
 
