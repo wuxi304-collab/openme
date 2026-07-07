@@ -23,7 +23,7 @@ export function buildBasicFileSummary(input: SummaryInput): FileSummary {
     evidence: [
       { label: "文件名", value: input.fileName },
       { label: "文件类型", value: getCategoryLabel(input.category) },
-      { label: "支持等级", value: getSupportLevelLabel(supportLevel), severity: supportLevel === "external-open" || supportLevel === "experimental" ? "warning" : "info" },
+      { label: "支持等级", value: getSupportLevelLabel(supportLevel), severity: supportLevel === "external-open" || supportLevel === "experimental" || supportLevel === "semantic-inspection" ? "warning" : "info" },
       { label: "文件大小", value: sizeLabel },
     ],
   };
@@ -46,6 +46,9 @@ function getCategoryLabel(category: SummaryInput["category"]): string {
     case "font": return "字体";
     case "cad": return "3D / 工程模型";
     case "dwg": return "DWG / DXF 图纸";
+    case "design": return "设计源文件";
+    case "package": return "安装包 / 应用包";
+    case "disk": return "磁盘镜像 / 虚拟机镜像";
     case "other":
     default:
       return "未知文件";
@@ -65,6 +68,14 @@ function getCategoryWarnings(category: SummaryInput["category"]): string[] {
       return ["Office 预览不承诺分页、浮动对象、宏、图表和复杂样式完全一致。"];
     case "svg":
       return ["SVG 必须隔离预览，不执行脚本。"];
+    case "design":
+      return ["设计源文件先做格式识别与外部打开路由；PSD、AI、Sketch、Figma 等不承诺内置高保真预览。"];
+    case "package":
+      return ["安装包和应用包先做语义检查与外部打开路由；不执行安装器、不运行未知二进制。"];
+    case "disk":
+      return ["磁盘镜像和虚拟机镜像先做识别与外部打开路由；不自动挂载、不自动解包。"];
+    case "archive":
+      return ["ZIP 可内置浏览；RAR、7Z、TAR、GZ 等仍应走外部打开或后续专用解包器。"];
     default:
       return [];
   }
