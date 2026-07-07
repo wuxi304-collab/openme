@@ -287,6 +287,29 @@
   white-space: nowrap;
 }
 
+.status-dirty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #f8c92b;
+}
+
+.status-dirty i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f8c92b;
+  box-shadow: 0 0 0 3px rgba(248, 201, 43, 0.13);
+}
+
+.status-pill {
+  border: 1px solid rgba(248, 201, 43, 0.18);
+  border-radius: 999px;
+  background: rgba(248, 201, 43, 0.08);
+  color: #d8c56e;
+  padding: 3px 7px;
+}
+
 @media (max-width: 1160px) {
   .workspace-viewer-grid {
     grid-template-columns: minmax(0, 1fr);
