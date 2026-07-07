@@ -1,13 +1,13 @@
 import React from "react";
 import type { FileTabState } from "../../types";
 import { getViewerRouteByPath } from "../../viewer-registry";
-import type { ViewerRoute } from "../../viewer-registry";
 import { detectLanguage } from "../../utils/fileTypeDetector";
 import ErrorBoundary from "../ErrorBoundary";
 import JsonViewer from "./JsonViewer";
 import ImageViewer from "./ImageViewer";
 import SvgViewer from "./SvgViewer";
 import CadAssistant from "./CadAssistant";
+import OpenMeRouteCard from "./OpenMeRouteCard";
 
 const CodeEditor = React.lazy(() => import("./CodeEditor"));
 const MarkdownViewer = React.lazy(() => import("./MarkdownViewer"));
@@ -66,9 +66,9 @@ export default function ViewerRouter({ tab, onChange }: ViewerRouterProps) {
     case "design":
       return <OpenMeRouteCard tab={tab} route={route} title="设计源文件已进入 OpenMe" description="OpenMe 已直接打开该设计源文件为本地安全卡片，显示身份、边界、风险和下一步。" />;
     case "package":
-      return <OpenMeRouteCard tab={tab} route={route} title="安装包 / 应用包已进入 OpenMe" description="OpenMe 已直接打开该包文件为限制卡片。不会执行、安装或运行未知二进制。" />;
+      return <OpenMeRouteCard tab={tab} route={route} title="应用包已进入 OpenMe" description="OpenMe 已直接打开该包文件为限制卡片，显示身份、边界、风险和下一步。" />;
     case "disk":
-      return <OpenMeRouteCard tab={tab} route={route} title="磁盘镜像 / 虚拟机镜像已进入 OpenMe" description="OpenMe 已直接打开该镜像为限制卡片。不会自动挂载、恢复、导入或启动。" />;
+      return <OpenMeRouteCard tab={tab} route={route} title="镜像文件已进入 OpenMe" description="OpenMe 已直接打开该镜像为限制卡片，显示身份、边界、风险和下一步。" />;
     default:
       return <OpenMeRouteCard tab={tab} route={route} title="文件已进入 OpenMe" description="OpenMe 已直接打开该文件为本地安全卡片。" />;
   }
@@ -84,32 +84,4 @@ function ViewerBoundary({ children }: { children: React.ReactNode }) {
 
 function LoadingState() {
   return <div className="loading-state"><div className="loading-card"><div className="loading-dot-row"><div className="loading-dot" /><div className="loading-dot" /><div className="loading-dot" /></div><p>正在加载文件...</p></div></div>;
-}
-
-function OpenMeRouteCard({ tab, route, title, description }: { tab: FileTabState; route: ViewerRoute; title: string; description: string }) {
-  return (
-    <div className="flex-1 flex items-center justify-center p-6">
-      <div className="unsupported-card">
-        <div className="unsupported-icon" aria-hidden="true">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <circle cx="12" cy="15" r="1" />
-            <path d="M12 12v1" />
-          </svg>
-        </div>
-        <h3>{title}</h3>
-        <p className="unsupported-subtitle">{tab.name}</p>
-        <p>{description}</p>
-        <div className="summary-chip-list" aria-label="OpenMe 打开路径">
-          <span className="summary-chip">{route.surface}</span>
-          <span className="summary-chip">{route.mode}</span>
-          <span className="summary-chip">{route.label}</span>
-        </div>
-        <p>{route.reason}</p>
-        <p>{route.boundary}</p>
-        {route.hasExternalFallback && <button type="button" onClick={() => window.electronAPI.openInSystem(tab.path)}>用系统程序兜底打开</button>}
-      </div>
-    </div>
-  );
 }
