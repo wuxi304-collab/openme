@@ -1,6 +1,6 @@
-import { FileInfo } from "../../types";
+import { FileInfo, type FileCategory } from "../../types";
 import { detectCategory } from "../../utils/fileTypeDetector";
-import { getDomainPack, type PackSuggestion } from "../../packs";
+import { getDomainPack, suggestDomainPacks, type PackSuggestion, type SupportedFileCategory } from "../../packs";
 import FileTypeIcon from "../FileTypeIcon";
 
 interface Props {
@@ -15,6 +15,15 @@ interface Props {
 }
 
 export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpenDialog, searchValue, onSearchChange, packSuggestions = [] }: Props) {
+  const selectedFile = files.find((file) => file.path === selectedPath) ?? null;
+  const inferredSuggestions = selectedFile
+    ? suggestDomainPacks({
+        fileName: selectedFile.name,
+        category: toPackCategory(detectCategory(selectedFile.path)),
+      })
+    : [];
+  const visibleSuggestions = packSuggestions.length > 0 ? packSuggestions : inferredSuggestions;
+
   return (
     <aside className="workspace-sidebar">
       <div className="sidebar-actions">
@@ -25,11 +34,39 @@ export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpe
       <div className="sidebar-section-heading"><span>最近打开</span><span className="coin-count"><i aria-hidden="true" />{files.length}</span></div>
       <div className="recent-list">{files.length === 0 ? <div className="sidebar-empty"><span className="mini-question-block" aria-hidden="true">?</span><strong>还没有文件</strong><span>打开一个文件，它会留在这里</span></div> : files.map((file) => { const active = selectedPath === file.path; return <div className={`recent-row ${active ? "is-active" : ""}`} key={file.id}><button type="button" className="recent-file" onClick={() => onSelect(file)} title={file.path}><FileTypeIcon type={detectCategory(file.path)} size={38} /><span className="recent-file-copy"><strong>{file.name}</strong><small>{file.extension || "文件"}</small></span>{active && <span className="active-flag" aria-label="当前文件">●</span>}</button><button type="button" className="recent-remove" aria-label={`从最近文件移除 ${file.name}`} title="从列表移除" onClick={() => onRemove(file)}>×</button></div>; })}</div>
 
-      <PackSuggestionPanel suggestions={packSuggestions} />
+      <PackSuggestionPanel suggestions={visibleSuggestions} />
 
       <div className="sidebar-footer"><span className="pipe-status" aria-hidden="true" /><span>本地模式</span><span className="sidebar-footer-spacer" /><span>v1.0</span></div>
     </aside>
   );
+}
+
+function toPackCategory(category: FileCategory): SupportedFileCategory {
+  switch (category) {
+    case "markdown":
+      return "text";
+    case "json":
+    case "csv":
+      return "data";
+    case "cad":
+      return "model3d";
+    case "dwg":
+      return "dwg";
+    case "code":
+    case "image":
+    case "svg":
+    case "pdf":
+    case "office":
+    case "archive":
+    case "epub":
+    case "audio":
+    case "video":
+    case "font":
+    case "other":
+      return category;
+    default:
+      return "other";
+  }
 }
 
 function PackSuggestionPanel({ suggestions }: { suggestions: PackSuggestion[] }) {
