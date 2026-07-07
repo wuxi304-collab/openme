@@ -150,6 +150,8 @@ export default function App() {
         }
       } else if (category === "audio" || category === "video" || category === "epub") {
         setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false } : t));
+      } else if (category === "design" || category === "package" || category === "disk" || category === "other") {
+        setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false } : t));
       } else if (category === "svg" || category === "image" || category === "pdf" || category === "cad" || category === "font") {
         const maxSize = category === "pdf" || category === "cad" ? 100 * 1024 * 1024 : category === "font" ? 25 * 1024 * 1024 : 50 * 1024 * 1024;
         const res = await window.electronAPI.readBinary(fileInfo.path, maxSize);
