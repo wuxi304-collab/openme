@@ -18,6 +18,75 @@ let mainWindow = null;
 let hasUnsavedChanges = false;
 
 const isDev = !app.isPackaged && process.env.OPENME_USE_DIST !== "1";
+const DEV_ORIGIN = "http://localhost:1420";
+
+function buildContentSecurityPolicy() {
+  const scriptSrc = isDev ? "'self' 'unsafe-eval' http://localhost:1420" : "'self'";
+  const connectSrc = isDev ? "'self' http://localhost:1420 ws://localhost:1420 openme-media:" : "'self' openme-media:";
+  return [
+    "default-src 'self'",
+    `script-src ${scriptSrc}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: openme-media:",
+    "font-src 'self' data:",
+    "media-src 'self' blob: openme-media:",
+    `connect-src ${connectSrc}`,
+    "object-src 'none'",
+    "frame-src 'none'",
+    "base-uri 'self'",
+    "form-action 'none'",
+  ].join("; ");
+}
+
+function isDevServerUrl(targetUrl) {
+  try {
+    const parsed = new URL(targetUrl);
+    return isDev && parsed.origin === DEV_ORIGIN;
+  } catch {
+    return false;
+  }
+}
+
+function isAppUrl(targetUrl) {
+  if (isDevServerUrl(targetUrl)) return true;
+  try {
+    const parsed = new URL(targetUrl);
+    return parsed.protocol === "file:" || parsed.protocol === "openme-media:";
+  } catch {
+    return false;
+  }
+}
+
+function isExternalWebUrl(targetUrl) {
+  try {
+    const parsed = new URL(targetUrl);
+    return ["https:", "http:", "mailto:"].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
+function hardenWebContents(webContents) {
+  webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const responseHeaders = {
+      ...details.responseHeaders,
+      "Content-Security-Policy": [buildContentSecurityPolicy()],
+      "X-Content-Type-Options": ["nosniff"],
+    };
+    callback({ responseHeaders });
+  });
+
+  webContents.setWindowOpenHandler(({ url }) => {
+    if (isExternalWebUrl(url)) shell.openExternal(url).catch(() => undefined);
+    return { action: "deny" };
+  });
+
+  webContents.on("will-navigate", (event, url) => {
+    if (isAppUrl(url)) return;
+    event.preventDefault();
+    if (isExternalWebUrl(url)) shell.openExternal(url).catch(() => undefined);
+  });
+}
 
 function getRecentFilesPath() {
   const appDir = path.join(app.getPath("userData"));
@@ -139,11 +208,15 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
     },
   });
 
+  hardenWebContents(mainWindow.webContents);
+
   if (isDev) {
-    mainWindow.loadURL("http://localhost:1420");
+    mainWindow.loadURL(DEV_ORIGIN);
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
@@ -523,11 +596,6 @@ ipcMain.handle("plan-cad-change", async (_, input) => {
     return { success: false, message: error.message };
   }
 });
-
-
-
-
-
 
 
 
