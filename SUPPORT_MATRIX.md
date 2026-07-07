@@ -30,8 +30,8 @@ Support levels:
 | PowerPoint | PPT, PPTX | External open | Use system application until a reliable preview path exists. |
 | Archives beyond ZIP | RAR, 7Z, TAR, GZ | External open | Do not claim built-in extraction. |
 | EPUB | EPUB | Safe text reading | Metadata, chapters, navigation, search, font size. No complex layout fidelity claim. |
-| Audio | MP3, WAV, OGG/OGA, M4A, AAC, FLAC, OPUS, WEBA, AIFF/AIF, WMA | Built-in playback, environment-dependent | File classification is broad; actual decoding depends on Chromium/Electron/system codecs. |
-| Video | MP4, WebM, OGV, M4V, MOV, MKV, AVI, WMV, FLV, 3GP/3G2, TS, MTS, M2TS | Built-in playback, environment-dependent | Container recognition is broad; H.264, AV1, HEVC, ProRes and legacy codecs depend on Electron/system support. |
+| Audio | MP3, WAV, OGG/OGA, M4A, AAC, FLAC, OPUS, WEBA, AIFF/AIF, WMA | Built-in playback, environment-dependent | File classification is broad; actual decoding depends on Chromium/Electron/system codecs. Playback failure shows a codec-boundary message and a system-open fallback. |
+| Video | MP4, WebM, OGV, M4V, MOV, MKV, AVI, WMV, FLV, 3GP/3G2, TS, MTS, M2TS | Built-in playback, environment-dependent | Container recognition is broad; H.264, AV1, HEVC, ProRes and legacy codecs depend on Electron/system support. Playback failure shows a codec-boundary message and a system-open fallback. |
 | Fonts | TTF, OTF, WOFF, WOFF2 | Full built-in preview | Custom sample text and font-size controls. |
 | 3D | STL, OBJ, glTF, GLB, STEP, IGES | Experimental approximate preview | Complex assemblies, materials, and STEP semantics require sample regression. |
 | CAD | DWG, DXF | Semantic inspection / approximate preview / external native open | Do not claim AutoCAD-level fidelity. Prefer native external viewer when installed. |
@@ -43,7 +43,8 @@ Media support is intentionally conservative:
 - OpenMe can classify and route common audio/video containers to the built-in media viewer.
 - Playback still depends on Electron, Chromium and installed system codecs.
 - A recognized extension does not mean every codec inside that container will decode.
-- Unsupported playback should fall back to system open instead of pretending to be broken data.
+- Unsupported playback shows an explicit codec-boundary explanation and offers system open.
+- Source files are not modified or uploaded during media playback attempts.
 
 ## CAD Statement
 
