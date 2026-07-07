@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FileInfo, FileTabState, RecentFilesStore } from "./types";
+import { FileInfo, FileTabState } from "./types";
 import { detectCategory, detectLanguage } from "./utils/fileTypeDetector";
 import Sidebar from "./components/layout/Sidebar";
 import TitleBar from "./components/layout/TitleBar";
@@ -25,41 +25,6 @@ const MediaViewer = React.lazy(() => import("./components/viewers/MediaViewer"))
 const FontViewer = React.lazy(() => import("./components/viewers/FontViewer"));
 const EpubViewer = React.lazy(() => import("./components/viewers/EpubViewer"));
 const DwgViewer = React.lazy(() => import("./components/viewers/DwgViewer"));
-
-declare global {
-  interface Window {
-    electronAPI: {
-      getFileInfo: (path: string) => Promise<FileInfo>;
-      loadRecentFiles: () => Promise<RecentFilesStore>;
-      saveRecentFiles: (store: { files: FileInfo[]; version: number }) => Promise<void>;
-      readFileContent: (path: string, maxSize?: number) => Promise<{ type: string; data?: string; mimeType?: string; message?: string }>;
-      saveFile: (path: string, content: string) => Promise<{ success: boolean; message?: string }>;
-      readBinary: (path: string, maxSize?: number) => Promise<{ success: boolean; data?: string; message?: string }>;
-      convertDocx: (path: string) => Promise<{ success: boolean; html?: string; message?: string }>;
-      convertExcel: (path: string) => Promise<{ success: boolean; sheets?: any[]; message?: string }>;
-      openFileDialog: () => Promise<string[]>;
-      openInSystem: (path: string) => Promise<void>;
-      getAppVersion: () => Promise<string>;
-      getMediaUrl: (path: string) => Promise<string>;
-      readEpub: (path: string) => Promise<{ success: boolean; book?: { title: string; creator?: string; language?: string; cover?: { data: string; mimeType: string } | null; chapters: { title: string; text: string }[] }; message?: string }>;
-      getCadEngineStatus: () => Promise<{ available: boolean; kind: string; name: string; capabilities: string[]; quality: string; fallback: boolean; message?: string }>;
-      inspectCadDocument: (path: string) => Promise<{ success: boolean; document?: { document?: { entityCount?: number; layerCount?: number; blockCount?: number }; entityTypes?: Record<string, number> }; message?: string }>;
-      renderCadDocument: (path: string) => Promise<{ success: boolean; svg?: string; message?: string }>;
-      listZipContents: (path: string) => Promise<{ success: boolean; entries?: { name: string; isDir: boolean; size: number }[]; message?: string }>;
-      readZipEntry: (path: string, entryName: string) => Promise<{ success: boolean; data?: string; message?: string }>;
-      unzipFile: (path: string, targetDir: string) => Promise<{ success: boolean; destination?: string; message?: string }>;
-      selectFolderDialog: () => Promise<string | null>;
-      setDirtyState: (dirty: boolean) => Promise<void>;
-      windowMinimize: () => Promise<void>;
-      windowMaximize: () => Promise<void>;
-      windowClose: () => Promise<void>;
-      windowIsMaximized: () => Promise<boolean>;
-      getAiConfig: () => Promise<{ configured: boolean; model: string; baseUrl: string }>;
-      saveAiConfig: (config: { apiKey: string; model: string; baseUrl: string }) => Promise<{ success: boolean; message?: string }>;
-      planCadChange: (input: { filePath: string; fileName: string; request: string }) => Promise<{ success: boolean; plan?: unknown; message?: string }>;
-    };
-  }
-}
 
 export default function App() {
   const [recentFiles, setRecentFiles] = useState<FileInfo[]>([]);
