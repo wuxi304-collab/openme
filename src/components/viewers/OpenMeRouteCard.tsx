@@ -9,6 +9,8 @@ interface OpenMeRouteCardProps {
 }
 
 export default function OpenMeRouteCard({ tab, route, title, description }: OpenMeRouteCardProps) {
+  const outcome = tab.openOutcome;
+
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div className="unsupported-card">
@@ -23,11 +25,13 @@ export default function OpenMeRouteCard({ tab, route, title, description }: Open
         <span className="summary-kicker">OpenMe Direct Open</span>
         <h3>{title}</h3>
         <p className="unsupported-subtitle">{tab.name}</p>
-        <p>{description}</p>
+        <p>{outcome?.message ?? description}</p>
         <div className="summary-chip-list" aria-label="OpenMe route">
           <span className="summary-chip">{route.surface}</span>
           <span className="summary-chip">{route.mode}</span>
           <span className="summary-chip">{route.label}</span>
+          {outcome && <span className="summary-chip">{outcome.loader}</span>}
+          {outcome && <span className="summary-chip">{outcome.status}</span>}
         </div>
         <dl className="registry-strategy-list">
           <div>
@@ -42,6 +46,18 @@ export default function OpenMeRouteCard({ tab, route, title, description }: Open
             <dt>Preview</dt>
             <dd>{route.canPreview ? "available" : "card"}</dd>
           </div>
+          {outcome && (
+            <div>
+              <dt>Loader</dt>
+              <dd>{outcome.loader}</dd>
+            </div>
+          )}
+          {outcome && (
+            <div>
+              <dt>Status</dt>
+              <dd>{outcome.status}</dd>
+            </div>
+          )}
         </dl>
         <p>{route.reason}</p>
         <p>{route.boundary}</p>
