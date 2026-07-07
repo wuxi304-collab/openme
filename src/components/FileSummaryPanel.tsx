@@ -34,6 +34,7 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
   });
   const brief = buildFileBrief(metadata);
   const actionPlan = createOpenActionPlan(brief);
+  const primaryActionUsesSystem = !actionPlan.canUseInternalViewer;
 
   return (
     <aside className="file-summary-panel" aria-label="文件摘要">
@@ -134,7 +135,9 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
       </div>
 
       <div className="summary-actions">
-        <button type="button" onClick={onOpenInSystem}>{actionPlan.primaryLabel}</button>
+        <button type="button" onClick={primaryActionUsesSystem ? onOpenInSystem : undefined} disabled={!primaryActionUsesSystem}>
+          {primaryActionUsesSystem ? actionPlan.primaryLabel : "Internal preview active"}
+        </button>
       </div>
     </aside>
   );
