@@ -1,8 +1,8 @@
 import type { FileTabState } from "../types";
-import { getFileFormatByPath, getRegistryStrategy } from "../file-registry";
+import { getFileFormatByPath } from "../file-registry";
 import type { FileCapability, FileFormatDefinition } from "../file-registry";
-import { buildBasicFileSummary } from "../understanding";
-import type { SupportLevel } from "../understanding";
+import { extractMetadata } from "../metadata";
+import { buildFileBrief } from "../brief";
 
 interface FileSummaryPanelProps {
   tab: FileTabState;
@@ -23,54 +23,48 @@ const coreCapabilities: FileCapability[] = ["detect", "preview", "metadata", "ai
 
 export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPanelProps) {
   const registryFormat = getFileFormatByPath(tab.path);
-  const registryStrategy = registryFormat ? getRegistryStrategy(registryFormat) : undefined;
-  const summary = buildBasicFileSummary({
+  const metadata = extractMetadata({
     filePath: tab.path,
     fileName: tab.name,
-    category: tab.category,
     extension: tab.sourceFile?.extension,
     size: tab.sourceFile?.size,
+    modifiedAt: tab.sourceFile?.modified_at,
     textSample: tab.content ?? undefined,
   });
-  const actions = getRecommendedActions(summary.supportLevel, tab.category);
+  const brief = buildFileBrief(metadata);
 
   return (
     <aside className="file-summary-panel" aria-label="文件摘要">
       <div className="file-summary-header">
-        <span className="summary-kicker">File Summary</span>
-        <strong title={summary.title}>{summary.title}</strong>
-        <p>{summary.description}</p>
+        <span className="summary-kicker">File Brief</span>
+        <strong title={brief.title}>{brief.title}</strong>
+        <p>{brief.subtitle}</p>
       </div>
 
-      {registryFormat && registryStrategy && (
+      {registryFormat && (
         <div className="summary-section registry-section">
           <span className="summary-section-title">Format Registry</span>
           <div className="registry-card">
             <div className="registry-card-head">
               <strong>{registryFormat.name}</strong>
-              <span className={`registry-support-badge support-${registryFormat.supportLevel.replace("+", "plus")}`}>Support {registryFormat.supportLevel}</span>
+              <span className={`registry-support-badge support-${brief.supportLevel.replace("+", "plus")}`}>Support {brief.supportLevel}</span>
             </div>
             <p>{registryFormat.boundary}</p>
             <dl className="registry-strategy-list">
               <div>
                 <dt>Viewer</dt>
-                <dd>{registryStrategy.preferredViewer}</dd>
+                <dd>{brief.preferredViewer}</dd>
               </div>
               <div>
                 <dt>Strategy</dt>
-                <dd>{registryStrategy.openStrategy}</dd>
+                <dd>{brief.openStrategy}</dd>
               </div>
               <div>
                 <dt>Risk</dt>
-                <dd>{registryStrategy.riskLevel}</dd>
+                <dd>{brief.riskLevel}</dd>
               </div>
             </dl>
             <CapabilityGrid format={registryFormat} />
-            <div className="summary-chip-list">
-              {registryStrategy.tags.map((tag) => (
-                <span key={tag} className="summary-chip">{tag}</span>
-              ))}
-            </div>
           </div>
         </div>
       )}
@@ -78,7 +72,7 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
       <div className="summary-section">
         <span className="summary-section-title">Signals</span>
         <div className="summary-chip-list">
-          {summary.signals.map((signal) => (
+          {brief.signals.map((signal) => (
             <span key={signal} className="summary-chip">{signal}</span>
           ))}
         </div>
@@ -87,20 +81,20 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
       <div className="summary-section">
         <span className="summary-section-title">Evidence</span>
         <dl className="summary-evidence-list">
-          {summary.evidence.map((item) => (
-            <div key={`${item.label}-${item.value}`} className={`summary-evidence is-${item.severity ?? "info"}`}>
+          {brief.evidence.map((item) => (
+            <div key={`${item.source}-${item.label}-${item.value}`} className={`summary-evidence is-${item.severity ?? "info"}`}>
               <dt>{item.label}</dt>
-              <dd title={item.value}>{item.value}</dd>
+              <dd title={`${item.source}: ${item.value}`}>{item.value}</dd>
             </div>
           ))}
         </dl>
       </div>
 
-      {summary.warnings.length > 0 && (
+      {brief.warnings.length > 0 && (
         <div className="summary-section">
           <span className="summary-section-title">Boundary</span>
           <div className="summary-warning-list">
-            {summary.warnings.map((warning) => (
+            {brief.warnings.map((warning) => (
               <p key={warning}>{warning}</p>
             ))}
           </div>
@@ -110,8 +104,11 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
       <div className="summary-section">
         <span className="summary-section-title">Next Actions</span>
         <ul className="summary-action-list">
-          {actions.map((action) => (
-            <li key={action}>{action}</li>
+          {brief.actions.map((action) => (
+            <li key={`${action.label}-${action.reason}`}>
+              <strong>{action.label}</strong>
+              <span>{action.reason}</span>
+            </li>
           ))}
         </ul>
       </div>
@@ -138,15 +135,4 @@ function CapabilityGrid({ format }: { format: FileFormatDefinition }) {
       })}
     </div>
   );
-}
-
-function getRecommendedActions(supportLevel: SupportLevel, category: FileTabState["category"]): string[] {
-  if (category === "design") return ["确认源软件：Photoshop、Illustrator、Sketch、Figma 或 Affinity。", "用系统程序打开，不在 OpenMe 内承诺高保真渲染。", "后续可接入只读元数据提取。"];
-  if (category === "package") return ["不执行安装器。", "后续可提取包名、版本、签名、权限等只读元数据。", "需要安装时交给系统或可信工具。"];
-  if (category === "disk") return ["不自动挂载镜像。", "后续可提取镜像类型、体积和分区摘要。", "需要挂载时交给系统或虚拟化工具。"];
-  if (category === "dwg") return ["先查看图层、块、实体和文字摘要。", "生产签审使用原生 CAD 软件。", "不要直接修改原始图纸。"];
-  if (category === "audio" || category === "video") return ["如果内置播放失败，优先使用系统播放器。", "不要把容器识别等同于编码器支持。"];
-  if (supportLevel === "external-open") return ["OpenMe 仅识别并路由该格式。", "使用系统默认程序打开。"];
-  if (supportLevel === "semantic-inspection") return ["查看文件边界和风险提示。", "需要完整预览时使用原生软件。"];
-  return ["查看当前预览结果。", "需要编辑或专业处理时交给原生软件。"];
 }
