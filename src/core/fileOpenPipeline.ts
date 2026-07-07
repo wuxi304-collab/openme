@@ -10,9 +10,7 @@ export async function loadFileTabData(fileInfo: FileInfo, category: FileCategory
   if (category === "office") return loadOfficeData(fileInfo, route);
   if (category === "audio" || category === "video") return { openOutcome: buildOutcome(route, "loaded", "media", `${fileInfo.name} 已进入 OpenMe 媒体打开面。`) };
   if (category === "epub") return { openOutcome: buildOutcome(route, "loaded", "epub", `${fileInfo.name} 已进入 OpenMe EPUB 打开面。`) };
-  if (category === "design" || category === "package" || category === "disk" || category === "other") {
-    return { openOutcome: buildOutcome(route, "route-card", "safe-card", route.reason) };
-  }
+  if (category === "design" || category === "package" || category === "disk" || category === "other") return {};
   if (category === "svg" || category === "image" || category === "pdf" || category === "cad" || category === "font") return loadBinaryData(fileInfo, category, route);
   return loadTextLikeData(fileInfo, route);
 }
