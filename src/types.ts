@@ -29,9 +29,7 @@ export interface FileTabState {
   mimeType?: string;
   isDirty: boolean;
   isLoading: boolean;
+  sourceFile?: FileInfo;
   officeData?: any;
   error?: string;
 }
-
-
-
