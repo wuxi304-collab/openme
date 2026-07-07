@@ -3,6 +3,7 @@ import { getFileFormatByPath } from "../file-registry";
 import type { FileCapability, FileFormatDefinition } from "../file-registry";
 import { extractMetadata } from "../metadata";
 import { buildFileBrief } from "../brief";
+import { createOpenActionPlan } from "../opening";
 
 interface FileSummaryPanelProps {
   tab: FileTabState;
@@ -32,6 +33,7 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
     textSample: tab.content ?? undefined,
   });
   const brief = buildFileBrief(metadata);
+  const actionPlan = createOpenActionPlan(brief);
 
   return (
     <aside className="file-summary-panel" aria-label="文件摘要">
@@ -39,6 +41,24 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
         <span className="summary-kicker">File Brief</span>
         <strong title={brief.title}>{brief.title}</strong>
         <p>{brief.subtitle}</p>
+      </div>
+
+      <div className="summary-section">
+        <span className="summary-section-title">Action Plan</span>
+        <dl className="registry-strategy-list">
+          <div>
+            <dt>Kind</dt>
+            <dd>{actionPlan.kind}</dd>
+          </div>
+          <div>
+            <dt>Viewer</dt>
+            <dd>{actionPlan.viewer}</dd>
+          </div>
+          <div>
+            <dt>Check</dt>
+            <dd>{actionPlan.requiresConfirmation ? "confirm" : "direct"}</dd>
+          </div>
+        </dl>
       </div>
 
       {registryFormat && (
@@ -105,7 +125,7 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
         <span className="summary-section-title">Next Actions</span>
         <ul className="summary-action-list">
           {brief.actions.map((action) => (
-            <li key={`${action.label}-${action.reason}`}>
+            <li key={`${action.label}-${action.reason}`} className={`is-${action.priority}`}>
               <strong>{action.label}</strong>
               <span>{action.reason}</span>
             </li>
@@ -114,7 +134,7 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
       </div>
 
       <div className="summary-actions">
-        <button type="button" onClick={onOpenInSystem}>用系统程序打开</button>
+        <button type="button" onClick={onOpenInSystem}>{actionPlan.primaryLabel}</button>
       </div>
     </aside>
   );
