@@ -18,6 +18,11 @@ export interface RecentFilesStore {
   version: number;
 }
 
+export interface DocxOfficeData { type: "docx"; html: string; }
+export interface ExcelOfficeData { type: "excel"; sheets: { name: string; data: string[][] }[]; }
+export interface PptxOfficeData { type: "pptx"; }
+export type OfficeData = DocxOfficeData | ExcelOfficeData | PptxOfficeData;
+
 export interface FileTabState {
   id: string;
   path: string;
@@ -30,6 +35,6 @@ export interface FileTabState {
   isDirty: boolean;
   isLoading: boolean;
   sourceFile?: FileInfo;
-  officeData?: any;
+  officeData?: OfficeData;
   error?: string;
 }

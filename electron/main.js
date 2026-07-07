@@ -5,6 +5,7 @@ const os = require("os");
 const { execFile } = require("child_process");
 const { pathToFileURL } = require("url");
 const { readEpub } = require("./epub");
+const log = require("electron-log");
 
 // Allow managed environments to place Chromium state in an explicitly writable directory.
 if (process.env.OPENME_USER_DATA_DIR) {
@@ -19,6 +20,21 @@ let hasUnsavedChanges = false;
 
 const isDev = !app.isPackaged && process.env.OPENME_USE_DIST !== "1";
 const DEV_ORIGIN = "http://localhost:1420";
+
+// ── Structured logging ──
+log.transports.file.level = "info";
+log.transports.console.level = isDev ? "debug" : "warn";
+log.transports.file.maxSize = 2 * 1024 * 1024;
+log.transports.file.format = "[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}";
+log.info(`OpenMe starting — dev=${isDev} chrome=${process.versions.chrome} electron=${process.versions.electron} os=${os.platform()} ${os.release()}`);
+
+// ── Process-level crash guards ──
+process.on("uncaughtException", (err) => {
+  log.error("Uncaught exception:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  log.error("Unhandled rejection:", reason);
+});
 
 function buildContentSecurityPolicy() {
   const scriptSrc = isDev ? "'self' 'unsafe-eval' http://localhost:1420" : "'self'";
@@ -240,6 +256,15 @@ function createWindow() {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
+
+  mainWindow.webContents.on("render-process-gone", (event, details) => {
+    log.error(`Renderer process gone: reason=${details.reason}, exitCode=${details.exitCode}`);
+  });
+  mainWindow.webContents.on("did-fail-load", (event, errorCode, errorDescription) => {
+    log.error(`Page did-fail-load: code=${errorCode} desc=${errorDescription}`);
+  });
+
+  log.info("Main window created");
 }
 
 app.whenReady().then(() => {

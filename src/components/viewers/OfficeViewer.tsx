@@ -1,9 +1,5 @@
 import { useState } from "react";
-
-interface DocxData { type: "docx"; html: string; }
-interface ExcelData { type: "excel"; sheets: { name: string; data: string[][] }[]; }
-interface PptxData { type: "pptx"; }
-type OfficeData = DocxData | ExcelData | PptxData;
+import type { OfficeData } from "../../types";
 
 interface Props { data: OfficeData; }
 
