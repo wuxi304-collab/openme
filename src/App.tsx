@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FileInfo, FileTabState } from "./types";
 import { detectCategory } from "./utils/fileTypeDetector";
+import { loadFileTabData } from "./core/fileOpenPipeline";
 import Sidebar from "./components/layout/Sidebar";
 import TitleBar from "./components/layout/TitleBar";
 import StatusBar from "./components/layout/StatusBar";
@@ -58,27 +59,8 @@ export default function App() {
     setTabs((prev) => [...prev, newTab]);
     setActiveTabId(id);
     try {
-      if (category === "office") {
-        const ext = fileInfo.extension.toLowerCase();
-        if (ext === ".docx") {
-          const res = await window.electronAPI.convertDocx(fileInfo.path);
-          setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, officeData: res.success ? { type: "docx", html: res.html ?? "" } : undefined, error: res.success ? undefined : res.message ?? "Word 转换失败" } : t));
-        } else if (ext === ".xlsx") {
-          const res = await window.electronAPI.convertExcel(fileInfo.path);
-          setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, officeData: res.success ? { type: "excel", sheets: res.sheets ?? [] } : undefined, error: res.success ? undefined : res.message ?? "Excel 转换失败" } : t));
-        } else setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, officeData: { type: "pptx" } } : t));
-      } else if (category === "audio" || category === "video" || category === "epub") {
-        setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false } : t));
-      } else if (category === "design" || category === "package" || category === "disk" || category === "other") {
-        setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false } : t));
-      } else if (category === "svg" || category === "image" || category === "pdf" || category === "cad" || category === "font") {
-        const maxSize = category === "pdf" || category === "cad" ? 100 * 1024 * 1024 : category === "font" ? 25 * 1024 * 1024 : 50 * 1024 * 1024;
-        const res = await window.electronAPI.readBinary(fileInfo.path, maxSize);
-        setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, binaryData: res.success ? res.data : undefined, mimeType: getMimeType(fileInfo.extension), error: res.success ? undefined : res.message ?? "无法读取文件" } : t));
-      } else {
-        const res = await window.electronAPI.readFileContent(fileInfo.path);
-        setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, content: res.type === "text" ? res.data ?? null : null, binaryData: res.type === "binary" ? res.data : undefined, mimeType: res.mimeType } : t));
-      }
+      const loaded = await loadFileTabData(fileInfo, category);
+      setTabs((prev) => prev.map((t) => t.id === id ? { ...t, ...loaded, isLoading: false } : t));
     } catch (error) {
       setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, error: error instanceof Error ? error.message : "读取失败" } : t));
     }
@@ -141,8 +123,3 @@ function EmptyState({ onOpenDialog }: { onOpenDialog: () => void }) {
 }
 
 function LoadingState() { return <div className="loading-state"><div className="loading-card"><div className="loading-dot-row"><div className="loading-dot" /><div className="loading-dot" /><div className="loading-dot" /></div><p>正在加载文件...</p></div></div>; }
-
-function getMimeType(ext: string): string {
-  const map: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".bmp": "image/bmp", ".webp": "image/webp", ".svg": "image/svg+xml", ".pdf": "application/pdf" };
-  return map[ext.toLowerCase()] ?? "application/octet-stream";
-}
