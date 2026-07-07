@@ -22,6 +22,7 @@ export type SupportedFileCategory =
   | "font"
   | "epub"
   | "cad"
+  | "dwg"
   | "model3d"
   | "other";
 
