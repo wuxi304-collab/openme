@@ -45,7 +45,20 @@ jobs:
           }
 
       - name: Build renderer
-        run: npm run build
+        shell: pwsh
+        run: |
+          npm run build *>&1 | Tee-Object -FilePath build-renderer.log
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+      - name: Upload renderer build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: renderer-build-log
+          path: build-renderer.log
+          if-no-files-found: ignore
 
       - name: Dependency audit
         run: npm audit --omit=dev
