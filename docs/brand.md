@@ -1,6 +1,16 @@
 # OpenMe Brand Guide
 
-OpenMe is a local-first file workspace platform. The brand should feel calm, precise, reliable and product-grade.
+OpenMe（中文名：启吾）is a local-first file workspace platform. The brand should feel calm, precise, reliable and product-grade.
+
+## Name
+
+| Name | Usage |
+| --- | --- |
+| OpenMe | Global product name, repository name and developer-facing name. |
+| 启吾 | Chinese product name for Chinese documentation, product narrative and domestic communication. |
+| OpenMe 启吾 | Preferred bilingual display when the product first appears in Chinese materials. |
+
+“启吾” means opening the file and, more importantly, opening one’s own understanding of the file. The name should be used with restraint. Do not turn it into decorative copy.
 
 ## Core line
 
@@ -43,6 +53,7 @@ Use Chinese cultural language through operating principles, not ornament.
 
 | Word | Product meaning |
 | --- | --- |
+| 启吾 | Open the file; open personal understanding. |
 | 格物 | Understand structure, boundary and risk. |
 | 开卷 | Open documents, drawings, images, books and media first. |
 | 归档 | Bring scattered files back into a workspace. |
@@ -131,7 +142,7 @@ Order:
 
 ## Claims policy
 
-Every format claim must map to `SUPPORT_MATRIX.md`.
+Every format claim must map to `SUPPORT_MATRIX.md` and `src/file-registry/formats.ts`.
 
 Use:
 

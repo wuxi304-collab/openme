@@ -10,15 +10,16 @@
 
   <img src="public/readme-china-red-line.svg" alt="China red separator" width="520">
 
+  <p><strong>OpenMe 启吾</strong></p>
   <p><strong>打开文件，不必先猜该用哪个软件。</strong></p>
   <p><strong>Open Anything. Understand Everything.</strong></p>
 
   <p>本地优先文件工作台 · 诚实格式支持 · 可扩展能力包</p>
-  <p>格物 · 开卷 · 归档 · 知新</p>
+  <p>启吾 · 格物 · 开卷 · 归档 · 知新</p>
 
   <p>
     <a href="#快速开始">快速开始</a> ·
-    <a href="#为什么是-openme">为什么是 OpenMe</a> ·
+    <a href="#baseline文件格式支持">Baseline</a> ·
     <a href="#功能">功能</a> ·
     <a href="#架构">架构</a> ·
     <a href="#路线图">路线图</a> ·
@@ -37,11 +38,11 @@
   <strong>中国无锡发起，面向全球的本地优先文件工作平台。</strong>
 </div>
 
-## 为什么是 OpenMe
+## 为什么是 OpenMe 启吾
 
 日常工作里的文件不是按软件分类来的。客户发来的可能是一份 PDF、一张表、一个压缩包、几张图片、一段视频、一个 DWG 图纸，或者一组混在一起的项目资料。
 
-OpenMe 要解决的不是“再造一个文件查看器”，而是把文件处理变成一条清楚的路径：
+OpenMe 启吾要解决的不是“再造一个文件查看器”，而是把文件处理变成一条清楚的路径：
 
 ```text
 Open
@@ -50,7 +51,9 @@ Open
   -> Act
 ```
 
-| 问题 | OpenMe 的处理方式 |
+“启吾”的含义不是装饰性的中文名，而是产品目标：打开文件，也打开自己对文件的理解。
+
+| 问题 | OpenMe 启吾的处理方式 |
 | --- | --- |
 | 不知道该用什么软件打开 | 先用统一工作台打开，无法高质量内置预览时交给系统程序。 |
 | 不知道文件内容是否可靠 | 明确显示支持等级、格式边界和风险提示。 |
@@ -58,12 +61,45 @@ Open
 | 行业文件需要专业理解 | 通过 Domain Packs 扩展，不把行业逻辑写死在核心里。 |
 | 不希望资料默认上传 | Local First，默认本地处理，外部动作必须明确。 |
 
+## Baseline：文件格式支持
+
+OpenMe 启吾的 baseline 是文件格式支持。
+
+不是简单写“支持很多格式”，而是每一种格式都进入统一注册中心：
+
+```text
+src/file-registry/formats.ts
+```
+
+每个格式必须声明：
+
+```text
+extension
+name
+category
+capabilities
+supportLevel
+boundary
+```
+
+也就是说，OpenMe 启吾的格式支持必须回答两个问题：
+
+```text
+能做到什么？
+不能承诺什么？
+```
+
+当前基线覆盖文档、Office、图片、设计源文件、音视频、代码、压缩包、安装包、磁盘镜像、CAD/BIM/EDA、GIS、数据库、科学数据、AI 模型、虚拟机、字体、游戏资源、证书和邮件等常见工作场景。
+
+支持等级采用 `A+ / A / B / C / D / E / F`，并在 StatusBar 和 File Summary 中显示。完整边界见 [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md)。
+
 ## 产品气质
 
-OpenMe 的中国文化元素不靠装饰，而靠秩序。
+OpenMe 启吾的中国文化元素不靠装饰，而靠秩序。
 
 | 词 | 产品含义 |
 | --- | --- |
+| 启吾 | 打开文件，也打开自己对文件的理解。 |
 | 格物 | 先看清文件结构、格式边界和风险。 |
 | 开卷 | 让文档、表格、图纸、图片、音视频先能被打开。 |
 | 归档 | 把散落资料放回一个可管理的工作台。 |
@@ -96,6 +132,12 @@ npm run dist
 npm test
 ```
 
+生成格式支持矩阵：
+
+```powershell
+npm run support:matrix
+```
+
 常用快捷键：
 
 | 快捷键 | 动作 |
@@ -110,15 +152,17 @@ npm test
 
 | 模块 | 当前能力 | 边界 |
 | --- | --- | --- |
+| File Registry | 统一登记扩展名、分类、能力、支持等级、边界 | README/UI 的格式声明必须映射到 Registry。 |
 | Workspace | 最近文件、多标签、命令面板、状态栏、能力包建议 | 项目级 Workspace 继续推进。 |
-| Documents | PDF、Markdown、DOCX、纯文本、源代码 | DOCX/Markdown 属安全近似预览。 |
-| Data | CSV、JSON、XLSX | XLSX 为只读数据预览，不承诺公式、宏、图表。 |
-| Images | PNG、JPEG、GIF、BMP、WebP、AVIF、ICO、TIFF、SVG | SVG 隔离预览，不执行脚本。 |
+| Documents | PDF、Markdown、DOCX、纯文本、源代码、电子书 | DOCX/Markdown 属安全近似预览。 |
+| Data | CSV、TSV、JSON、GeoJSON、XLSX | XLSX 为只读数据预览，不承诺公式、宏、图表。 |
+| Images | PNG、JPEG、GIF、BMP、WebP、AVIF、ICO、TIFF、HEIC、HEIF、RAW、SVG | SVG 隔离预览，不执行脚本；RAW/HEIC 依赖外部或系统能力。 |
 | Media | MP3、WAV、OGG、M4A、AAC、FLAC、OPUS、MP4、MOV、MKV、AVI、WebM 等 | 容器识别不等于编码器全支持，失败时提供系统打开。 |
-| Archives | ZIP | 内置列表、文本预览、安全解压。 |
-| Books | EPUB | 安全文本阅读，不承诺复杂排版还原。 |
-| Fonts | TTF、OTF、WOFF、WOFF2 | 字体试排和字号调整。 |
-| Engineering | STEP、IGES、STL、OBJ、glTF、GLB、DWG、DXF | 3D 近似预览；DWG/DXF 不承诺 AutoCAD 级保真。 |
+| Archives | ZIP、RAR、7Z、TAR、GZ、TGZ、BZ2、XZ、CAB | 当前只有 ZIP 有内置安全路径；非 ZIP 不承诺内置解压。 |
+| Engineering | STEP、IGES、STL、OBJ、3MF、glTF、GLB、DWG、DXF、DGN、IFC、RVT、SolidWorks、CATIA、Gerber | 3D/CAD 多为近似预览或语义路由；不承诺源软件级保真。 |
+| Packages and images | EXE、MSI、MSIX、DMG、PKG、APK、AAB、IPA、DEB、RPM、ISO、IMG、VHD、VHDX、QCOW2、VMDK | 不执行、不安装、不自动挂载、不自动启动。 |
+| Specialist data | SQLite、Access、Parquet、HDF5、NetCDF、ONNX、SafeTensors、GGUF、FASTA、FASTQ | 多为识别和安全路由；不执行模型，不做科学分析承诺。 |
+| Fonts | TTF、OTF、WOFF、WOFF2、EOT、TTC | 字体试排和字号调整；高级表解析未完整实现。 |
 | Domain Packs | 工程包、金石包、账册包、契约包、典籍包、匠作包 | 能力包只读建议已接入，后续扩展动作入口。 |
 
 完整边界见 [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md)。
@@ -139,7 +183,8 @@ npm test
 
 ```mermaid
 graph TD
-  A[OpenMe Core<br/>文件、标签、命令、安全边界] --> B[Viewer Layer<br/>PDF / Office / Image / ZIP / Media / CAD / Code]
+  A[OpenMe Core<br/>文件、标签、命令、安全边界] --> R[File Registry<br/>格式 / 能力 / 支持等级 / 边界]
+  R --> B[Viewer Layer<br/>PDF / Office / Image / ZIP / Media / CAD / Code]
   B --> C[File Understanding Layer<br/>Metadata / Summary / Evidence / Risk]
   C --> D[Action Layer<br/>Search / Compare / Export / Review / Extract]
   D --> E[Domain Pack Runtime<br/>工程包 / 金石包 / 账册包 / 契约包 / 典籍包 / 匠作包]
@@ -149,6 +194,7 @@ graph TD
 
 ```text
 src/
+  file-registry/     格式、能力、支持等级、边界
   core/              文件状态、命令、工作台、安全边界
   viewers/           各格式预览组件
   understanding/     通用元数据、摘要、证据和风险
@@ -158,126 +204,26 @@ electron/
   ipc/               桌面与文件系统桥接
   security/          本地安全边界
   file-system/       文件读取与受保护写入
-  sidecars/          CAD 等辅助引擎
 ```
-
-## 能力包
-
-OpenMe 不把行业逻辑写死在核心里。行业能力通过 Domain Packs 扩展。
-
-| Pack | 中文名 | 状态 | 方向 |
-| --- | --- | --- | --- |
-| Engineering Pack | 工程包 | experimental | CAD、图层、块、实体、图纸审查。 |
-| Metal Materials Pack | 金石包 | experimental | 材料牌号、规格、标准、数量、报价字段。 |
-| Finance Pack | 账册包 | planned | 票据、对账、金额、日期、币种。 |
-| Legal Pack | 契约包 | planned | 主体、义务、期限、条款、风险。 |
-| Research Pack | 典籍包 | planned | 论文、笔记、引用、阅读摘要。 |
-| Developer Pack | 匠作包 | planned | 代码树、依赖、脚本、配置。 |
-
-## 支持等级
-
-| 等级 | 含义 |
-| --- | --- |
-| 完整内置浏览 | OpenMe 可在本地按已声明能力打开和检查该格式。 |
-| 高保真浏览 | 常见文件渲染接近原格式，但不承诺高级编辑或复杂布局能力。 |
-| 安全近似预览 | 能提取或展示有用内容，但不承诺源软件级一致性。 |
-| 语义检查 | 能检查结构、元数据或文本，但视觉输出可能不完整。 |
-| 外部打开 | 调用系统默认或专业软件打开，不声明内置预览。 |
-| 实验性 | 已在部分样本可用，但需要更多回归样本。 |
-
-### 音视频边界
-
-OpenMe 会识别更多音视频容器，但保持保守承诺：
-
-- 能识别扩展名，不等于所有编码都能播放。
-- H.264、AV1、HEVC、ProRes、旧式 WMV/AVI 编码取决于 Electron、Chromium 与系统环境。
-- 播放失败时显示编码边界，并提供系统程序打开。
-
-### DWG / DXF 边界
-
-DWG 是封闭且版本复杂的格式。OpenMe 可以提供：
-
-- 快速结构检查
-- 图层、块、实体和文字摘要
-- 近似工程预览
-- 检测并调用已安装的原生 CAD 软件
-
-OpenMe 不承诺 AutoCAD 级字体、标注、代理对象、布局和复杂实体保真。生产签审和精确编辑应使用原生 CAD 软件。
 
 ## 路线图
 
-| 阶段 | 主题 | 目标 |
-| --- | --- | --- |
-| V0.1 | Open Files | 稳定打开、预览、搜索和管理最近文件。 |
-| V0.2 | Understand Files | 统一 FileSummary、证据、风险和支持等级。 |
-| V0.3 | Project Workspace | 把多个相关文件组织成一个工作上下文。 |
-| V0.4 | Action Layer | 比较、提取、导出、审查、外部打开。 |
-| V0.5 | Domain Packs | 工程、金石、账册、契约、典籍、匠作。 |
-| V1.0 | File Workspace Platform | 本地优先、可扩展、可审计的文件工作平台。 |
-
-## 质量门
-
-每个公开版本至少满足：
-
-- `npm run build` 通过。
-- `npm test` 通过。
-- README、UI 文案与 [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md) 一致。
-- 不把实验性 CAD 预览描述成工业级保真。
-- 不把音视频容器识别描述成全编码器支持。
-- 不提交 `node_modules`、`dist`、`release`、本地 SDK、API Key 或客户样本文件。
-- ZIP、SVG、Office、EPUB 等高风险内容保持隔离或清洗。
-- 源文件默认不被静默修改。
-
-## 文档
-
-| 文件 | 用途 |
+| 阶段 | 目标 |
 | --- | --- |
-| [ROADMAP.md](ROADMAP.md) | 平台路线图与版本方向。 |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Core、Viewer、Understanding、Pack 架构。 |
-| [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md) | 格式支持等级与能力边界。 |
-| [docs/brand.md](docs/brand.md) | 品牌、颜色、Logo、文案规范。 |
-| [docs/design-system.md](docs/design-system.md) | UI 设计系统与组件原则。 |
-| [AGENTS.md](AGENTS.md) | 工程记录、约束、验证结论和 agent 指令。 |
-
-## 安全与隐私模型
-
-- 文件默认保留在本地。
-- 除非用户明确启用外部或 AI 辅助动作，否则不应上传文件。
-- HTML、SVG、Office、EPUB、压缩包内容必须隔离或清洗。
-- ZIP 解压必须防路径穿越和大包滥用。
-- 源文件不能被静默修改。
-- CAD 修改必须遵循：检查 -> 生成计划 -> 用户确认 -> 另存副本 -> 校验。
-
-## 技术栈
-
-- Electron + React + TypeScript + Vite
-- PDF.js, Mammoth, JSZip, read-excel-file
-- Monaco Editor, Three.js, OCCT Import JS
-- LibreDWG Web / ACadSharp auxiliary CAD pipeline
+| V0.1 | 多格式本地打开、基础 Viewer、最近文件和多标签。 |
+| V0.2 | File Registry、Support Matrix、StatusBar/File Summary 支持等级。 |
+| V0.3 | 文件理解层：摘要、证据、风险、推荐动作。 |
+| V0.4 | Pack SDK：让行业逻辑以能力包接入。 |
+| V0.5 | Workflow：报价、合同、CAD、归档等文件任务。 |
 
 ## English
 
-OpenMe is a local-first desktop file workspace for opening, previewing, understanding, organizing and acting on everyday work files.
+OpenMe Qiwu is a local-first desktop workspace for opening, inspecting and understanding everyday files.
 
-It is not a single-format viewer and not a single-industry tool. The core remains general. Domain-specific intelligence is added through optional packs.
+It starts from a strict baseline: honest file format support. Each format should map to a registry entry, a support level and an explicit boundary.
+
+The long-term direction is:
 
 ```text
-Open
-  -> Understand
-  -> Organize
-  -> Act
+Preview -> Understand -> Workflow -> Marketplace
 ```
-
-Initiated in Wuxi, China. Built for global file workflows.
-
-## License
-
-OpenMe original code is released under the [MIT License](LICENSE). Third-party components remain subject to their respective licenses; review CAD-related licensing requirements before redistribution.
-
-<div align="center">
-
-<img src="public/readme-china-red-line.svg" alt="China red separator" width="520">
-
-<strong>中国无锡 · Designed and built in Wuxi, China.</strong>
-
-</div>

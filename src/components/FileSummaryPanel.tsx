@@ -1,4 +1,5 @@
 import type { FileTabState } from "../types";
+import { getFileFormatByPath } from "../file-registry";
 import { buildBasicFileSummary } from "../understanding";
 import type { SupportLevel } from "../understanding";
 
@@ -8,6 +9,7 @@ interface FileSummaryPanelProps {
 }
 
 export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPanelProps) {
+  const registryFormat = getFileFormatByPath(tab.path);
   const summary = buildBasicFileSummary({
     filePath: tab.path,
     fileName: tab.name,
@@ -25,6 +27,24 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
         <strong title={summary.title}>{summary.title}</strong>
         <p>{summary.description}</p>
       </div>
+
+      {registryFormat && (
+        <div className="summary-section registry-section">
+          <span className="summary-section-title">Format Registry</span>
+          <div className="registry-card">
+            <div className="registry-card-head">
+              <strong>{registryFormat.name}</strong>
+              <span className={`registry-support-badge support-${registryFormat.supportLevel.replace("+", "plus")}`}>Support {registryFormat.supportLevel}</span>
+            </div>
+            <p>{registryFormat.boundary}</p>
+            <div className="summary-chip-list">
+              {registryFormat.capabilities.map((capability) => (
+                <span key={capability} className="summary-chip">{capability}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="summary-section">
         <span className="summary-section-title">Signals</span>

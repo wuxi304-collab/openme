@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build:
-    name: TypeScript and Vite build
+    name: Test build and registry checks
     runs-on: windows-latest
 
     steps:
@@ -25,7 +25,24 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Generate support matrix
+        run: npm run support:matrix
+
+      - name: Verify generated support matrix
+        shell: pwsh
+        run: |
+          if (!(Test-Path SUPPORT_MATRIX.generated.md)) {
+            throw "SUPPORT_MATRIX.generated.md was not created"
+          }
+          $content = Get-Content SUPPORT_MATRIX.generated.md -Raw
+          if ($content -notmatch "Total registered formats") {
+            throw "Generated support matrix is missing registry summary"
+          }
 
       - name: Build renderer
         run: npm run build

@@ -2,7 +2,7 @@
   "name": "openme-desktop",
   "private": true,
   "version": "1.0.0",
-  "description": "A local-first desktop workspace for previewing and inspecting everyday files.",
+  "description": "OpenMe Qiwu is a local-first desktop workspace for previewing and inspecting everyday files.",
   "main": "electron/main.js",
   "author": "OpenMe contributors",
   "scripts": {
@@ -13,7 +13,8 @@
     "electron:dev": "concurrently \"vite\" \"electron .\"",
     "dist": "npm run build && electron-builder",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "support:matrix": "node scripts/generate-support-matrix.mjs"
   },
   "dependencies": {
     "@mlightcad/cad-simple-viewer": "^1.5.7",
@@ -51,7 +52,7 @@
   },
   "build": {
     "appId": "com.openme.desktop",
-    "productName": "OpenMe",
+    "productName": "OpenMe Qiwu",
     "directories": {
       "output": "release"
     },

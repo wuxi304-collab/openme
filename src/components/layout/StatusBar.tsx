@@ -1,6 +1,10 @@
+import type { HonestSupportLevel } from "../../file-registry";
+import { getFileFormatByPath } from "../../file-registry";
+
 interface Props {
   activeTab: {
     name: string;
+    path?: string;
     size?: number;
     content?: string;
     isDirty?: boolean;
@@ -10,6 +14,7 @@ interface Props {
 export default function StatusBar({ activeTab }: Props) {
   const lines = activeTab?.content !== undefined ? activeTab.content.split("\n").length : 0;
   const sizeLabel = typeof activeTab?.size === "number" ? formatBytes(activeTab.size) : null;
+  const format = activeTab?.path ? getFileFormatByPath(activeTab.path) : undefined;
 
   return (
     <footer className="status-bar">
@@ -19,6 +24,7 @@ export default function StatusBar({ activeTab }: Props) {
           {activeTab?.isDirty ? "已修改" : "READY"}
         </span>
         <span className="status-file">{activeTab?.name ?? "等待打开文件"}</span>
+        {format && <SupportBadge level={format.supportLevel} label={format.name} />}
         {sizeLabel && <span className="status-meta">{sizeLabel}</span>}
         {lines > 0 && <span className="status-meta">{lines.toLocaleString()} 行</span>}
       </div>
@@ -30,6 +36,10 @@ export default function StatusBar({ activeTab }: Props) {
       </div>
     </footer>
   );
+}
+
+function SupportBadge({ level, label }: { level: HonestSupportLevel; label: string }) {
+  return <span className={`status-support-badge support-${level.replace("+", "plus")}`} title={label}>Support {level}</span>;
 }
 
 function formatBytes(bytes: number): string {

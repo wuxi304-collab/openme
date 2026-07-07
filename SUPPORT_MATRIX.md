@@ -2,90 +2,124 @@
 
 OpenMe must describe file support by real capability, not by marketing language.
 
-Support levels:
+The source of truth for format coverage is now:
+
+```text
+src/file-registry/formats.ts
+```
+
+Generated matrix command:
+
+```bash
+npm run support:matrix
+```
+
+## Baseline rule
+
+Supporting a file format in OpenMe means the format has a registry entry with:
+
+- extension
+- name
+- category
+- capabilities
+- support level
+- explicit boundary
+
+A format should not be advertised in README, UI, roadmap or release notes unless it maps to the registry.
+
+## Support levels
 
 | Level | Meaning |
 | --- | --- |
-| Full built-in browsing | OpenMe can open and inspect the format locally with the stated features. |
-| High-fidelity browsing | Rendering is close for common files, but advanced editing or layout features may be absent. |
-| Safe approximate preview | OpenMe extracts and displays useful content, but does not promise source-application fidelity. |
-| Semantic inspection | OpenMe can inspect structure, metadata, or text, but visual output may be incomplete. |
-| External open | OpenMe can route the file to the system/default application. Built-in preview is not claimed. |
-| Experimental | Works for selected samples and requires more regression coverage. |
+| A+ | Official or native-quality implementation. Rare; use only when the implementation is close to source-app fidelity. |
+| A | Strong built-in local support. |
+| B | Built-in preview or extraction with documented limits. |
+| C | Approximate preview or text-level support. |
+| D | Recognized with metadata, boundary, semantic inspection, or safe route. |
+| E | External-open route only; no built-in preview claim. |
+| F | Known but not supported. |
 
-## Current Matrix
+## Capability labels
 
-| Category | Formats | Current level | Notes |
+| Capability | Meaning |
+| --- | --- |
+| `detect` | OpenMe can classify the file extension/family. |
+| `preview` | OpenMe has a built-in viewer or useful rendering path. |
+| `edit` | OpenMe can safely edit the file as text/table content. |
+| `metadata` | OpenMe can show basic file or format metadata. |
+| `thumbnail` | OpenMe can reasonably produce a thumbnail or visual preview. |
+| `ai-summary` | OpenMe may use the format in an explicit understanding flow. |
+| `external-open` | OpenMe can route to the system/default application. |
+
+## Current matrix
+
+| Category | Examples | Registry behavior | Boundary |
 | --- | --- | --- | --- |
-| Images | PNG, JPEG, GIF, BMP, WebP, AVIF, ICO, TIFF, HEIC, HEIF, RAW, DNG | Full built-in browsing, environment-dependent for newer codecs | Supports zoom, pan, rotation, fit, and 1:1 view where Chromium can decode the image. RAW/DNG are recognized but may require external viewing. |
-| SVG | SVG | Safe approximate preview | Must be isolated from the main DOM. Do not execute scripts. |
-| Text and code | TXT, MD, MDX, JSON, JSONL, NDJSON, XML, YAML, INI, LOG, JS, TS, JSX, TSX, PY, RS, GO, JAVA, C, C++, H, CSS, HTML, Dockerfile, Makefile, TF, GraphQL, Proto and common config files | Full built-in browsing | Editable text/code paths must preserve dirty-state warnings. |
-| CSV | CSV | Full built-in browsing | Search, sort, pagination, malformed-row warnings. |
-| JSON | JSON | Full built-in browsing | Node expansion and inspection. |
-| ZIP | ZIP | Full built-in browsing | Guard against Zip Slip and large archive abuse. |
-| PDF | PDF | High-fidelity browsing | Local PDF.js rendering, search, page navigation, rotation. No OCR claim. |
-| DOCX | DOCX | Safe approximate preview | Mammoth extraction. No Word pagination, floating object, or complex style fidelity claim. |
-| XLSX | XLSX | Data preview | Read-only values and sheets. No macro, formula engine, chart, conditional-format, or print-layout claim. |
-| Office route | DOC, XLS, PPT, PPTX, ODT, ODS, ODP, RTF | External open / safe approximate where available | Do not imply full Office fidelity. |
-| Archives beyond ZIP | RAR, 7Z, TAR, GZ, TGZ, BZ2, XZ, ZST | External open / future semantic inspection | Do not claim built-in extraction until a safe extractor is implemented. |
-| EPUB | EPUB | Safe text reading | Metadata, chapters, navigation, search, font size. No complex layout fidelity claim. |
-| Audio | MP3, WAV, OGG/OGA, M4A, AAC, FLAC, OPUS, WEBA, AIFF/AIF, WMA, ALAC, AMR, MIDI | Built-in playback, environment-dependent | File classification is broad; actual decoding depends on Chromium/Electron/system codecs. Playback failure shows a codec-boundary message and a system-open fallback. |
-| Video | MP4, WebM, OGV, M4V, MOV, MKV, AVI, WMV, FLV, 3GP/3G2, TS, MTS, M2TS, MPEG, MPG, MXF | Built-in playback, environment-dependent | Container recognition is broad; H.264, AV1, HEVC, ProRes and legacy codecs depend on Electron/system support. Playback failure shows a codec-boundary message and a system-open fallback. |
-| Fonts | TTF, OTF, WOFF, WOFF2, EOT | Full built-in preview | Custom sample text and font-size controls. |
-| 3D | STL, OBJ, glTF, GLB, STEP, IGES, 3MF, PLY, FBX, DAE, 3DS, IFC, SKP | Experimental approximate preview / external open | Complex assemblies, materials, and STEP semantics require sample regression. |
-| CAD | DWG, DXF | Semantic inspection / approximate preview / external native open | Do not claim AutoCAD-level fidelity. Prefer native external viewer when installed. |
-| Design source files | PSD, PSB, AI, AIT, EPS, INDD, IDML, XD, Sketch, Figma, FIG, Affinity, CDR, Krita, Clip Studio, Aseprite | Semantic inspection / external open | Recognize and route design source files. Do not claim built-in Photoshop, Illustrator, Figma, Sketch, InDesign or Affinity fidelity. |
-| App and package files | APK, IPA, JAR, WAR, EAR, APPX, MSIX, DEB, RPM, DMG, PKG, EXE, MSI | Semantic inspection / external open | Recognize application packages and installers. Do not execute installers or unknown binaries. Some package formats may later expose metadata safely. |
-| Disk and VM images | ISO, IMG, VHD, VHDX, QCOW2, VMDK, OVA, OVF | Semantic inspection / external open | Recognize disk and VM images. Do not automatically mount, unpack or boot images. |
+| Text and code | TXT, LOG, INI, CONF, JS, TS, PY, GO, JAVA, C/C++, HTML, CSS, SQL, SH, PS1, VUE, SVELTE, Verilog | Built-in text/code path for safe local editing. | OpenMe never executes scripts, build files, SQL, HDL or configuration files. |
+| Markdown | MD, MDX | Built-in Markdown path. | MDX components are not executed. |
+| Structured data | JSON, GeoJSON, CSV, TSV | Built-in JSON/table routes where implemented. | Schema validation and map rendering are not automatic. |
+| Office | DOC, DOCX, XLS, XLSX, XLSM, PPT, PPTX, PPTM, WPS, ET, DPS, ODT, ODS, ODP, RTF, Pages, Numbers, Keynote | DOCX/XLSX have current approximate paths; the rest are recognized and routed. | No source-application fidelity claim; macros are never executed. |
+| PDF and ebooks | PDF, EPUB, MOBI, AZW, AZW3, DJVU, CHM, HLP | PDF/EPUB have built-in paths; others are recognized/routed. | No OCR, DRM bypass or full layout fidelity claim unless separately implemented. |
+| Images | JPG, PNG, GIF, BMP, WebP, AVIF, TIFF, HEIC, HEIF, RAW, CR2, NEF, ARW, ICO, ICNS, SVG | Browser-backed preview where supported; SVG is isolated. | Codec/OS support varies. SVG scripts are not executed. RAW decoding is not claimed. |
+| Design and media projects | PSD, PSB, AI, EPS, CDR, Sketch, Figma, XD, PRPROJ, AEP, AUP3, VEG, DRP | Recognized, bounded, and routed. | No Photoshop, Illustrator, Figma, Sketch, Premiere, After Effects or Resolve fidelity claim. |
+| Audio and video | MP3, WAV, FLAC, APE, AAC, OGG, OPUS, M4A, WMA, MIDI, MP4, MOV, AVI, MKV, WebM, FLV, RMVB, WMV, TS, M4V, 3GP | Built-in media path where Electron/Chromium can decode. | Container recognition is not codec support. Fallback must offer system open. |
+| Archives | ZIP, RAR, 7Z, TAR, GZ, TGZ, BZ2, XZ, CAB, PAK, UnityPackage, MCWORLD, KMZ | ZIP has current built-in path; others are recognized and routed. | Do not claim safe extraction for non-ZIP formats until implemented. |
+| Packages and installers | EXE, MSI, MSIX, PKG, APK, AAB, IPA, DEB, RPM, AppImage | Recognized and routed with safety boundary. | OpenMe never installs or executes packages. |
+| Disk and VM images | ISO, IMG, WIM, GHO, VMDK, VDI, VHD, VHDX, QCOW2, OVA, OVF, SNAPSHOT, DMG | Recognized and routed with safety boundary. | OpenMe never mounts, boots, restores or imports disk/VM images automatically. |
+| CAD, BIM, 3D and EDA | DWG, DXF, DGN, STL, OBJ, 3MF, glTF, GLB, STEP, STP, IGES, IFC, SKP, RVT, RFA, SAT, Parasolid, SolidWorks, CATIA, JT, Gerber, KiCad, GDSII | Current support ranges from approximate preview to semantic route. | No AutoCAD/BIM/source-CAD fidelity claim; manufacturing validation is not performed. |
+| Databases and scientific data | SQLite, Access, Parquet, ORC, Avro, Feather, HDF5, NetCDF, MAT, FITS, NIfTI | Recognized and routed for future safe metadata work. | Internal browsing is not implemented unless explicitly added. |
+| AI models and bioinformatics | ONNX, PT, PTH, CKPT, SafeTensors, GGUF, FASTA, FASTQ, SAM, BAM | Recognized with explicit no-execution boundary. | OpenMe never executes models; bioinformatics analysis is not implemented. |
+| Fonts | TTF, OTF, WOFF, WOFF2, EOT, TTC, PFB, PFM | Built-in preview for common web/desktop fonts where implemented. | Advanced font table inspection is not fully implemented. |
+| Certificates, mail and misc | CER, CRT, PEM, PFX, P12, KEY, ICS, VCF, MBOX, EML, TORRENT, ROM, SAV | Recognized and routed or text-previewed where safe. | OpenMe does not import certificates, download torrents, emulate ROMs or certify trust. |
 
-## Media Statement
+## Media statement
 
 Media support is intentionally conservative:
 
 - OpenMe can classify and route common audio/video containers to the built-in media viewer.
 - Playback still depends on Electron, Chromium and installed system codecs.
 - A recognized extension does not mean every codec inside that container will decode.
-- Unsupported playback shows an explicit codec-boundary explanation and offers system open.
+- Unsupported playback should show an explicit codec-boundary explanation and offer system open.
 - Source files are not modified or uploaded during media playback attempts.
 
-## CAD Statement
+## CAD statement
 
-DWG/DXF support must remain explicitly qualified.
+DWG/DXF and CAD support must remain explicitly qualified.
 
 OpenMe can provide:
 
-- Quick structural inspection
-- Layer, block, entity, and text summaries when the engine can parse them
-- Approximate engineering preview
-- External launch into native CAD software when available
+- quick structural inspection
+- layer, block, entity, and text summaries when the engine can parse them
+- approximate engineering preview where a safe viewer exists
+- external launch into native CAD software when available
 
 OpenMe must not promise:
 
 - AutoCAD-level rendering fidelity
-- Complete SHX/font fidelity
-- Complete layout/paper-space fidelity
-- Complete proxy object fidelity
-- Safe direct mutation of original CAD files
+- complete SHX/font fidelity
+- complete layout/paper-space fidelity
+- complete proxy object fidelity
+- safe direct mutation of original CAD files
 
-## Design and package statement
+## Design, package and disk-image statement
 
 OpenMe recognizes design source files, app packages and disk images so the workspace can route them correctly and show honest boundaries.
 
 Current behavior:
 
 - classify the file family
-- show semantic-inspection support level through the understanding layer
+- show support level and registry boundary
 - avoid unsafe execution, mounting, installation or mutation
 - prefer external open when native software exists
 
 OpenMe must not promise:
 
-- Photoshop, Illustrator, Figma, Sketch, InDesign or Affinity rendering fidelity
+- source-application rendering fidelity for proprietary design tools
 - safe execution of installers or binaries
 - automatic mounting or extraction of disk images
 - malware scanning or security certification
 
-## Future Matrix Items
+## Future matrix items
 
 Potential future support should be added only after sample-based regression:
 
@@ -98,7 +132,8 @@ Potential future support should be added only after sample-based regression:
 - Media codec diagnostics panel
 - Safe package metadata panel for APK, IPA and JAR
 - Safe design-file metadata panel for PSD, AI, Sketch and Figma exports
+- Safe scientific data preview for Parquet, HDF5 and NetCDF
 
-## Rule for README and UI Claims
+## Rule for README and UI claims
 
-Any README or UI support claim should map to one of the support levels above. If a capability is not listed here, it should not be advertised as supported.
+Any README or UI support claim should map to one of the support levels above. If a capability is not listed in the registry, it should not be advertised as supported.
