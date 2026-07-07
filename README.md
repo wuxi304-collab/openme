@@ -1,15 +1,14 @@
 <div align="center">
-  <img src="public/openme-logo.png" alt="OpenMe logo" width="360">
+  <img src="public/openme-logo.png" alt="OpenMe logo" width="300">
+
+  <br>
+
+  <img src="https://img.shields.io/badge/%E4%B8%AD%E5%9B%BD%C2%B7%E6%97%A0%E9%94%A1-Built%20in%20Wuxi-C91F37?style=flat-square&labelColor=C91F37&color=0F172A" alt="中国 · 无锡 Built in Wuxi">
 
   <br>
   <br>
 
-  <img src="https://img.shields.io/badge/%E4%B8%AD%E5%9B%BD%C2%B7%E6%97%A0%E9%94%A1-Built%20in%20Wuxi-C91F37?style=for-the-badge&labelColor=C91F37&color=0F172A" alt="中国 · 无锡 Built in Wuxi">
-
-  <br>
-  <br>
-
-  <img src="public/readme-china-red-line.svg" alt="China red separator" width="720">
+  <img src="public/readme-china-red-line.svg" alt="China red separator" width="520">
 
   <p><strong>打开文件，不必先猜该用哪个软件。</strong></p>
   <p><strong>Open Anything. Understand Everything.</strong></p>
@@ -270,7 +269,7 @@ OpenMe original code is released under the [MIT License](LICENSE). Third-party c
 
 <div align="center">
 
-<img src="public/readme-china-red-line.svg" alt="China red separator" width="720">
+<img src="public/readme-china-red-line.svg" alt="China red separator" width="520">
 
 <strong>中国无锡 · Designed and built in Wuxi, China.</strong>
 
