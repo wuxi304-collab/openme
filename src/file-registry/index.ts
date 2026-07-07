@@ -3,7 +3,7 @@ import { EXPANDED_FILE_FORMATS } from "./expanded-formats";
 import type { FileFormatDefinition, FileRegistryStats, HonestSupportLevel } from "./types";
 
 export type { FileCapability, FileFormatDefinition, FileRegistryStats, HonestSupportLevel } from "./types";
-export { BASE_FILE_FORMATS } from "./formats";
+export { FILE_FORMATS as BASE_FILE_FORMATS } from "./formats";
 export { EXPANDED_FILE_FORMATS } from "./expanded-formats";
 
 export const FILE_FORMATS: FileFormatDefinition[] = dedupeByExtension([...BASE_FILE_FORMATS, ...EXPANDED_FILE_FORMATS]);
