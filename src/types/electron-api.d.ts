@@ -1,4 +1,4 @@
-import type { FileInfo, RecentFilesStore } from "../types";
+import type { ExcelSheetData, FileInfo, RecentFilesStore } from "../types";
 
 declare global {
   interface Window {
@@ -14,7 +14,7 @@ export interface ElectronAPI {
   saveFile: (path: string, content: string) => Promise<{ success: boolean; message?: string }>;
   readBinary: (path: string, maxSize?: number) => Promise<{ success: boolean; data?: string; message?: string }>;
   convertDocx: (path: string) => Promise<{ success: boolean; html?: string; message?: string }>;
-  convertExcel: (path: string) => Promise<{ success: boolean; sheets?: unknown[]; message?: string }>;
+  convertExcel: (path: string) => Promise<{ success: boolean; sheets?: ExcelSheetData[]; message?: string }>;
   openFileDialog: () => Promise<string[]>;
   openInSystem: (path: string) => Promise<void>;
   getAppVersion: () => Promise<string>;
