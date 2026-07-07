@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, protocol, net }
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
+const log = require("electron-log");
 const { execFile } = require("child_process");
 const { pathToFileURL } = require("url");
 const { readEpub } = require("./epub");
@@ -10,6 +11,25 @@ const { readEpub } = require("./epub");
 if (process.env.OPENME_USER_DATA_DIR) {
   app.setPath("userData", path.resolve(process.env.OPENME_USER_DATA_DIR));
 }
+
+function setupLogging() {
+  log.transports.file.level = "info";
+  log.transports.console.level = process.env.OPENME_LOG_LEVEL || "info";
+  log.transports.file.fileName = "openme-main.log";
+  log.transports.file.maxSize = 5 * 1024 * 1024;
+  log.initialize({ preload: false });
+  log.info("OpenMe main process starting", { version: app.getVersion(), platform: process.platform, arch: process.arch });
+}
+
+setupLogging();
+
+process.on("uncaughtException", (error) => {
+  log.error("uncaughtException", error);
+});
+
+process.on("unhandledRejection", (reason) => {
+  log.error("unhandledRejection", reason);
+});
 
 app.setAppUserModelId("com.openme.desktop");
 protocol.registerSchemesAsPrivileged([{ scheme: "openme-media", privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } }]);
@@ -77,14 +97,28 @@ function hardenWebContents(webContents) {
   });
 
   webContents.setWindowOpenHandler(({ url }) => {
-    if (isExternalWebUrl(url)) shell.openExternal(url).catch(() => undefined);
+    log.warn("Blocked window.open", { url });
+    if (isExternalWebUrl(url)) shell.openExternal(url).catch((error) => log.error("openExternal failed", error));
     return { action: "deny" };
   });
 
   webContents.on("will-navigate", (event, url) => {
     if (isAppUrl(url)) return;
     event.preventDefault();
-    if (isExternalWebUrl(url)) shell.openExternal(url).catch(() => undefined);
+    log.warn("Blocked renderer navigation", { url });
+    if (isExternalWebUrl(url)) shell.openExternal(url).catch((error) => log.error("openExternal failed", error));
+  });
+
+  webContents.on("render-process-gone", (_event, details) => {
+    log.error("Renderer process gone", details);
+  });
+
+  webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    log.error("Renderer failed to load", { errorCode, errorDescription, validatedURL, isMainFrame });
+  });
+
+  webContents.on("unresponsive", () => {
+    log.warn("Renderer became unresponsive");
   });
 }
 
@@ -214,6 +248,7 @@ function createWindow() {
   });
 
   hardenWebContents(mainWindow.webContents);
+  log.info("Main window created");
 
   if (isDev) {
     mainWindow.loadURL(DEV_ORIGIN);
@@ -274,6 +309,7 @@ ipcMain.handle("get-file-info", async (_, filePath) => {
       opened_at: now,
     };
   } catch (e) {
+    log.error("get-file-info failed", e);
     throw new Error(`无法读取文件: ${e.message}`);
   }
 });
@@ -285,6 +321,7 @@ ipcMain.handle("load-recent-files", async () => {
     const content = fs.readFileSync(p, "utf-8");
     return JSON.parse(content);
   } catch (e) {
+    log.warn("load-recent-files failed", e);
     return { files: [], version: 1 };
   }
 });
@@ -294,6 +331,7 @@ ipcMain.handle("save-recent-files", async (_, store) => {
     const p = getRecentFilesPath();
     fs.writeFileSync(p, JSON.stringify(store, null, 2), "utf-8");
   } catch (e) {
+    log.error("save-recent-files failed", e);
     throw new Error(`无法保存: ${e.message}`);
   }
 });
@@ -306,6 +344,7 @@ ipcMain.handle("read-text-file", async (_, filePath, maxSize = 1024 * 500) => {
     }
     return fs.readFileSync(filePath, "utf-8");
   } catch (e) {
+    log.error("read-text-file failed", e);
     throw new Error(`无法读取: ${e.message}`);
   }
 });
@@ -328,6 +367,7 @@ ipcMain.handle("read-file-content", async (_, filePath, maxSize = 10 * 1024 * 10
     const content = fs.readFileSync(filePath, "utf-8");
     return { type: "text", data: content };
   } catch (e) {
+    log.error("read-file-content failed", e);
     return { type: "error", message: e.message };
   }
 });
@@ -341,6 +381,7 @@ ipcMain.handle("read-binary", async (_, filePath, maxSize = 10 * 1024 * 1024) =>
     const buffer = fs.readFileSync(filePath);
     return { success: true, data: buffer.toString("base64") };
   } catch (e) {
+    log.error("read-binary failed", e);
     return { success: false, message: e.message };
   }
 });
@@ -350,6 +391,7 @@ ipcMain.handle("save-file", async (_, filePath, content) => {
     fs.writeFileSync(filePath, content, "utf-8");
     return { success: true };
   } catch (e) {
+    log.error("save-file failed", e);
     return { success: false, message: e.message };
   }
 });
@@ -360,6 +402,7 @@ ipcMain.handle("convert-docx", async (_, filePath) => {
     const result = await mammoth.convertToHtml({ path: filePath });
     return { success: true, html: result.value };
   } catch (e) {
+    log.error("convert-docx failed", e);
     return { success: false, message: e.message };
   }
 });
@@ -376,6 +419,7 @@ ipcMain.handle("convert-excel", async (_, filePath) => {
     }));
     return { success: true, sheets };
   } catch (e) {
+    log.error("convert-excel failed", e);
     return { success: false, message: e.message };
   }
 });
@@ -393,6 +437,7 @@ ipcMain.handle("open-in-system", async (_, filePath) => {
   try {
     await shell.openPath(filePath);
   } catch (e) {
+    log.error("open-in-system failed", e);
     throw new Error(`无法打开: ${e.message}`);
   }
 });
@@ -417,6 +462,7 @@ ipcMain.handle("list-zip-contents", async (_, filePath) => {
     const totalSize = entries.reduce((sum, entry) => sum + entry.size, 0);
     return { success: true, entries, totalSize };
   } catch (e) {
+    log.error("list-zip-contents failed", e);
     return { success: false, message: e.message };
   }
 });
@@ -446,6 +492,7 @@ ipcMain.handle("unzip-file", async (_, filePath, targetDir) => {
     }
     return { success: true, destination: destinationRoot };
   } catch (e) {
+    log.error("unzip-file failed", e);
     return { success: false, message: e.message };
   }
 });
@@ -461,6 +508,7 @@ ipcMain.handle("read-zip-entry", async (_, filePath, entryName) => {
     if (size > 2 * 1024 * 1024) return { success: false, message: "文件超过 2 MB 预览限制" };
     return { success: true, data: await file.async("base64") };
   } catch (e) {
+    log.error("read-zip-entry failed", e);
     return { success: false, message: e.message };
   }
 });
@@ -485,7 +533,7 @@ ipcMain.handle("get-media-url", async (_, filePath) => {
 
 ipcMain.handle("read-epub", async (_, filePath) => {
   try { return { success: true, book: await readEpub(filePath) }; }
-  catch (e) { return { success: false, message: e.message }; }
+  catch (e) { log.error("read-epub failed", e); return { success: false, message: e.message }; }
 });
 ipcMain.handle("get-app-version", () => app.getVersion());
 
@@ -497,8 +545,6 @@ ipcMain.handle("window-maximize", () => {
 });
 ipcMain.handle("window-close", () => mainWindow?.close());
 ipcMain.handle("window-is-maximized", () => mainWindow?.isMaximized() ?? false);
-
-
 
 function getAiConfigPath() {
   return path.join(app.getPath("userData"), "ai-config.json");
@@ -541,6 +587,7 @@ ipcMain.handle("save-ai-config", (_, input) => {
     fs.writeFileSync(getAiConfigPath(), JSON.stringify(payload, null, 2), { encoding: "utf8", mode: 0o600 });
     return { success: true };
   } catch (error) {
+    log.error("save-ai-config failed", error);
     return { success: false, message: error.message };
   }
 });
@@ -593,12 +640,7 @@ ipcMain.handle("plan-cad-change", async (_, input) => {
     if (!outputText) return { success: false, message: "模型没有返回结构化计划" };
     return { success: true, plan: JSON.parse(outputText) };
   } catch (error) {
+    log.error("plan-cad-change failed", error);
     return { success: false, message: error.message };
   }
 });
-
-
-
-
-
-

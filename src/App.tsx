@@ -26,6 +26,8 @@ const FontViewer = React.lazy(() => import("./components/viewers/FontViewer"));
 const EpubViewer = React.lazy(() => import("./components/viewers/EpubViewer"));
 const DwgViewer = React.lazy(() => import("./components/viewers/DwgViewer"));
 
+type DragFile = File & { path?: string };
+
 export default function App() {
   const [recentFiles, setRecentFiles] = useState<FileInfo[]>([]);
   const [tabs, setTabs] = useState<FileTabState[]>([]);
@@ -100,7 +102,7 @@ export default function App() {
   }, [tabs]);
 
   const addToRecent = useCallback(async (file: FileInfo) => { const updated = [file, ...recentFiles.filter((f) => f.path !== file.path)].slice(0, MAX_RECENT); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); }, [recentFiles]);
-  const handleFilePaths = useCallback(async (paths: string[]) => { for (const p of paths) { try { const fileInfo = await window.electronAPI.getFileInfo(p); fileInfo.file_type = detectCategory(p) as any; await addToRecent(fileInfo); await openFileInTab(fileInfo); } catch (error) { console.error("Open file error:", error); } } }, [addToRecent, openFileInTab]);
+  const handleFilePaths = useCallback(async (paths: string[]) => { for (const p of paths) { try { const fileInfo = await window.electronAPI.getFileInfo(p); fileInfo.file_type = detectCategory(p); await addToRecent(fileInfo); await openFileInTab(fileInfo); } catch (error) { console.error("Open file error:", error); } } }, [addToRecent, openFileInTab]);
   const handleSelectFile = useCallback(async (file: FileInfo) => { await openFileInTab(file); }, [openFileInTab]);
   const handleRemoveRecent = useCallback(async (file: FileInfo) => { const updated = recentFiles.filter((item) => item.path !== file.path); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); setToast({ kind: "success", message: `已从最近文件移除 ${file.name}` }); }, [recentFiles]);
   const handleCloseTab = useCallback((tabId: string) => { const closingTab = tabs.find((tab) => tab.id === tabId); if (closingTab?.isDirty && !window.confirm(`“${closingTab.name}”有未保存修改，仍要关闭吗？`)) return; setTabs((prev) => { const idx = prev.findIndex((t) => t.id === tabId); const newTabs = prev.filter((t) => t.id !== tabId); if (activeTabId === tabId) { if (newTabs.length > 0) setActiveTabId(newTabs[Math.min(idx, newTabs.length - 1)].id); else setActiveTabId(null); } return newTabs; }); }, [activeTabId, tabs]);
@@ -110,7 +112,7 @@ export default function App() {
   useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "o") { event.preventDefault(); handleOpenDialog(); } }; window.addEventListener("keydown", handler); return () => window.removeEventListener("keydown", handler); }, [handleOpenDialog]);
 
   const handleContentChange = useCallback((content: string) => { if (!activeTabId) return; setTabs((prev) => prev.map((t) => t.id === activeTabId ? { ...t, content, isDirty: true } : t)); }, [activeTabId]);
-  const handleDrop = useCallback((event: React.DragEvent) => { event.preventDefault(); const paths = Array.from(event.dataTransfer.files).map((file: any) => file.path).filter(Boolean); if (paths.length) handleFilePaths(paths); }, [handleFilePaths]);
+  const handleDrop = useCallback((event: React.DragEvent) => { event.preventDefault(); const paths = Array.from(event.dataTransfer.files).map((file) => (file as DragFile).path).filter((value): value is string => Boolean(value)); if (paths.length) handleFilePaths(paths); }, [handleFilePaths]);
   const activateRelativeTab = useCallback((direction: 1 | -1) => { if (tabs.length < 2) return; const current = Math.max(0, tabs.findIndex((tab) => tab.id === activeTabId)); setActiveTabId(tabs[(current + direction + tabs.length) % tabs.length].id); }, [tabs, activeTabId]);
 
   const commands = useMemo<CommandItem[]>(() => {
@@ -175,7 +177,7 @@ function TabContent({ tab, onChange }: { tab: FileTabState; onChange: (content: 
     case "image": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary>{tab.binaryData ? <ImageViewer base64Data={tab.binaryData} mimeType={tab.mimeType ?? "image/png"} /> : <div className="empty-viewer-message">无法加载图片</div>}</ViewerBoundary></div>;
     case "svg": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary>{tab.binaryData ? <SvgViewer base64Data={tab.binaryData} /> : <div className="empty-viewer-message">无法加载 SVG</div>}</ViewerBoundary></div>;
     case "pdf": return <div className="flex-1 min-h-0 p-4">{tab.binaryData ? <ViewerBoundary><PdfViewer base64Data={tab.binaryData} /></ViewerBoundary> : <div className="empty-viewer-message">无法加载 PDF</div>}</div>;
-    case "office": return <div className="flex-1 min-h-0 p-4">{tab.officeData ? <ViewerBoundary><OfficeViewer data={tab.officeData as any} /></ViewerBoundary> : <div className="empty-viewer-message">正在转换 Office 文件...</div>}</div>;
+    case "office": return <div className="flex-1 min-h-0 p-4">{tab.officeData ? <ViewerBoundary><OfficeViewer data={tab.officeData} /></ViewerBoundary> : <div className="empty-viewer-message">正在转换 Office 文件...</div>}</div>;
     case "archive": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary><ZipViewer zipPath={tab.path} /></ViewerBoundary></div>;
     case "cad": return <div className="flex-1 min-h-0 p-4">{tab.binaryData ? <ViewerBoundary><CadViewer base64Data={tab.binaryData} filePath={tab.path} /></ViewerBoundary> : <div className="empty-viewer-message">无法加载 3D 模型</div>}</div>;
     case "epub": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary><EpubViewer filePath={tab.path} /></ViewerBoundary></div>;
