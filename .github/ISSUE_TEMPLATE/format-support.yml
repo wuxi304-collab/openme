@@ -1,0 +1,50 @@
+name: Format support
+
+description: Request or improve support for a file format
+
+title: "Format: <extension or format name>"
+labels: [format-support]
+
+body:
+  - type: input
+    id: format
+    attributes:
+      label: Format
+      description: File extension or format family
+      placeholder: ".psd, .dwg, .apk, .xlsx"
+    validations:
+      required: true
+  - type: dropdown
+    id: goal
+    attributes:
+      label: Desired support level
+      options:
+        - Full built-in browsing
+        - High-fidelity browsing
+        - Safe approximate preview
+        - Semantic inspection
+        - External open
+        - Experimental
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: What real workflow needs this format?
+    validations:
+      required: true
+  - type: textarea
+    id: samples
+    attributes:
+      label: Safe sample files
+      description: Link to public, non-confidential samples if available. Do not upload private customer files.
+    validations:
+      required: false
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Known boundaries
+      description: What should OpenMe avoid claiming or doing for this format?
+    validations:
+      required: false
