@@ -7,6 +7,7 @@ import StatusBar from "./components/layout/StatusBar";
 import FileTabs from "./components/layout/FileTabs";
 import CommandPalette, { type CommandItem } from "./components/CommandPalette";
 import FileSummaryPanel from "./components/FileSummaryPanel";
+import ErrorBoundary from "./components/ErrorBoundary";
 import JsonViewer from "./components/viewers/JsonViewer";
 import ImageViewer from "./components/viewers/ImageViewer";
 import SvgViewer from "./components/viewers/SvgViewer";
@@ -68,9 +69,7 @@ export default function App() {
   const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [commandOpen, setCommandOpen] = useState(false);
 
-  useEffect(() => {
-    window.electronAPI.loadRecentFiles().then((store) => setRecentFiles(store.files)).catch(console.error);
-  }, []);
+  useEffect(() => { window.electronAPI.loadRecentFiles().then((store) => setRecentFiles(store.files)).catch(console.error); }, []);
 
   const filteredFiles = useMemo(() => {
     if (!searchQuery.trim()) return recentFiles;
@@ -81,15 +80,8 @@ export default function App() {
   const activeTab = useMemo(() => tabs.find((t) => t.id === activeTabId) ?? null, [tabs, activeTabId]);
   const hasDirtyTabs = tabs.some((tab) => tab.isDirty);
 
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 2600);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
-
-  useEffect(() => {
-    window.electronAPI.setDirtyState(hasDirtyTabs).catch(() => undefined);
-  }, [hasDirtyTabs]);
+  useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(timer); }, [toast]);
+  useEffect(() => { window.electronAPI.setDirtyState(hasDirtyTabs).catch(() => undefined); }, [hasDirtyTabs]);
 
   const handleSaveCurrent = useCallback(async () => {
     const tab = activeTab;
@@ -98,44 +90,23 @@ export default function App() {
     if (result.success) {
       setTabs((prev) => prev.map((t) => t.id === tab.id ? { ...t, isDirty: false } : t));
       setToast({ kind: "success", message: `已保存 ${tab.name}` });
-    } else {
-      setToast({ kind: "error", message: result.message ?? "保存失败" });
-    }
+    } else setToast({ kind: "error", message: result.message ?? "保存失败" });
   }, [activeTab]);
 
   useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === "s") {
-        event.preventDefault();
-        handleSaveCurrent();
-      }
-    };
+    const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key === "s") { event.preventDefault(); handleSaveCurrent(); } };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [handleSaveCurrent]);
 
   const openFileInTab = useCallback(async (fileInfo: FileInfo) => {
     const existingTab = tabs.find((t) => t.path === fileInfo.path);
-    if (existingTab) {
-      setActiveTabId(existingTab.id);
-      return;
-    }
-
+    if (existingTab) { setActiveTabId(existingTab.id); return; }
     const category = detectCategory(fileInfo.path);
     const id = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const newTab: FileTabState = {
-      id,
-      path: fileInfo.path,
-      name: fileInfo.name,
-      category,
-      content: null,
-      isDirty: false,
-      isLoading: true,
-      sourceFile: fileInfo,
-    };
+    const newTab: FileTabState = { id, path: fileInfo.path, name: fileInfo.name, category, content: null, isDirty: false, isLoading: true, sourceFile: fileInfo };
     setTabs((prev) => [...prev, newTab]);
     setActiveTabId(id);
-
     try {
       if (category === "office") {
         const ext = fileInfo.extension.toLowerCase();
@@ -145,9 +116,7 @@ export default function App() {
         } else if (ext === ".xlsx") {
           const res = await window.electronAPI.convertExcel(fileInfo.path);
           setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, officeData: res.success ? { type: "excel", sheets: res.sheets ?? [] } : undefined, error: res.success ? undefined : res.message ?? "Excel 转换失败" } : t));
-        } else {
-          setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, officeData: { type: "pptx" } } : t));
-        }
+        } else setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, officeData: { type: "pptx" } } : t));
       } else if (category === "audio" || category === "video" || category === "epub") {
         setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false } : t));
       } else if (category === "design" || category === "package" || category === "disk" || category === "other") {
@@ -165,86 +134,18 @@ export default function App() {
     }
   }, [tabs]);
 
-  const addToRecent = useCallback(async (file: FileInfo) => {
-    const updated = [file, ...recentFiles.filter((f) => f.path !== file.path)].slice(0, MAX_RECENT);
-    setRecentFiles(updated);
-    await window.electronAPI.saveRecentFiles({ files: updated, version: 1 });
-  }, [recentFiles]);
+  const addToRecent = useCallback(async (file: FileInfo) => { const updated = [file, ...recentFiles.filter((f) => f.path !== file.path)].slice(0, MAX_RECENT); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); }, [recentFiles]);
+  const handleFilePaths = useCallback(async (paths: string[]) => { for (const p of paths) { try { const fileInfo = await window.electronAPI.getFileInfo(p); fileInfo.file_type = detectCategory(p) as any; await addToRecent(fileInfo); await openFileInTab(fileInfo); } catch (error) { console.error("Open file error:", error); } } }, [addToRecent, openFileInTab]);
+  const handleSelectFile = useCallback(async (file: FileInfo) => { await openFileInTab(file); }, [openFileInTab]);
+  const handleRemoveRecent = useCallback(async (file: FileInfo) => { const updated = recentFiles.filter((item) => item.path !== file.path); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); setToast({ kind: "success", message: `已从最近文件移除 ${file.name}` }); }, [recentFiles]);
+  const handleCloseTab = useCallback((tabId: string) => { const closingTab = tabs.find((tab) => tab.id === tabId); if (closingTab?.isDirty && !window.confirm(`“${closingTab.name}”有未保存修改，仍要关闭吗？`)) return; setTabs((prev) => { const idx = prev.findIndex((t) => t.id === tabId); const newTabs = prev.filter((t) => t.id !== tabId); if (activeTabId === tabId) { if (newTabs.length > 0) setActiveTabId(newTabs[Math.min(idx, newTabs.length - 1)].id); else setActiveTabId(null); } return newTabs; }); }, [activeTabId, tabs]);
+  const handleOpenDialog = useCallback(async () => { try { const paths = await window.electronAPI.openFileDialog(); if (paths?.length) handleFilePaths(paths); } catch (error) { console.error("Dialog error:", error); } }, [handleFilePaths]);
 
-  const handleFilePaths = useCallback(async (paths: string[]) => {
-    for (const p of paths) {
-      try {
-        const fileInfo = await window.electronAPI.getFileInfo(p);
-        fileInfo.file_type = detectCategory(p) as any;
-        await addToRecent(fileInfo);
-        await openFileInTab(fileInfo);
-      } catch (error) {
-        console.error("Open file error:", error);
-      }
-    }
-  }, [addToRecent, openFileInTab]);
+  useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "o") { event.preventDefault(); handleOpenDialog(); } }; window.addEventListener("keydown", handler); return () => window.removeEventListener("keydown", handler); }, [handleOpenDialog]);
 
-  const handleSelectFile = useCallback(async (file: FileInfo) => {
-    await openFileInTab(file);
-  }, [openFileInTab]);
-
-  const handleRemoveRecent = useCallback(async (file: FileInfo) => {
-    const updated = recentFiles.filter((item) => item.path !== file.path);
-    setRecentFiles(updated);
-    await window.electronAPI.saveRecentFiles({ files: updated, version: 1 });
-    setToast({ kind: "success", message: `已从最近文件移除 ${file.name}` });
-  }, [recentFiles]);
-
-  const handleCloseTab = useCallback((tabId: string) => {
-    const closingTab = tabs.find((tab) => tab.id === tabId);
-    if (closingTab?.isDirty && !window.confirm(`“${closingTab.name}”有未保存修改，仍要关闭吗？`)) return;
-    setTabs((prev) => {
-      const idx = prev.findIndex((t) => t.id === tabId);
-      const newTabs = prev.filter((t) => t.id !== tabId);
-      if (activeTabId === tabId) {
-        if (newTabs.length > 0) setActiveTabId(newTabs[Math.min(idx, newTabs.length - 1)].id);
-        else setActiveTabId(null);
-      }
-      return newTabs;
-    });
-  }, [activeTabId, tabs]);
-
-  const handleOpenDialog = useCallback(async () => {
-    try {
-      const paths = await window.electronAPI.openFileDialog();
-      if (paths?.length) handleFilePaths(paths);
-    } catch (error) {
-      console.error("Dialog error:", error);
-    }
-  }, [handleFilePaths]);
-
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "o") {
-        event.preventDefault();
-        handleOpenDialog();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [handleOpenDialog]);
-
-  const handleContentChange = useCallback((content: string) => {
-    if (!activeTabId) return;
-    setTabs((prev) => prev.map((t) => t.id === activeTabId ? { ...t, content, isDirty: true } : t));
-  }, [activeTabId]);
-
-  const handleDrop = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    const paths = Array.from(event.dataTransfer.files).map((file: any) => file.path).filter(Boolean);
-    if (paths.length) handleFilePaths(paths);
-  }, [handleFilePaths]);
-
-  const activateRelativeTab = useCallback((direction: 1 | -1) => {
-    if (tabs.length < 2) return;
-    const current = Math.max(0, tabs.findIndex((tab) => tab.id === activeTabId));
-    setActiveTabId(tabs[(current + direction + tabs.length) % tabs.length].id);
-  }, [tabs, activeTabId]);
+  const handleContentChange = useCallback((content: string) => { if (!activeTabId) return; setTabs((prev) => prev.map((t) => t.id === activeTabId ? { ...t, content, isDirty: true } : t)); }, [activeTabId]);
+  const handleDrop = useCallback((event: React.DragEvent) => { event.preventDefault(); const paths = Array.from(event.dataTransfer.files).map((file: any) => file.path).filter(Boolean); if (paths.length) handleFilePaths(paths); }, [handleFilePaths]);
+  const activateRelativeTab = useCallback((direction: 1 | -1) => { if (tabs.length < 2) return; const current = Math.max(0, tabs.findIndex((tab) => tab.id === activeTabId)); setActiveTabId(tabs[(current + direction + tabs.length) % tabs.length].id); }, [tabs, activeTabId]);
 
   const commands = useMemo<CommandItem[]>(() => [
     { id: "open", label: "打开文件", detail: "从电脑选择一个或多个文件", shortcut: "Ctrl O", run: handleOpenDialog },
@@ -254,49 +155,20 @@ export default function App() {
     { id: "close", label: "关闭当前标签", detail: activeTab?.name ?? "没有打开文件", shortcut: "Ctrl W", disabled: !activeTab, run: () => { if (activeTab) handleCloseTab(activeTab.id); } },
   ], [handleOpenDialog, handleSaveCurrent, activeTab, tabs.length, activateRelativeTab, handleCloseTab]);
 
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "k") {
-        event.preventDefault();
-        setCommandOpen((value) => !value);
-        return;
-      }
-      if (commandOpen) return;
-      if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "w") {
-        event.preventDefault();
-        if (activeTab) handleCloseTab(activeTab.id);
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key === "Tab") {
-        event.preventDefault();
-        activateRelativeTab(event.shiftKey ? -1 : 1);
-      }
-    };
-    window.addEventListener("keydown", handler, true);
-    return () => window.removeEventListener("keydown", handler, true);
-  }, [commandOpen, activeTab, handleCloseTab, activateRelativeTab]);
+  useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "k") { event.preventDefault(); setCommandOpen((value) => !value); return; } if (commandOpen) return; if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "w") { event.preventDefault(); if (activeTab) handleCloseTab(activeTab.id); } if ((event.ctrlKey || event.metaKey) && event.key === "Tab") { event.preventDefault(); activateRelativeTab(event.shiftKey ? -1 : 1); } }; window.addEventListener("keydown", handler, true); return () => window.removeEventListener("keydown", handler, true); }, [commandOpen, activeTab, handleCloseTab, activateRelativeTab]);
 
   return (
     <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
       <TitleBar />
       <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} />
-
       <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
         <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} />
-
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
-          {tabs.length === 0 ? (
-            <EmptyState onOpenDialog={handleOpenDialog} />
-          ) : activeTab ? (
-            <div className="workspace-viewer-grid">
-              <div className="workspace-viewer-main">
-                {activeTab.isLoading ? <LoadingState /> : <TabContent tab={activeTab} onChange={handleContentChange} />}
-              </div>
-              <FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} />
-            </div>
+          {tabs.length === 0 ? <EmptyState onOpenDialog={handleOpenDialog} /> : activeTab ? (
+            <div className="workspace-viewer-grid"><div className="workspace-viewer-main">{activeTab.isLoading ? <LoadingState /> : <TabContent tab={activeTab} onChange={handleContentChange} />}</div><FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} /></div>
           ) : null}
         </main>
       </div>
-
       <StatusBar activeTab={activeTab ? { name: activeTab.name, size: activeTab.sourceFile?.size, content: activeTab.content ?? undefined, isDirty: activeTab.isDirty } : null} />
       {toast && <div className={`app-toast is-${toast.kind}`} role="status" aria-live="polite"><i aria-hidden="true">{toast.kind === "success" ? "✓" : "!"}</i>{toast.message}</div>}
       <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
@@ -306,45 +178,17 @@ export default function App() {
 
 function EmptyState({ onOpenDialog }: { onOpenDialog: () => void }) {
   const formats = ["PDF", "DOCX", "XLSX", "DWG", "PSD", "APK", "ISO", "ZIP"];
-  return (
-    <section className="empty-workspace" aria-labelledby="empty-title">
-      <div className="sky-grid" aria-hidden="true"><span className="pixel-cloud cloud-one" /><span className="pixel-cloud cloud-two" /><span className="floating-coin coin-one" /><span className="floating-coin coin-two" /><span className="scenery-hill hill-one" /><span className="scenery-hill hill-two" /></div>
-      <div className="welcome-panel">
-        <div className="welcome-eyebrow"><span className="eyebrow-line" />OPENME WORKSPACE<span className="eyebrow-line" /></div>
-        <div className="hero-mark" aria-hidden="true"><i /><span>OM</span></div>
-        <h1 id="empty-title">打开文件，先看懂边界</h1>
-        <p>拖进来直接预览、识别或路由到系统程序。文件默认只在本地处理。</p>
-        <div className="empty-actions">
-          <button type="button" className="hero-open-button" onClick={onOpenDialog}>选择文件</button>
-          <span className="drop-hint">也可以拖放到这里</span>
-        </div>
-        <div className="format-row" aria-label="支持的文件格式">{formats.map((format) => <span key={format}>{format}</span>)}</div>
-      </div>
-      <div className="workspace-ground" aria-hidden="true"><span className="ground-pipe" /><span className="ground-bricks" /></div>
-    </section>
-  );
+  return <section className="empty-workspace" aria-labelledby="empty-title"><div className="sky-grid" aria-hidden="true"><span className="pixel-cloud cloud-one" /><span className="pixel-cloud cloud-two" /><span className="floating-coin coin-one" /><span className="floating-coin coin-two" /><span className="scenery-hill hill-one" /><span className="scenery-hill hill-two" /></div><div className="welcome-panel"><div className="welcome-eyebrow"><span className="eyebrow-line" />OPENME WORKSPACE<span className="eyebrow-line" /></div><div className="hero-mark" aria-hidden="true"><i /><span>OM</span></div><h1 id="empty-title">打开文件，先看懂边界</h1><p>拖进来直接预览、识别或路由到系统程序。文件默认只在本地处理。</p><div className="empty-actions"><button type="button" className="hero-open-button" onClick={onOpenDialog}>选择文件</button><span className="drop-hint">也可以拖放到这里</span></div><div className="format-row" aria-label="支持的文件格式">{formats.map((format) => <span key={format}>{format}</span>)}</div></div><div className="workspace-ground" aria-hidden="true"><span className="ground-pipe" /><span className="ground-bricks" /></div></section>;
 }
 
-function LoadingState() {
-  return <div className="loading-state"><div className="loading-card"><div className="loading-dot-row"><div className="loading-dot" /><div className="loading-dot" /><div className="loading-dot" /></div><p>正在加载文件...</p></div></div>;
-}
+function LoadingState() { return <div className="loading-state"><div className="loading-card"><div className="loading-dot-row"><div className="loading-dot" /><div className="loading-dot" /><div className="loading-dot" /></div><p>正在加载文件...</p></div></div>; }
 
 function ViewerBoundary({ children }: { children: React.ReactNode }) {
-  return <React.Suspense fallback={<LoadingState />}>{children}</React.Suspense>;
+  return <ErrorBoundary><React.Suspense fallback={<LoadingState />}>{children}</React.Suspense></ErrorBoundary>;
 }
 
 function UnsupportedCard({ title, subtitle, description, onOpenInSystem }: { title: string; subtitle: string; description: string; onOpenInSystem: () => void }) {
-  return (
-    <div className="unsupported-card">
-      <div className="unsupported-icon" aria-hidden="true">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><circle cx="12" cy="15" r="1" /><path d="M12 12v1" /></svg>
-      </div>
-      <h3>{title}</h3>
-      <p className="unsupported-subtitle">{subtitle}</p>
-      <p>{description}</p>
-      <button type="button" onClick={onOpenInSystem}>用系统程序打开</button>
-    </div>
-  );
+  return <div className="unsupported-card"><div className="unsupported-icon" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><circle cx="12" cy="15" r="1" /><path d="M12 12v1" /></svg></div><h3>{title}</h3><p className="unsupported-subtitle">{subtitle}</p><p>{description}</p><button type="button" onClick={onOpenInSystem}>用系统程序打开</button></div>;
 }
 
 function TabContent({ tab, onChange }: { tab: FileTabState; onChange: (content: string) => void }) {
@@ -352,10 +196,10 @@ function TabContent({ tab, onChange }: { tab: FileTabState; onChange: (content: 
   switch (tab.category) {
     case "code": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary><CodeEditor content={tab.content ?? ""} language={detectLanguage(tab.path)} onChange={onChange} /></ViewerBoundary></div>;
     case "markdown": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary><MarkdownViewer content={tab.content ?? ""} onChange={onChange} /></ViewerBoundary></div>;
-    case "json": return <div className="flex-1 min-h-0 p-4"><JsonViewer content={tab.content ?? ""} onChange={onChange} /></div>;
+    case "json": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary><JsonViewer content={tab.content ?? ""} onChange={onChange} /></ViewerBoundary></div>;
     case "csv": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary><CsvViewer content={tab.content ?? ""} /></ViewerBoundary></div>;
-    case "image": return <div className="flex-1 min-h-0 p-4">{tab.binaryData ? <ImageViewer base64Data={tab.binaryData} mimeType={tab.mimeType ?? "image/png"} /> : <div className="empty-viewer-message">无法加载图片</div>}</div>;
-    case "svg": return <div className="flex-1 min-h-0 p-4">{tab.binaryData ? <SvgViewer base64Data={tab.binaryData} /> : <div className="empty-viewer-message">无法加载 SVG</div>}</div>;
+    case "image": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary>{tab.binaryData ? <ImageViewer base64Data={tab.binaryData} mimeType={tab.mimeType ?? "image/png"} /> : <div className="empty-viewer-message">无法加载图片</div>}</ViewerBoundary></div>;
+    case "svg": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary>{tab.binaryData ? <SvgViewer base64Data={tab.binaryData} /> : <div className="empty-viewer-message">无法加载 SVG</div>}</ViewerBoundary></div>;
     case "pdf": return <div className="flex-1 min-h-0 p-4">{tab.binaryData ? <ViewerBoundary><PdfViewer base64Data={tab.binaryData} /></ViewerBoundary> : <div className="empty-viewer-message">无法加载 PDF</div>}</div>;
     case "office": return <div className="flex-1 min-h-0 p-4">{tab.officeData ? <ViewerBoundary><OfficeViewer data={tab.officeData as any} /></ViewerBoundary> : <div className="empty-viewer-message">正在转换 Office 文件...</div>}</div>;
     case "archive": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary><ZipViewer zipPath={tab.path} /></ViewerBoundary></div>;
@@ -363,8 +207,8 @@ function TabContent({ tab, onChange }: { tab: FileTabState; onChange: (content: 
     case "epub": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary><EpubViewer filePath={tab.path} /></ViewerBoundary></div>;
     case "audio":
     case "video": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary><MediaViewer filePath={tab.path} kind={tab.category} /></ViewerBoundary></div>;
-    case "font": return <div className="flex-1 min-h-0 p-4">{tab.binaryData ? <ViewerBoundary><FontViewer base64Data={tab.binaryData} fileName={tab.name} /></ViewerBoundary> : <div className="viewer-error"><strong>字体无法加载</strong></div>}</div>;
-    case "dwg": return <div className="cad-workspace"><div className="cad-stage"><React.Suspense fallback={<LoadingState />}><DwgViewer filePath={tab.path} fileName={tab.name} /></React.Suspense></div><CadAssistant filePath={tab.path} fileName={tab.name} /></div>;
+    case "font": return <div className="flex-1 min-h-0 p-4"><ViewerBoundary>{tab.binaryData ? <FontViewer base64Data={tab.binaryData} fileName={tab.name} /> : <div className="viewer-error"><strong>字体无法加载</strong></div>}</ViewerBoundary></div>;
+    case "dwg": return <div className="cad-workspace"><div className="cad-stage"><ViewerBoundary><DwgViewer filePath={tab.path} fileName={tab.name} /></ViewerBoundary></div><CadAssistant filePath={tab.path} fileName={tab.name} /></div>;
     case "design": return <SemanticRouteCard tab={tab} title="设计源文件" description="该文件已被识别为设计源文件。OpenMe 当前提供语义检查、风险边界和系统程序路由，不承诺源软件级高保真预览。" />;
     case "package": return <SemanticRouteCard tab={tab} title="安装包 / 应用包" description="该文件已被识别为安装包或应用包。OpenMe 不执行安装器、不运行未知二进制，只提供本地识别和外部打开。" />;
     case "disk": return <SemanticRouteCard tab={tab} title="磁盘镜像 / 虚拟机镜像" description="该文件已被识别为镜像文件。OpenMe 不自动挂载、不自动解包、不自动启动，仅提供识别和外部打开。" />;
@@ -373,11 +217,7 @@ function TabContent({ tab, onChange }: { tab: FileTabState; onChange: (content: 
 }
 
 function SemanticRouteCard({ tab, title, description }: { tab: FileTabState; title: string; description: string }) {
-  return (
-    <div className="flex-1 flex items-center justify-center p-6">
-      <UnsupportedCard title={title} subtitle={tab.name} description={description} onOpenInSystem={() => window.electronAPI.openInSystem(tab.path)} />
-    </div>
-  );
+  return <div className="flex-1 flex items-center justify-center p-6"><UnsupportedCard title={title} subtitle={tab.name} description={description} onOpenInSystem={() => window.electronAPI.openInSystem(tab.path)} /></div>;
 }
 
 function getMimeType(ext: string): string {
