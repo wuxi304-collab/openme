@@ -16,6 +16,9 @@ export function getSupportLevel(category: FileCategory): SupportLevel {
     case "epub":
       return "safe-approximate";
     case "dwg":
+    case "design":
+    case "package":
+    case "disk":
       return "semantic-inspection";
     case "cad":
       return "experimental";
