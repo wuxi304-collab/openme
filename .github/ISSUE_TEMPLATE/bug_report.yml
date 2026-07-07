@@ -1,0 +1,76 @@
+name: Bug report
+description: Report a reproducible OpenMe problem
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Please do not upload private, commercial, customer, or sensitive files.
+
+  - type: input
+    id: version
+    attributes:
+      label: OpenMe version or commit
+      description: Version number, release name, or commit SHA.
+      placeholder: "0.1.0 / main / commit SHA"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Windows 11
+        - Windows 10
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: file_type
+    attributes:
+      label: File type
+      placeholder: "PDF, DOCX, XLSX, DWG, ZIP, EPUB, MP4, etc."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the exact steps that trigger the problem.
+      placeholder: |
+        1. Open OpenMe
+        2. Drag file into the window
+        3. Click ...
+        4. See ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: Minimal public sample
+      description: Attach or link a minimal non-sensitive sample if possible. Do not upload private customer files.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste relevant logs or screenshots. Remove private paths, keys, and customer data.

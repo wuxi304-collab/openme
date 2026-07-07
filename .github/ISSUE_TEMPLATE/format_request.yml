@@ -1,0 +1,53 @@
+name: Format request
+description: Request support for a file format or improve an existing viewer
+title: "format: "
+labels: ["format", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to request a new file format or a better support level for an existing format.
+        Please avoid uploading private or commercially sensitive files.
+
+  - type: input
+    id: format
+    attributes:
+      label: Format or extension
+      placeholder: "PPTX, RAR, 7Z, HEIC, DWG, STEP, etc."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: desired_level
+    attributes:
+      label: Desired support level
+      options:
+        - Full built-in browsing
+        - High-fidelity browsing
+        - Safe approximate preview
+        - Semantic inspection
+        - External open integration
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow need
+      description: What do you need to do with this file type?
+      placeholder: "Preview pages, extract text, list contents, inspect metadata, compare versions, launch external app, etc."
+    validations:
+      required: true
+
+  - type: textarea
+    id: samples
+    attributes:
+      label: Public sample files
+      description: Link minimal public samples if available. Do not upload private customer files.
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Compatibility notes
+      description: Mention source applications, versions, codecs, CAD systems, or other relevant details.
