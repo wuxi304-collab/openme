@@ -1,15 +1,11 @@
 import { useState } from "react";
-
-interface DocxData { type: "docx"; html: string; }
-interface ExcelData { type: "excel"; sheets: { name: string; data: string[][] }[]; }
-interface PptxData { type: "pptx"; }
-type OfficeData = DocxData | ExcelData | PptxData;
+import type { ExcelSheetData, OfficeData } from "../../types";
 
 interface Props { data: OfficeData; }
 
 const EXCEL_PAGE_SIZE = 500;
 
-function ExcelSheet({ sheet }: { sheet: { name: string; data: string[][] } }) {
+function ExcelSheet({ sheet }: { sheet: ExcelSheetData }) {
   const [page, setPage] = useState(0);
   const columnCount = sheet.data.reduce((maximum, row) => Math.max(maximum, row.length), 0);
   const headers = Array.from({ length: columnCount }, (_, index) => sheet.data[0]?.[index] || `第 ${index + 1} 列`);
@@ -81,6 +77,3 @@ export default function OfficeViewer({ data }: Props) {
     </div>
   );
 }
-
-
-
