@@ -2,6 +2,14 @@
   <img src="public/openme-logo.png" alt="OpenMe logo" width="360">
 
   <br>
+  <br>
+
+  <img src="https://img.shields.io/badge/%E4%B8%AD%E5%9B%BD%C2%B7%E6%97%A0%E9%94%A1-Built%20in%20Wuxi-C91F37?style=for-the-badge&labelColor=C91F37&color=0F172A" alt="中国 · 无锡 Built in Wuxi">
+
+  <br>
+  <br>
+
+  <img src="public/readme-china-red-line.svg" alt="China red separator" width="720">
 
   <p><strong>打开文件，不必先猜该用哪个软件。</strong></p>
   <p><strong>Open Anything. Understand Everything.</strong></p>
@@ -23,12 +31,11 @@
   <img src="https://img.shields.io/badge/Windows-0F172A?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/Electron-0F172A?style=flat-square" alt="Electron">
   <img src="https://img.shields.io/badge/MIT-0F172A?style=flat-square" alt="MIT License">
+  <img src="https://img.shields.io/badge/%E4%B8%AD%E5%9B%BD%E7%BA%A2-C91F37-C91F37?style=flat-square&labelColor=C91F37&color=C91F37" alt="中国红 C91F37">
 </p>
 
 <div align="center">
-
-<span style="color:#C91F37">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
-
+  <strong>中国无锡发起，面向全球的本地优先文件工作平台。</strong>
 </div>
 
 ## 为什么是 OpenMe
@@ -63,7 +70,7 @@ OpenMe 的中国文化元素不靠装饰，而靠秩序。
 | 归档 | 把散落资料放回一个可管理的工作台。 |
 | 知新 | 在文件理解层之上，进入摘要、检查、提取、比较和行动。 |
 
-品牌色使用克制的中国红 `#C91F37`，只作为强调色，不做大面积装饰。
+品牌色使用克制的中国红 `#C91F37`。README 首屏已经使用中国红作为可见分隔与地域标识；客户端 UI 中只作为强调色，不做大面积装饰。
 
 ## 快速开始
 
@@ -255,7 +262,7 @@ Open
   -> Act
 ```
 
-Built in Wuxi, China.
+Initiated in Wuxi, China. Built for global file workflows.
 
 ## License
 
@@ -263,8 +270,8 @@ OpenMe original code is released under the [MIT License](LICENSE). Third-party c
 
 <div align="center">
 
-<span style="color:#C91F37">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
+<img src="public/readme-china-red-line.svg" alt="China red separator" width="720">
 
-Designed and built in Wuxi, China.
+<strong>中国无锡 · Designed and built in Wuxi, China.</strong>
 
 </div>
