@@ -22,7 +22,7 @@ describe("detectCategory", () => {
 
   it("detects engineering and CAD formats", () => {
     expect(detectCategory("part.step")).toBe("cad");
-    expect(detectCategory("mesh.3mf")).toBe("other");
+    expect(detectCategory("mesh.3mf")).toBe("cad");
     expect(detectCategory("plant.ifc")).toBe("cad");
     expect(detectCategory("layout.dwg")).toBe("dwg");
     expect(detectCategory("layout.dxf")).toBe("dwg");
