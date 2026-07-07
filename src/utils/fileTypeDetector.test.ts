@@ -49,22 +49,34 @@ describe("detectCategory", () => {
     expect(detectCategory("sample.fastq")).toBe("code");
     expect(detectCategory("weather.nc")).toBe("other");
   });
+
+  it("detects expanded professional and compound formats", () => {
+    expect(detectCategory("bundle.tar.gz")).toBe("archive");
+    expect(detectCategory("scan.nii.gz")).toBe("other");
+    expect(detectCategory("app.jar")).toBe("package");
+    expect(detectCategory("rushes.mxf")).toBe("video");
+    expect(detectCategory("model.3dm")).toBe("cad");
+    expect(detectCategory("genome.fq")).toBe("code");
+    expect(detectCategory("shapefile.dbf")).toBe("other");
+    expect(detectCategory("board.gtl")).toBe("dwg");
+  });
 });
 
 describe("file registry", () => {
   it("contains a broad baseline registry with honest boundaries", () => {
-    expect(FILE_FORMATS.length).toBeGreaterThan(180);
+    expect(FILE_FORMATS.length).toBeGreaterThan(270);
     expect(getFileFormatByPath("contract.docx")?.boundary).toContain("not source-application fidelity");
     expect(getFileFormatByPath("installer.exe")?.boundary).toContain("never executes");
     expect(getFileFormatByPath("drawing.dwg")?.supportLevel).toBe("D");
+    expect(getFileFormatByPath("model.pkl")?.boundary).toContain("never unpickles");
   });
 
   it("computes category and support-level stats", () => {
     const stats = getFileRegistryStats();
     expect(stats.total).toBe(FILE_FORMATS.length);
-    expect(stats.byCategory.code).toBeGreaterThan(20);
-    expect(stats.byCategory.cad).toBeGreaterThan(20);
-    expect(stats.bySupportLevel.D).toBeGreaterThan(50);
+    expect(stats.byCategory.code).toBeGreaterThan(30);
+    expect(stats.byCategory.cad).toBeGreaterThan(30);
+    expect(stats.bySupportLevel.D).toBeGreaterThan(100);
   });
 });
 
