@@ -1,3 +1,4 @@
+import type { ViewerRouteMode } from "./viewer-registry";
 import type { FileCategory } from "./utils/fileTypeDetector";
 
 export { type FileCategory };
@@ -18,6 +19,17 @@ export interface RecentFilesStore {
   version: number;
 }
 
+export type FileOpenOutcomeStatus = "loaded" | "route-card" | "error";
+export type FileOpenLoader = "text" | "binary" | "office" | "media" | "epub" | "safe-card";
+
+export interface FileOpenOutcome {
+  surface: "openme-tab";
+  status: FileOpenOutcomeStatus;
+  loader: FileOpenLoader;
+  routeMode: ViewerRouteMode;
+  message: string;
+}
+
 export interface FileTabState {
   id: string;
   path: string;
@@ -31,5 +43,6 @@ export interface FileTabState {
   isLoading: boolean;
   sourceFile?: FileInfo;
   officeData?: any;
+  openOutcome?: FileOpenOutcome;
   error?: string;
 }
