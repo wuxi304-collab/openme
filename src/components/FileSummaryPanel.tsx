@@ -1,5 +1,6 @@
 import type { FileTabState } from "../types";
 import { getFileFormatByPath } from "../file-registry";
+import type { FileCapability, FileFormatDefinition } from "../file-registry";
 import { buildBasicFileSummary } from "../understanding";
 import type { SupportLevel } from "../understanding";
 
@@ -7,6 +8,18 @@ interface FileSummaryPanelProps {
   tab: FileTabState;
   onOpenInSystem: () => void;
 }
+
+const capabilityLabels: Record<FileCapability, string> = {
+  detect: "Detect",
+  preview: "Preview",
+  edit: "Edit",
+  metadata: "Metadata",
+  thumbnail: "Thumbnail",
+  "ai-summary": "AI Summary",
+  "external-open": "External",
+};
+
+const coreCapabilities: FileCapability[] = ["detect", "preview", "metadata", "ai-summary", "edit", "external-open"];
 
 export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPanelProps) {
   const registryFormat = getFileFormatByPath(tab.path);
@@ -37,6 +50,7 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
               <span className={`registry-support-badge support-${registryFormat.supportLevel.replace("+", "plus")}`}>Support {registryFormat.supportLevel}</span>
             </div>
             <p>{registryFormat.boundary}</p>
+            <CapabilityGrid format={registryFormat} />
             <div className="summary-chip-list">
               {registryFormat.capabilities.map((capability) => (
                 <span key={capability} className="summary-chip">{capability}</span>
@@ -91,6 +105,23 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
         <button type="button" onClick={onOpenInSystem}>用系统程序打开</button>
       </div>
     </aside>
+  );
+}
+
+function CapabilityGrid({ format }: { format: FileFormatDefinition }) {
+  const capabilitySet = new Set(format.capabilities);
+  return (
+    <div className="capability-grid" aria-label="格式能力卡">
+      {coreCapabilities.map((capability) => {
+        const supported = capabilitySet.has(capability);
+        return (
+          <div key={capability} className={`capability-cell is-${supported ? "yes" : "no"}`}>
+            <span>{supported ? "✓" : "×"}</span>
+            <strong>{capabilityLabels[capability]}</strong>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

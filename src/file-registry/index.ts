@@ -1,8 +1,12 @@
-import { FILE_FORMATS } from "./formats";
+import { FILE_FORMATS as BASE_FILE_FORMATS } from "./formats";
+import { EXPANDED_FILE_FORMATS } from "./expanded-formats";
 import type { FileFormatDefinition, FileRegistryStats, HonestSupportLevel } from "./types";
 
 export type { FileCapability, FileFormatDefinition, FileRegistryStats, HonestSupportLevel } from "./types";
-export { FILE_FORMATS } from "./formats";
+export { FILE_FORMATS as BASE_FILE_FORMATS } from "./formats";
+export { EXPANDED_FILE_FORMATS } from "./expanded-formats";
+
+export const FILE_FORMATS: FileFormatDefinition[] = dedupeByExtension([...BASE_FILE_FORMATS, ...EXPANDED_FILE_FORMATS]);
 
 const extensionMap = new Map(FILE_FORMATS.map((format) => [format.extension.toLowerCase(), format]));
 
@@ -43,6 +47,18 @@ export function getFileRegistryStats(): FileRegistryStats {
   }
 
   return { total: FILE_FORMATS.length, byCategory, bySupportLevel };
+}
+
+function dedupeByExtension(formats: FileFormatDefinition[]): FileFormatDefinition[] {
+  const seen = new Set<string>();
+  const result: FileFormatDefinition[] = [];
+  for (const format of formats) {
+    const key = format.extension.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(format);
+  }
+  return result;
 }
 
 function syntheticCodeFormat(name: string, extension: string): FileFormatDefinition {
