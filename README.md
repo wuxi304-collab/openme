@@ -1,9 +1,9 @@
 <div align="center">
-  <img src="public/openme-logo.png" alt="OpenMe logo" width="108" height="108">
+  <img src="public/openme-logo.png" alt="OpenMe logo" width="176" height="176">
   <h1>OpenMe</h1>
   <p><strong>打开文件，不必先猜该用哪个软件。</strong></p>
   <p>本地优先文件工作台 · 诚实格式支持 · 可扩展能力包</p>
-  <p>把散落文件整理成可预览、可检查、可行动的工作资料。</p>
+  <p>格物、开卷、归档：把散落文件整理成可预览、可检查、可行动的工作资料。</p>
 
   <p>
     <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
@@ -29,9 +29,20 @@
 
 1. **OpenMe 是一个本地优先的通用桌面文件工作台**，用于打开、预览、检查和整理 PDF、Excel、Word、图片、ZIP、代码、媒体、电子书、CAD 图纸和 3D 模型。
 2. **OpenMe 不把“支持格式”当口号**，而是明确区分完整浏览、高保真浏览、近似预览、语义检查、外部打开和实验性能力。
-3. **OpenMe 的长期方向是 Core + Viewers + Understanding + Packs**：核心保持通用，工程、金属材料、财务、契约、研究、开发者等领域能力通过可选能力包扩展。
+3. **OpenMe 的长期方向是 Core + Viewers + Understanding + Packs**：核心保持通用，工程、金石、账册、契约、典籍、匠作等能力通过可选能力包扩展。
 
 > 不先问“这是什么软件的文件”，先问“这个文件能帮我把事推进到哪一步”。
+
+## 产品气质
+
+OpenMe 的中国文化元素不走装饰化路线，而走“器物感”和“案牍感”：
+
+- **格物**：先看清文件结构、格式边界和风险。
+- **开卷**：让文档、表格、图片、图纸、音视频先能被打开。
+- **归档**：把散落资料放回一个清楚的工作台。
+- **匠作**：能力包像工具匣，按行业逐步增加专门工具。
+
+这不是给软件贴一层花纹，而是把“有据、有序、有边界”的做事方式写进产品。
 
 ## 适合谁
 
@@ -109,16 +120,17 @@ npm run dist
 
 | 方向 | 当前能力 | 说明 |
 | --- | --- | --- |
-| 工作台 | 最近文件、标签页、命令面板、快捷键、状态栏 | 统一入口，减少应用切换。 |
+| 工作台 | 最近文件、标签页、命令面板、快捷键、状态栏、能力包建议 | 统一入口，减少应用切换。 |
 | 文档 | PDF、Markdown、DOCX、纯文本、源代码 | PDF 高保真浏览；DOCX/Markdown 安全近似预览。 |
 | 数据 | CSV、JSON、XLSX | CSV/JSON 完整浏览；XLSX 只读数据预览。 |
-| 图片 | PNG、JPEG、GIF、BMP、WebP、SVG | 位图完整浏览；SVG 安全近似预览。 |
+| 图片 | PNG、JPEG、GIF、BMP、WebP、AVIF、ICO、TIFF、SVG | 位图完整浏览或依赖环境解码；SVG 安全近似预览。 |
 | 压缩包 | ZIP 文件列表、文本预览、安全解压 | 防路径穿越和大包滥用。 |
-| 媒体 | 音频、视频播放 | 取决于 Electron 与系统编解码能力。 |
+| 音频 | MP3、WAV、OGG/OGA、M4A、AAC、FLAC、OPUS、WEBA、AIFF/AIF、WMA | 识别并尝试本地播放，实际解码取决于 Electron/系统。 |
+| 视频 | MP4、WebM、OGV、M4V、MOV、MKV、AVI、WMV、FLV、3GP/3G2、TS、MTS、M2TS | 识别并尝试本地播放，容器支持不等于编码器全支持。 |
 | 电子书 | EPUB 安全文本阅读 | 不执行书内脚本，不承诺复杂排版还原。 |
 | 字体 | TTF、OTF、WOFF、WOFF2 预览 | 支持试排和字号调整。 |
 | 工程文件 | STEP / IGES / STL / OBJ / glTF / GLB / DWG / DXF | 3D 近似预览；DWG/DXF 语义检查与外部原生打开路径。 |
-| 能力包 | Engineering、Metal Materials 等内置 manifest | 代码基础已建立，UI 接入继续推进。 |
+| 能力包 | 工程包、金石包等内置 manifest 与侧边栏建议 | 已有本地推荐入口，不调用 AI、不上传文件。 |
 
 完整边界见 [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md)。
 
@@ -130,7 +142,7 @@ npm run dist
 ┌──────────────────────────────────────────────────────────────┐
 │ OpenMe                                                       │
 ├───────────────┬──────────────────────────────────────────────┤
-│ 最近文件       │  标签页：PDF / Excel / DWG / ZIP / Code       │
+│ 最近文件       │  标签页：PDF / Excel / DWG / ZIP / Media      │
 │ 搜索           │                                              │
 │ 能力包建议     │  文件预览 + 摘要 + 支持等级 + 下一步动作       │
 └───────────────┴──────────────────────────────────────────────┘
@@ -148,6 +160,14 @@ OpenMe 不使用笼统的“支持某格式”，而是明确分级：
 | 语义检查 | 能检查结构、元数据或文本，但视觉输出可能不完整。 |
 | 外部打开 | 调用系统默认/专业软件打开，不声明内置预览。 |
 | 实验性 | 已在部分样本可用，但需要更多回归样本。 |
+
+### 音视频边界
+
+OpenMe 会识别更多音视频容器，但保持保守承诺：
+
+- 能识别扩展名，不等于所有编码都能播放。
+- H.264、AV1、HEVC、ProRes、旧式 WMV/AVI 编码取决于 Electron、Chromium 与系统环境。
+- 播放失败时应允许用户用系统程序打开，而不是假装文件损坏。
 
 ### DWG / DXF 边界
 
@@ -210,6 +230,7 @@ OpenMe 的长期路线不是把所有行业逻辑塞进主程序，而是通过 
 - `npm run build` 通过。
 - README、UI 文案与 [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md) 一致。
 - 不把实验性 CAD 预览描述成工业级保真。
+- 不把音视频容器识别描述成全编码器支持。
 - 不提交 `node_modules`、`dist`、`release`、本地 SDK、API Key 或客户样本文件。
 - ZIP、SVG、Office、EPUB 等高风险内容保持隔离或清洗。
 - 源文件默认不被静默修改。
@@ -231,12 +252,12 @@ OpenMe 的长期路线不是把所有行业逻辑塞进主程序，而是通过 
 
 优先级建议：
 
-1. 在 UI 侧展示 `src/packs` 中的内置能力包清单。
-2. 在文件详情区显示“可能适用的能力包”。
-3. 建立 `src/understanding` 基础摘要结构。
-4. 给 PDF / XLSX / ZIP / CAD 输出统一 `FileSummary`。
-5. 增加公开样本库与最小回归测试。
-6. 生成第一版 Windows portable 包。
+1. 给音视频播放失败增加“系统打开”与“可能是编码器不支持”的提示。
+2. 建立 `src/understanding` 基础摘要结构。
+3. 给 PDF / XLSX / ZIP / CAD 输出统一 `FileSummary`。
+4. 增加公开样本库与最小回归测试。
+5. 生成第一版 Windows portable 包。
+6. 将能力包建议卡升级为可执行的只读动作入口。
 
 ## 仓库地图
 
