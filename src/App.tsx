@@ -105,6 +105,7 @@ export default function App() {
   const handleRemoveRecent = useCallback(async (file: FileInfo) => { const updated = recentFiles.filter((item) => item.path !== file.path); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); setToast({ kind: "success", message: `已从最近文件移除 ${file.name}` }); }, [recentFiles]);
   const handleCloseTab = useCallback((tabId: string) => { const closingTab = tabs.find((tab) => tab.id === tabId); if (closingTab?.isDirty && !window.confirm(`“${closingTab.name}”有未保存修改，仍要关闭吗？`)) return; setTabs((prev) => { const idx = prev.findIndex((t) => t.id === tabId); const newTabs = prev.filter((t) => t.id !== tabId); if (activeTabId === tabId) { if (newTabs.length > 0) setActiveTabId(newTabs[Math.min(idx, newTabs.length - 1)].id); else setActiveTabId(null); } return newTabs; }); }, [activeTabId, tabs]);
   const handleOpenDialog = useCallback(async () => { try { const paths = await window.electronAPI.openFileDialog(); if (paths?.length) handleFilePaths(paths); } catch (error) { console.error("Dialog error:", error); } }, [handleFilePaths]);
+  const handleCloseAllTabs = useCallback(() => { if (hasDirtyTabs && !window.confirm("存在未保存修改，仍要关闭全部标签吗？")) return; setTabs([]); setActiveTabId(null); }, [hasDirtyTabs]);
 
   useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "o") { event.preventDefault(); handleOpenDialog(); } }; window.addEventListener("keydown", handler); return () => window.removeEventListener("keydown", handler); }, [handleOpenDialog]);
 
@@ -112,15 +113,23 @@ export default function App() {
   const handleDrop = useCallback((event: React.DragEvent) => { event.preventDefault(); const paths = Array.from(event.dataTransfer.files).map((file: any) => file.path).filter(Boolean); if (paths.length) handleFilePaths(paths); }, [handleFilePaths]);
   const activateRelativeTab = useCallback((direction: 1 | -1) => { if (tabs.length < 2) return; const current = Math.max(0, tabs.findIndex((tab) => tab.id === activeTabId)); setActiveTabId(tabs[(current + direction + tabs.length) % tabs.length].id); }, [tabs, activeTabId]);
 
-  const commands = useMemo<CommandItem[]>(() => [
-    { id: "open", label: "打开文件", detail: "从电脑选择一个或多个文件", shortcut: "Ctrl O", run: handleOpenDialog },
-    { id: "save", label: "保存当前文件", detail: activeTab?.name ?? "没有打开文件", shortcut: "Ctrl S", disabled: !activeTab?.isDirty, run: handleSaveCurrent },
-    { id: "system", label: "用系统程序打开", detail: activeTab?.path ?? "没有打开文件", disabled: !activeTab, run: () => { if (activeTab) window.electronAPI.openInSystem(activeTab.path); } },
-    { id: "next", label: "切换到下个标签", detail: `${tabs.length} 个已打开标签`, shortcut: "Ctrl Tab", disabled: tabs.length < 2, run: () => activateRelativeTab(1) },
-    { id: "close", label: "关闭当前标签", detail: activeTab?.name ?? "没有打开文件", shortcut: "Ctrl W", disabled: !activeTab, run: () => { if (activeTab) handleCloseTab(activeTab.id); } },
-  ], [handleOpenDialog, handleSaveCurrent, activeTab, tabs.length, activateRelativeTab, handleCloseTab]);
+  const commands = useMemo<CommandItem[]>(() => {
+    const baseCommands: CommandItem[] = [
+      { id: "open", label: "打开文件", detail: "从电脑选择一个或多个文件", shortcut: "Ctrl O", kind: "file", keywords: ["open", "file"], run: handleOpenDialog },
+      { id: "save", label: "保存当前文件", detail: activeTab?.name ?? "没有打开文件", shortcut: "Ctrl S", kind: "file", keywords: ["save"], disabled: !activeTab?.isDirty, run: handleSaveCurrent },
+      { id: "system", label: "用系统程序打开", detail: activeTab?.path ?? "没有打开文件", kind: "system", keywords: ["external", "system"], disabled: !activeTab, run: () => { if (activeTab) window.electronAPI.openInSystem(activeTab.path); } },
+      { id: "next", label: "切换到下个标签", detail: `${tabs.length} 个已打开标签`, shortcut: "Ctrl Tab", kind: "tab", disabled: tabs.length < 2, run: () => activateRelativeTab(1) },
+      { id: "prev", label: "切换到上个标签", detail: `${tabs.length} 个已打开标签`, shortcut: "Ctrl Shift Tab", kind: "tab", disabled: tabs.length < 2, run: () => activateRelativeTab(-1) },
+      { id: "close", label: "关闭当前标签", detail: activeTab?.name ?? "没有打开文件", shortcut: "Ctrl W", kind: "tab", disabled: !activeTab, run: () => { if (activeTab) handleCloseTab(activeTab.id); } },
+      { id: "close-all", label: "关闭全部标签", detail: `${tabs.length} 个已打开标签`, kind: "workspace", disabled: tabs.length === 0, run: handleCloseAllTabs },
+      { id: "clear-search", label: "清空最近文件搜索", detail: searchQuery ? `当前搜索：${searchQuery}` : "没有搜索条件", kind: "workspace", disabled: !searchQuery, run: () => setSearchQuery("") },
+    ];
+    const tabCommands = tabs.map((tab, index) => ({ id: `tab-${tab.id}`, label: `切换标签：${tab.name}`, detail: tab.path, kind: "tab" as const, shortcut: index < 9 ? `Alt ${index + 1}` : undefined, keywords: [tab.category], run: () => setActiveTabId(tab.id) }));
+    const recentCommands = recentFiles.slice(0, 8).map((file) => ({ id: `recent-${file.path}`, label: `打开最近文件：${file.name}`, detail: file.path, kind: "recent" as const, keywords: [file.extension, file.file_type], run: () => { void openFileInTab(file); } }));
+    return [...baseCommands, ...tabCommands, ...recentCommands];
+  }, [handleOpenDialog, activeTab, tabs, searchQuery, handleSaveCurrent, activateRelativeTab, handleCloseTab, handleCloseAllTabs, recentFiles, openFileInTab]);
 
-  useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "k") { event.preventDefault(); setCommandOpen((value) => !value); return; } if (commandOpen) return; if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "w") { event.preventDefault(); if (activeTab) handleCloseTab(activeTab.id); } if ((event.ctrlKey || event.metaKey) && event.key === "Tab") { event.preventDefault(); activateRelativeTab(event.shiftKey ? -1 : 1); } }; window.addEventListener("keydown", handler, true); return () => window.removeEventListener("keydown", handler, true); }, [commandOpen, activeTab, handleCloseTab, activateRelativeTab]);
+  useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "k") { event.preventDefault(); setCommandOpen((value) => !value); return; } if (commandOpen) return; if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "w") { event.preventDefault(); if (activeTab) handleCloseTab(activeTab.id); } if ((event.ctrlKey || event.metaKey) && event.key === "Tab") { event.preventDefault(); activateRelativeTab(event.shiftKey ? -1 : 1); } if (event.altKey && /^[1-9]$/.test(event.key)) { const target = tabs[Number(event.key) - 1]; if (target) { event.preventDefault(); setActiveTabId(target.id); } } }; window.addEventListener("keydown", handler, true); return () => window.removeEventListener("keydown", handler, true); }, [commandOpen, activeTab, handleCloseTab, activateRelativeTab, tabs]);
 
   return (
     <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
