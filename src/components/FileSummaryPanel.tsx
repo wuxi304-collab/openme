@@ -1,5 +1,5 @@
 import type { FileTabState } from "../types";
-import { getFileFormatByPath } from "../file-registry";
+import { getFileFormatByPath, getRegistryStrategy } from "../file-registry";
 import type { FileCapability, FileFormatDefinition } from "../file-registry";
 import { buildBasicFileSummary } from "../understanding";
 import type { SupportLevel } from "../understanding";
@@ -23,6 +23,7 @@ const coreCapabilities: FileCapability[] = ["detect", "preview", "metadata", "ai
 
 export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPanelProps) {
   const registryFormat = getFileFormatByPath(tab.path);
+  const registryStrategy = registryFormat ? getRegistryStrategy(registryFormat) : undefined;
   const summary = buildBasicFileSummary({
     filePath: tab.path,
     fileName: tab.name,
@@ -41,7 +42,7 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
         <p>{summary.description}</p>
       </div>
 
-      {registryFormat && (
+      {registryFormat && registryStrategy && (
         <div className="summary-section registry-section">
           <span className="summary-section-title">Format Registry</span>
           <div className="registry-card">
@@ -50,10 +51,24 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
               <span className={`registry-support-badge support-${registryFormat.supportLevel.replace("+", "plus")}`}>Support {registryFormat.supportLevel}</span>
             </div>
             <p>{registryFormat.boundary}</p>
+            <dl className="registry-strategy-list">
+              <div>
+                <dt>Viewer</dt>
+                <dd>{registryStrategy.preferredViewer}</dd>
+              </div>
+              <div>
+                <dt>Strategy</dt>
+                <dd>{registryStrategy.openStrategy}</dd>
+              </div>
+              <div>
+                <dt>Risk</dt>
+                <dd>{registryStrategy.riskLevel}</dd>
+              </div>
+            </dl>
             <CapabilityGrid format={registryFormat} />
             <div className="summary-chip-list">
-              {registryFormat.capabilities.map((capability) => (
-                <span key={capability} className="summary-chip">{capability}</span>
+              {registryStrategy.tags.map((tag) => (
+                <span key={tag} className="summary-chip">{tag}</span>
               ))}
             </div>
           </div>
