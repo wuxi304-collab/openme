@@ -13,7 +13,8 @@
     "electron:dev": "concurrently \"vite\" \"electron .\"",
     "dist": "npm run build && electron-builder",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "support:matrix": "node scripts/generate-support-matrix.mjs"
   },
   "dependencies": {
     "@mlightcad/cad-simple-viewer": "^1.5.7",
