@@ -126,13 +126,15 @@
   white-space: nowrap;
 }
 
-.summary-warning-list {
+.summary-warning-list,
+.summary-action-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.summary-warning-list p {
+.summary-warning-list p,
+.summary-action-list li {
   border: 1px solid rgba(201, 31, 55, 0.26);
   border-radius: 12px;
   background: rgba(201, 31, 55, 0.08);
@@ -141,6 +143,15 @@
   font-weight: 650;
   line-height: 1.6;
   padding: 10px 12px;
+}
+
+.summary-action-list {
+  list-style: none;
+}
+
+.summary-action-list li {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .summary-actions {
