@@ -2,11 +2,11 @@ export type FileCategory = "code" | "markdown" | "json" | "csv" | "image" | "svg
 
 const CODE_EXTS = [".txt", ".js", ".ts", ".jsx", ".tsx", ".py", ".rs", ".go", ".java", ".c", ".cpp", ".h", ".css", ".html", ".scss", ".less", ".xml", ".yml", ".yaml", ".ini", ".log", ".sh", ".bat", ".ps1", ".vue", ".svelte", ".env", ".sql", ".gradle", ".toml", ".cfg", ".conf", ".properties"];
 const MARKDOWN_EXTS = [".md", ".mdtxt", ".mdx"];
-const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
+const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".avif", ".ico", ".tif", ".tiff"];
 const OFFICE_EXTS = [".docx", ".xlsx", ".pptx"];
 const ARCHIVE_EXTS = [".zip"];
-const AUDIO_EXTS = [".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac"];
-const VIDEO_EXTS = [".mp4", ".webm", ".ogv", ".m4v"];
+const AUDIO_EXTS = [".mp3", ".wav", ".ogg", ".oga", ".m4a", ".aac", ".flac", ".opus", ".weba", ".aiff", ".aif", ".wma"];
+const VIDEO_EXTS = [".mp4", ".webm", ".ogv", ".m4v", ".mov", ".mkv", ".avi", ".wmv", ".flv", ".3gp", ".3g2", ".ts", ".mts", ".m2ts"];
 const FONT_EXTS = [".ttf", ".otf", ".woff", ".woff2"];
 const CAD_EXTS = [".stl", ".obj", ".gltf", ".glb", ".step", ".stp", ".iges", ".igs"];
 
@@ -55,5 +55,3 @@ export function detectLanguage(filePath: string): string {
   };
   return langs[ext] || "plaintext";
 }
-
-
