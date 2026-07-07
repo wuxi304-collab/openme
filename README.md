@@ -227,13 +227,150 @@ electron/
 | V0.4 | Pack SDK：让行业逻辑以能力包接入。 |
 | V0.5 | Workflow：报价、合同、CAD、归档等文件任务。 |
 
+---
+
 ## English
 
-OpenMe Qiwu is a local-first desktop workspace for opening, inspecting and understanding everyday files.
+<div align="center">
+  <strong>OpenMe Qiwu</strong><br>
+  A local-first luxury file workspace for opening, inspecting, routing, and understanding everyday files.
+</div>
 
-It starts from a strict baseline: honest file format support. Each format should map to a registry entry, a support level and an explicit boundary.
+### One-line summary
 
-The long-term direction is:
+**OpenMe Qiwu is not just another file viewer. It is a local-first file workspace that identifies a file, states the support boundary, and chooses the most reliable way to open it.**
+
+Modern work does not arrive as a single clean document. A real project folder may contain a PDF, a spreadsheet, a ZIP archive, screenshots, media, DWG drawings, Office files, model files, GIS data, certificates, and domain-specific source files. OpenMe Qiwu treats those files as a workspace, not as isolated icons.
+
+```text
+Open -> Identify -> Preview -> Understand -> Act
+```
+
+### What “luxury” means here
+
+Luxury is not decoration. In OpenMe Qiwu, it means restraint, truthful capability boundaries, and product-grade reliability.
+
+| Principle | Product meaning |
+| --- | --- |
+| Material honesty | Format support must state what is supported and what is not. |
+| Reliable craft | Every advertised format maps to a registry entry, support level, and boundary. |
+| Restrained interface | China red is used as an accent, not as noise. |
+| Ordered workflow | File identity, evidence, risk, and next actions have fixed places. |
+
+“Qiwu” means opening the file, and more importantly, opening one’s own understanding of the file.
+
+### Format support baseline
+
+File format support is the product baseline.
+
+A format claim is valid only when it is registered in:
+
+```text
+src/file-registry/formats.ts
+src/file-registry/expanded-formats.ts
+```
+
+Each registered format carries:
+
+```text
+extension
+name
+category
+capabilities
+supportLevel
+boundary
+```
+
+OpenMe Qiwu currently registers **270+** extensions across real-world work categories.
+
+| Area | Coverage |
+| --- | --- |
+| Documents and Office | PDF, DOC/DOCX, XLS/XLSX/XLSM, PPT/PPTX/PPTM, RTF, ODT/ODS/ODP, WPS, Pages, Numbers, Keynote |
+| Images and design | JPG, PNG, GIF, BMP, WebP, AVIF, TIFF, HEIC/HEIF, RAW/DNG, PSD/PSB, AI, EPS, CDR, Sketch, Figma, XD |
+| Audio and video | MP3, WAV, FLAC, AAC, OGG, OPUS, M4A, WMA, AIFF, AMR, MP4, MOV, MKV, AVI, WebM, MTS/M2TS, MPEG, MXF |
+| Code and configuration | Markdown, JSON, YAML, XML, HTML/CSS, JS/TS, Python, Go, Rust, Java, C/C++, Shell, PowerShell, Docker, Terraform, GraphQL, Proto |
+| Archives and packages | ZIP, RAR, 7Z, TAR, TAR.GZ, TAR.XZ, ZST, JAR/WAR/EAR, EXE, MSI, MSIX, APK, AAB, IPA, DEB, RPM, AppImage |
+| CAD / BIM / EDA | DWG, DXF, DGN, STEP/STP, IGES/IGS, STL, OBJ, 3MF, glTF/GLB, IFC, RVT/RFA, SolidWorks, CATIA, Inventor, Rhino, Gerber, KiCad, Altium, GDSII |
+| Data and science | SQLite, Access, Parquet, ORC, Avro, Feather, HDF/HDF5, NetCDF, MAT, FITS, NIfTI, GRIB, LAS/LAZ, GeoJSON, Shapefile, GeoPackage |
+| AI and bioinformatics | ONNX, PT/PTH, CKPT, SafeTensors, GGUF, TensorFlow PB, TFLite, Core ML, NumPy, FASTA, FASTQ, SAM/BAM/CRAM, BED, GFF/GTF |
+| Images, VMs, certificates, mail | ISO, IMG, WIM, GHO, VMDK, VDI, VHD/VHDX, QCOW2, OVA/OVF, CER/CRT/PEM/PFX/P12, ICS, VCF, MBOX, EML |
+
+Support levels use `A+ / A / B / C / D / E / F`. These levels are shown in the StatusBar and File Summary panel. Full support boundaries are documented in [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md).
+
+### Safety model
+
+OpenMe Qiwu is local-first and conservative by default.
+
+| File family | Default behavior |
+| --- | --- |
+| Installers and packages | Recognize and route; never install or execute automatically. |
+| Scripts and build files | Preview/edit as text; never run automatically. |
+| Disk and VM images | Recognize and route; never mount, boot, restore, or import automatically. |
+| AI model files | Recognize and route; never execute models by default. |
+| Pickle/joblib files | Recognize as risky serialized objects; never unpickle automatically. |
+| CAD/BIM/EDA files | Inspect or preview only where safe; no source-application fidelity claim. |
+| Media containers | Recognition does not imply codec support; fallback to system open. |
+
+### Core architecture
+
+```text
+File Registry
+  -> File Open Pipeline
+  -> Viewer Router
+  -> File Summary / Support Boundary
+  -> Domain Packs / Workflows
+```
+
+| Layer | Role |
+| --- | --- |
+| File Registry | Source of truth for extension, category, capability, support level, and boundary. |
+| File Open Pipeline | Chooses safe loading strategy by category and file risk. |
+| Viewer Router | Routes each file category to the right built-in viewer or semantic route card. |
+| File Understanding | Produces metadata, summary, evidence, warnings, and recommended actions. |
+| Domain Packs | Adds industry-specific workflows without hard-coding them into core. |
+
+### Quick start
+
+Requirements:
+
+- Windows
+- Node.js 20+
+- npm
+
+```powershell
+npm install
+npm run electron:dev
+```
+
+Build a Windows distribution:
+
+```powershell
+npm run dist
+```
+
+Run tests:
+
+```powershell
+npm test
+```
+
+Generate the support matrix:
+
+```powershell
+npm run support:matrix
+```
+
+### Roadmap
+
+| Stage | Goal |
+| --- | --- |
+| V0.1 | Multi-format local opening, basic viewers, recent files, and tabs. |
+| V0.2 | File Registry, Support Matrix, StatusBar/File Summary support levels. |
+| V0.3 | File understanding: summaries, evidence, risk, and recommended actions. |
+| V0.4 | Pack SDK for domain-specific capabilities. |
+| V0.5 | Workflows for quotation, contract review, CAD inspection, and archival tasks. |
+
+### Direction
 
 ```text
 Preview -> Understand -> Workflow -> Marketplace
