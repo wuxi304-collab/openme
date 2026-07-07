@@ -6,7 +6,7 @@ export type { FileCapability, FileFormatDefinition, FileRegistryStats, HonestSup
 export { BASE_FILE_FORMATS } from "./formats";
 export { EXPANDED_FILE_FORMATS } from "./expanded-formats";
 
-export const FILE_FORMATS: FileFormatDefinition[] = [...BASE_FILE_FORMATS, ...EXPANDED_FILE_FORMATS];
+export const FILE_FORMATS: FileFormatDefinition[] = dedupeByExtension([...BASE_FILE_FORMATS, ...EXPANDED_FILE_FORMATS]);
 
 const extensionMap = new Map(FILE_FORMATS.map((format) => [format.extension.toLowerCase(), format]));
 
@@ -47,6 +47,18 @@ export function getFileRegistryStats(): FileRegistryStats {
   }
 
   return { total: FILE_FORMATS.length, byCategory, bySupportLevel };
+}
+
+function dedupeByExtension(formats: FileFormatDefinition[]): FileFormatDefinition[] {
+  const seen = new Set<string>();
+  const result: FileFormatDefinition[] = [];
+  for (const format of formats) {
+    const key = format.extension.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(format);
+  }
+  return result;
 }
 
 function syntheticCodeFormat(name: string, extension: string): FileFormatDefinition {
