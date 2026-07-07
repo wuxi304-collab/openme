@@ -1,0 +1,65 @@
+name: Domain pack request
+description: Propose a new domain pack or improve an existing pack
+title: "pack: "
+labels: ["pack", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Domain packs should extend OpenMe without turning the core application into a single-industry tool.
+
+  - type: input
+    id: pack_name
+    attributes:
+      label: Pack name
+      placeholder: "Engineering Pack, Metal Materials Pack, Finance Pack, Legal Pack, Research Pack, etc."
+    validations:
+      required: true
+
+  - type: textarea
+    id: users
+    attributes:
+      label: Target users
+      description: Who would use this pack?
+      placeholder: "Engineers, accountants, lawyers, researchers, manufacturers, students, etc."
+    validations:
+      required: true
+
+  - type: textarea
+    id: workflows
+    attributes:
+      label: Core workflows
+      description: What work should this pack help users do?
+      placeholder: |
+        - Extract fields from files
+        - Validate rules
+        - Generate review checklist
+        - Export a report
+    validations:
+      required: true
+
+  - type: textarea
+    id: file_types
+    attributes:
+      label: Relevant file types
+      placeholder: "PDF, XLSX, DOCX, DWG, ZIP, images, text, etc."
+    validations:
+      required: true
+
+  - type: textarea
+    id: fields
+    attributes:
+      label: Important fields or signals
+      description: List fields, entities, keywords, or patterns that the pack should recognize.
+
+  - type: textarea
+    id: rules
+    attributes:
+      label: Validation rules
+      description: List domain rules, warnings, or checklists if known.
+
+  - type: textarea
+    id: samples
+    attributes:
+      label: Public sample files or examples
+      description: Use public or synthetic examples only. Do not upload private business files.
