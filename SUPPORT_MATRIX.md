@@ -17,24 +17,26 @@ Support levels:
 
 | Category | Formats | Current level | Notes |
 | --- | --- | --- | --- |
-| Images | PNG, JPEG, GIF, BMP, WebP, AVIF, ICO, TIFF | Full built-in browsing, environment-dependent for newer codecs | Supports zoom, pan, rotation, fit, and 1:1 view where Chromium can decode the image. |
+| Images | PNG, JPEG, GIF, BMP, WebP, AVIF, ICO, TIFF, HEIC, HEIF, RAW, DNG | Full built-in browsing, environment-dependent for newer codecs | Supports zoom, pan, rotation, fit, and 1:1 view where Chromium can decode the image. RAW/DNG are recognized but may require external viewing. |
 | SVG | SVG | Safe approximate preview | Must be isolated from the main DOM. Do not execute scripts. |
-| Text and code | TXT, MD, JSON, XML, YAML, INI, LOG, JS, TS, JSX, TSX, PY, RS, GO, JAVA, C, C++, H, CSS, HTML | Full built-in browsing | Editable text/code paths must preserve dirty-state warnings. |
+| Text and code | TXT, MD, MDX, JSON, JSONL, NDJSON, XML, YAML, INI, LOG, JS, TS, JSX, TSX, PY, RS, GO, JAVA, C, C++, H, CSS, HTML, Dockerfile, Makefile, TF, GraphQL, Proto and common config files | Full built-in browsing | Editable text/code paths must preserve dirty-state warnings. |
 | CSV | CSV | Full built-in browsing | Search, sort, pagination, malformed-row warnings. |
 | JSON | JSON | Full built-in browsing | Node expansion and inspection. |
 | ZIP | ZIP | Full built-in browsing | Guard against Zip Slip and large archive abuse. |
 | PDF | PDF | High-fidelity browsing | Local PDF.js rendering, search, page navigation, rotation. No OCR claim. |
 | DOCX | DOCX | Safe approximate preview | Mammoth extraction. No Word pagination, floating object, or complex style fidelity claim. |
 | XLSX | XLSX | Data preview | Read-only values and sheets. No macro, formula engine, chart, conditional-format, or print-layout claim. |
-| Legacy Office | DOC, XLS | External open | Old binary formats are not built-in viewers. |
-| PowerPoint | PPT, PPTX | External open | Use system application until a reliable preview path exists. |
-| Archives beyond ZIP | RAR, 7Z, TAR, GZ | External open | Do not claim built-in extraction. |
+| Office route | DOC, XLS, PPT, PPTX, ODT, ODS, ODP, RTF | External open / safe approximate where available | Do not imply full Office fidelity. |
+| Archives beyond ZIP | RAR, 7Z, TAR, GZ, TGZ, BZ2, XZ, ZST | External open / future semantic inspection | Do not claim built-in extraction until a safe extractor is implemented. |
 | EPUB | EPUB | Safe text reading | Metadata, chapters, navigation, search, font size. No complex layout fidelity claim. |
-| Audio | MP3, WAV, OGG/OGA, M4A, AAC, FLAC, OPUS, WEBA, AIFF/AIF, WMA | Built-in playback, environment-dependent | File classification is broad; actual decoding depends on Chromium/Electron/system codecs. Playback failure shows a codec-boundary message and a system-open fallback. |
-| Video | MP4, WebM, OGV, M4V, MOV, MKV, AVI, WMV, FLV, 3GP/3G2, TS, MTS, M2TS | Built-in playback, environment-dependent | Container recognition is broad; H.264, AV1, HEVC, ProRes and legacy codecs depend on Electron/system support. Playback failure shows a codec-boundary message and a system-open fallback. |
-| Fonts | TTF, OTF, WOFF, WOFF2 | Full built-in preview | Custom sample text and font-size controls. |
-| 3D | STL, OBJ, glTF, GLB, STEP, IGES | Experimental approximate preview | Complex assemblies, materials, and STEP semantics require sample regression. |
+| Audio | MP3, WAV, OGG/OGA, M4A, AAC, FLAC, OPUS, WEBA, AIFF/AIF, WMA, ALAC, AMR, MIDI | Built-in playback, environment-dependent | File classification is broad; actual decoding depends on Chromium/Electron/system codecs. Playback failure shows a codec-boundary message and a system-open fallback. |
+| Video | MP4, WebM, OGV, M4V, MOV, MKV, AVI, WMV, FLV, 3GP/3G2, TS, MTS, M2TS, MPEG, MPG, MXF | Built-in playback, environment-dependent | Container recognition is broad; H.264, AV1, HEVC, ProRes and legacy codecs depend on Electron/system support. Playback failure shows a codec-boundary message and a system-open fallback. |
+| Fonts | TTF, OTF, WOFF, WOFF2, EOT | Full built-in preview | Custom sample text and font-size controls. |
+| 3D | STL, OBJ, glTF, GLB, STEP, IGES, 3MF, PLY, FBX, DAE, 3DS, IFC, SKP | Experimental approximate preview / external open | Complex assemblies, materials, and STEP semantics require sample regression. |
 | CAD | DWG, DXF | Semantic inspection / approximate preview / external native open | Do not claim AutoCAD-level fidelity. Prefer native external viewer when installed. |
+| Design source files | PSD, PSB, AI, AIT, EPS, INDD, IDML, XD, Sketch, Figma, FIG, Affinity, CDR, Krita, Clip Studio, Aseprite | Semantic inspection / external open | Recognize and route design source files. Do not claim built-in Photoshop, Illustrator, Figma, Sketch, InDesign or Affinity fidelity. |
+| App and package files | APK, IPA, JAR, WAR, EAR, APPX, MSIX, DEB, RPM, DMG, PKG, EXE, MSI | Semantic inspection / external open | Recognize application packages and installers. Do not execute installers or unknown binaries. Some package formats may later expose metadata safely. |
+| Disk and VM images | ISO, IMG, VHD, VHDX, QCOW2, VMDK, OVA, OVF | Semantic inspection / external open | Recognize disk and VM images. Do not automatically mount, unpack or boot images. |
 
 ## Media Statement
 
@@ -65,6 +67,24 @@ OpenMe must not promise:
 - Complete proxy object fidelity
 - Safe direct mutation of original CAD files
 
+## Design and package statement
+
+OpenMe recognizes design source files, app packages and disk images so the workspace can route them correctly and show honest boundaries.
+
+Current behavior:
+
+- classify the file family
+- show semantic-inspection support level through the understanding layer
+- avoid unsafe execution, mounting, installation or mutation
+- prefer external open when native software exists
+
+OpenMe must not promise:
+
+- Photoshop, Illustrator, Figma, Sketch, InDesign or Affinity rendering fidelity
+- safe execution of installers or binaries
+- automatic mounting or extraction of disk images
+- malware scanning or security certification
+
 ## Future Matrix Items
 
 Potential future support should be added only after sample-based regression:
@@ -76,6 +96,8 @@ Potential future support should be added only after sample-based regression:
 - Native CAD engine bridge
 - Pack-specific summary cards
 - Media codec diagnostics panel
+- Safe package metadata panel for APK, IPA and JAR
+- Safe design-file metadata panel for PSD, AI, Sketch and Figma exports
 
 ## Rule for README and UI Claims
 
