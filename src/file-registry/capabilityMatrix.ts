@@ -1,4 +1,5 @@
-import { FILE_FORMATS } from ".";
+import { FILE_FORMATS as BASE_FILE_FORMATS } from "./formats";
+import { EXPANDED_FILE_FORMATS } from "./expanded-formats";
 import type { FileCapability, FileFormatDefinition, HonestSupportLevel } from "./types";
 
 export interface CapabilityMatrixRow {
@@ -9,10 +10,11 @@ export interface CapabilityMatrixRow {
   examples: string[];
 }
 
+const defaultFormats = dedupeByExtension([...BASE_FILE_FORMATS, ...EXPANDED_FILE_FORMATS]);
 const supportLevels: HonestSupportLevel[] = ["A+", "A", "B", "C", "D", "E", "F"];
 const capabilities: FileCapability[] = ["detect", "preview", "edit", "metadata", "thumbnail", "ai-summary", "external-open"];
 
-export function buildCapabilityMatrix(formats: FileFormatDefinition[] = FILE_FORMATS): CapabilityMatrixRow[] {
+export function buildCapabilityMatrix(formats: FileFormatDefinition[] = defaultFormats): CapabilityMatrixRow[] {
   const rows = new Map<string, CapabilityMatrixRow>();
 
   for (const format of formats) {
@@ -32,11 +34,11 @@ export function getCapabilityCoverage(row: CapabilityMatrixRow, capability: File
   return row.capabilities[capability] / row.total;
 }
 
-export function getPreviewableFormatCount(formats: FileFormatDefinition[] = FILE_FORMATS): number {
+export function getPreviewableFormatCount(formats: FileFormatDefinition[] = defaultFormats): number {
   return formats.filter((format) => format.capabilities.includes("preview")).length;
 }
 
-export function getRouteOnlyFormatCount(formats: FileFormatDefinition[] = FILE_FORMATS): number {
+export function getRouteOnlyFormatCount(formats: FileFormatDefinition[] = defaultFormats): number {
   return formats.filter((format) => format.capabilities.length === 3 && format.capabilities.includes("detect") && format.capabilities.includes("metadata") && format.capabilities.includes("external-open")).length;
 }
 
@@ -48,4 +50,16 @@ function createRow(category: string): CapabilityMatrixRow {
     capabilities: Object.fromEntries(capabilities.map((capability) => [capability, 0])) as Record<FileCapability, number>,
     examples: [],
   };
+}
+
+function dedupeByExtension(formats: FileFormatDefinition[]): FileFormatDefinition[] {
+  const seen = new Set<string>();
+  const result: FileFormatDefinition[] = [];
+  for (const format of formats) {
+    const key = format.extension.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(format);
+  }
+  return result;
 }
