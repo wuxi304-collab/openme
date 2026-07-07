@@ -1,10 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const formatsPath = path.resolve("src/file-registry/formats.ts");
+const formatSourcePaths = [
+  path.resolve("src/file-registry/formats.ts"),
+  path.resolve("src/file-registry/expanded-formats.ts"),
+];
 const outputPath = path.resolve("SUPPORT_MATRIX.generated.md");
 
-const source = fs.readFileSync(formatsPath, "utf8");
+const source = formatSourcePaths.map((sourcePath) => fs.readFileSync(sourcePath, "utf8")).join("\n");
 const entries = [...source.matchAll(/\{ extension: "([^"]+)", name: "([^"]+)", category: "([^"]+)"[\s\S]*?supportLevel: "([^"]+)"[\s\S]*?boundary: "([^"]+)"/g)].map((match) => ({
   extension: match[1],
   name: match[2],
@@ -75,7 +78,7 @@ function escapeCell(value) {
 const lines = [];
 lines.push("# OpenMe Generated Support Matrix");
 lines.push("");
-lines.push("This file is generated from `src/file-registry/formats.ts`. Do not use it as marketing copy without checking the boundaries.");
+lines.push("This file is generated from `src/file-registry/formats.ts` and `src/file-registry/expanded-formats.ts`. Do not use it as marketing copy without checking the boundaries.");
 lines.push("");
 lines.push(`Total registered formats: **${entries.length}**`);
 lines.push("");
