@@ -2,9 +2,11 @@ import { FILE_FORMATS as BASE_FILE_FORMATS } from "./formats";
 import { EXPANDED_FILE_FORMATS } from "./expanded-formats";
 import type { FileFormatDefinition, FileRegistryStats, HonestSupportLevel } from "./types";
 
-export type { FileCapability, FileFormatDefinition, FileRegistryStats, HonestSupportLevel } from "./types";
+export type { FileCapability, FileFormatDefinition, FileRegistryStats, FileOpenStrategy, FileRiskLevel, HonestSupportLevel, PreferredViewerId } from "./types";
+export type { RegistryStrategy } from "./strategy";
 export { FILE_FORMATS as BASE_FILE_FORMATS } from "./formats";
 export { EXPANDED_FILE_FORMATS } from "./expanded-formats";
+export { deriveOpenStrategy, derivePreferredViewer, deriveRiskLevel, deriveTags, getRegistryStrategy } from "./strategy";
 
 export const FILE_FORMATS: FileFormatDefinition[] = dedupeByExtension([...BASE_FILE_FORMATS, ...EXPANDED_FILE_FORMATS]);
 
@@ -69,5 +71,9 @@ function syntheticCodeFormat(name: string, extension: string): FileFormatDefinit
     capabilities: ["detect", "preview", "edit", "metadata", "ai-summary", "external-open"],
     supportLevel: "A",
     boundary: "Text editing only; scripts or build recipes are never executed.",
+    preferredViewer: "text-viewer",
+    openStrategy: "text",
+    riskLevel: "low",
+    tags: ["code", "text", "editable"],
   };
 }
