@@ -161,7 +161,8 @@
 }
 
 .summary-actions button,
-.unsupported-card button {
+.unsupported-card button,
+.viewer-error-boundary button {
   width: 100%;
   border: 1px solid rgba(201, 31, 55, 0.44);
   border-radius: 12px;
@@ -175,14 +176,16 @@
 }
 
 .summary-actions button:hover,
-.unsupported-card button:hover {
+.unsupported-card button:hover,
+.viewer-error-boundary button:hover {
   background: #B11C31;
   box-shadow: 0 10px 24px rgba(201, 31, 55, 0.24);
   transform: translateY(-1px);
 }
 
 .loading-state,
-.empty-viewer-message {
+.empty-viewer-message,
+.viewer-error-boundary {
   flex: 1;
   display: flex;
   align-items: center;
@@ -190,7 +193,8 @@
   color: rgba(255, 255, 255, 0.58);
 }
 
-.loading-card {
+.loading-card,
+.viewer-error-boundary-card {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -199,6 +203,34 @@
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.06);
   padding: 26px 34px;
+}
+
+.viewer-error-boundary-card {
+  width: min(460px, 100%);
+  align-items: stretch;
+  background: rgba(12, 12, 14, 0.96);
+}
+
+.viewer-error-boundary-card h3 {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.viewer-error-boundary-card p,
+.viewer-error-boundary-card code {
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.viewer-error-boundary-card code {
+  display: block;
+  overflow: auto;
+  border: 1px solid rgba(201, 31, 55, 0.24);
+  border-radius: 10px;
+  background: rgba(201, 31, 55, 0.08);
+  padding: 10px;
 }
 
 .loading-dot-row {
