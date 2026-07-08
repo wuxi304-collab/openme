@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useI18n } from "../../i18n";
 import { describeIpcError, isIpcFailure } from "../../core/ipcError";
+import { CogIcon } from "../icons/CogIcon";
 
 interface CadPlanOperation {
   id: string;
@@ -87,7 +88,7 @@ export default function CadAssistant({ filePath, fileName }: Props) {
     <aside className="cad-assistant" aria-label={t("cadAssistantAria")}>
       <div className="cad-assistant-head">
         <div><span className="cad-ai-kicker">{t("cadAssistantKicker")}</span><h2>{t("cadAssistantTitle")}</h2></div>
-        <button type="button" className="cad-icon-button" aria-label={t("cadAssistantSettingsAria")} onClick={() => setSettingsOpen((value) => !value)}>⚙</button>
+        <button type="button" className="cad-icon-button" aria-label={t("cadAssistantSettingsAria")} onClick={() => setSettingsOpen((value) => !value)}><CogIcon size={14} strokeWidth={1.5} /></button>
       </div>
 
       {settingsOpen && <div className="cad-ai-settings">
