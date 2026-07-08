@@ -52,7 +52,8 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   });
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, lang); } catch { }
-  }, [lang]);
+      try { document.documentElement.lang = lang === "en" ? "en" : "zh-CN"; } catch { }
+    }, [lang]);
   const setLang = (next: Lang) => setLangState(next);
   const t = (key: string) => {
     return (translations[lang] && translations[lang][key]) ? translations[lang][key] : key;
