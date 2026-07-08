@@ -2,6 +2,7 @@ import { buildFileBrief } from "../../brief";
 import { extractMetadata } from "../../metadata";
 import type { FileTabState } from "../../types";
 import type { ViewerRoute } from "../../viewer-registry";
+import { useI18n } from "../../i18n";
 
 interface OpenMeRouteCardProps {
   tab: FileTabState;
@@ -11,6 +12,7 @@ interface OpenMeRouteCardProps {
 }
 
 export default function OpenMeRouteCard({ tab, route, title, description }: OpenMeRouteCardProps) {
+  const { t } = useI18n();
   const outcome = tab.openOutcome;
   const metadata = extractMetadata({
     filePath: tab.path,
@@ -33,11 +35,11 @@ export default function OpenMeRouteCard({ tab, route, title, description }: Open
             <path d="M12 12v1" />
           </svg>
         </div>
-        <span className="summary-kicker">OpenMe Direct Open</span>
+        <span className="summary-kicker">{t("routeDirectOpen")}</span>
         <h3>{title}</h3>
         <p className="unsupported-subtitle">{tab.name}</p>
         <p>{outcome?.message ?? description}</p>
-        <div className="summary-chip-list" aria-label="OpenMe route">
+        <div className="summary-chip-list" aria-label={t("routeAria")}>
           <span className="summary-chip">{route.surface}</span>
           <span className="summary-chip">{route.mode}</span>
           <span className="summary-chip">{route.label}</span>
@@ -46,26 +48,26 @@ export default function OpenMeRouteCard({ tab, route, title, description }: Open
         </div>
         <dl className="registry-strategy-list">
           <div>
-            <dt>Surface</dt>
+            <dt>{t("routeSurface")}</dt>
             <dd>{route.surface}</dd>
           </div>
           <div>
-            <dt>Mode</dt>
+            <dt>{t("routeMode")}</dt>
             <dd>{route.mode}</dd>
           </div>
           <div>
-            <dt>Preview</dt>
-            <dd>{route.canPreview ? "available" : "card"}</dd>
+            <dt>{t("routePreview")}</dt>
+            <dd>{route.canPreview ? t("routePreviewAvailable") : t("routePreviewCard")}</dd>
           </div>
           {outcome && (
             <div>
-              <dt>Loader</dt>
+              <dt>{t("routeLoader")}</dt>
               <dd>{outcome.loader}</dd>
             </div>
           )}
           {outcome && (
             <div>
-              <dt>Status</dt>
+              <dt>{t("routeStatus")}</dt>
               <dd>{outcome.status}</dd>
             </div>
           )}
@@ -73,7 +75,7 @@ export default function OpenMeRouteCard({ tab, route, title, description }: Open
         <p>{route.reason}</p>
         <p>{route.boundary}</p>
         <div className="summary-section">
-          <span className="summary-section-title">Signals</span>
+          <span className="summary-section-title">{t("signalsSection")}</span>
           <div className="summary-chip-list">
             {brief.signals.slice(0, 8).map((signal) => (
               <span key={signal} className="summary-chip">{signal}</span>
@@ -82,7 +84,7 @@ export default function OpenMeRouteCard({ tab, route, title, description }: Open
         </div>
         {brief.warnings.length > 0 && (
           <div className="summary-section">
-            <span className="summary-section-title">Boundary</span>
+            <span className="summary-section-title">{t("boundarySection")}</span>
             <div className="summary-warning-list">
               {brief.warnings.map((warning) => (
                 <p key={warning}>{warning}</p>
@@ -91,7 +93,7 @@ export default function OpenMeRouteCard({ tab, route, title, description }: Open
           </div>
         )}
         <div className="summary-section">
-          <span className="summary-section-title">OpenMe Actions</span>
+          <span className="summary-section-title">{t("routeOpenMeActions")}</span>
           <ul className="summary-action-list">
             {brief.actions.map((action) => (
               <li key={`${action.label}-${action.reason}`}>
@@ -101,7 +103,7 @@ export default function OpenMeRouteCard({ tab, route, title, description }: Open
             ))}
           </ul>
         </div>
-        {route.hasExternalFallback && <button type="button" onClick={() => window.electronAPI.openInSystem(tab.path)}>用系统程序兜底打开</button>}
+        {route.hasExternalFallback && <button type="button" onClick={() => window.electronAPI.openInSystem(tab.path)}>{t("routeSystemFallback")}</button>}
       </div>
     </div>
   );
