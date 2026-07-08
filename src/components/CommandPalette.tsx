@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useI18n } from "../i18n";
 
 export type CommandItem = {
   id: string;
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export default function CommandPalette({ open, commands, onClose }: Props) {
+  const { t, tf } = useI18n();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -90,13 +92,19 @@ export default function CommandPalette({ open, commands, onClose }: Props) {
 
   return (
     <div className="command-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section className="command-palette" role="dialog" aria-modal="true" aria-label="命令面板" onKeyDown={handleKeyDown}>
+      <section className="command-palette" role="dialog" aria-modal="true" aria-label={t("commandPaletteAria")} onKeyDown={handleKeyDown}>
         <label className="command-search">
           <span aria-hidden="true">›_</span>
-          <span className="sr-only">搜索命令</span>
-          <input ref={inputRef} value={query} onChange={(event) => { setQuery(event.target.value); setSelected(0); }} placeholder="输入命令、文件名或快捷键…" autoComplete="off" />
+          <span className="sr-only">{t("searchCommandsAria")}</span>
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(event) => { setQuery(event.target.value); setSelected(0); }}
+            placeholder={t("searchCommandsPlaceholder")}
+            autoComplete="off"
+          />
         </label>
-        <div className="command-list" role="listbox" aria-label="可用命令">
+        <div className="command-list" role="listbox" aria-label={t("availableCommandsAria")}>
           {filtered.length ? filtered.map((command, index) => (
             <button type="button" role="option" aria-selected={index === selected} key={command.id} disabled={command.disabled} className={index === selected ? "is-selected" : ""} onMouseEnter={() => setSelected(index)} onClick={() => execute(command)}>
               <span>
@@ -106,9 +114,14 @@ export default function CommandPalette({ open, commands, onClose }: Props) {
               <em>{command.kind ?? "command"}</em>
               {command.shortcut && <kbd>{command.shortcut}</kbd>}
             </button>
-          )) : <div className="command-empty">没有匹配命令</div>}
+          )) : <div className="command-empty">{t("noMatchingCommands")}</div>}
         </div>
-        <footer><span>{filtered.length} / {commands.length} 项</span><span>↑↓ 选择</span><span>Enter 执行</span><span>Esc 关闭</span></footer>
+        <footer>
+          <span>{tf("paletteCount", { shown: filtered.length, total: commands.length })}</span>
+          <span>{t("paletteNavHint")}</span>
+          <span>{t("paletteEnterHint")}</span>
+          <span>{t("paletteEscHint")}</span>
+        </footer>
       </section>
     </div>
   );

@@ -2,6 +2,7 @@ import { FileInfo } from "../types";
 import { detectCategory } from "../utils/fileTypeDetector";
 import { formatFileSize, formatDate } from "../utils/fileUtils";
 import FileTypeIcon from "./FileTypeIcon";
+import { useI18n } from "../i18n";
 
 interface Props {
   files: FileInfo[];
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function RecentFiles({ files, selectedPath, onSelect }: Props) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col h-full">
       {files.length === 0 ? (
@@ -18,8 +20,8 @@ export default function RecentFiles({ files, selectedPath, onSelect }: Props) {
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
             <polyline points="14 2 14 8 20 8" />
           </svg>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>暂无最近文件</p>
-          <p className="text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.6 }}>拖拽文件到右侧区域开始</p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>{t("noRecentFiles")}</p>
+          <p className="text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.6 }}>{t("dropHintRecent")}</p>
         </div>
       ) : (
         <ul className="flex flex-col divide-y" style={{ "--divide-y": "1px solid var(--border-muted)" } as React.CSSProperties}>

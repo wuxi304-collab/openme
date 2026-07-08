@@ -3,6 +3,7 @@ import { getFileFormatByPath } from "../file-registry";
 import type { FileCapability, FileFormatDefinition } from "../file-registry";
 import { extractMetadata } from "../metadata";
 import { buildFileBrief } from "../brief";
+import { useI18n } from "../i18n";
 
 interface FileSummaryPanelProps {
   tab: FileTabState;
@@ -22,6 +23,7 @@ const capabilityLabels: Record<FileCapability, string> = {
 const coreCapabilities: FileCapability[] = ["detect", "preview", "metadata", "ai-summary", "edit", "external-open"];
 
 export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPanelProps) {
+  const { t } = useI18n();
   const registryFormat = getFileFormatByPath(tab.path);
   const metadata = extractMetadata({
     filePath: tab.path,
@@ -34,7 +36,7 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
   const brief = buildFileBrief(metadata);
 
   return (
-    <aside className="file-summary-panel" aria-label="文件摘要">
+    <aside className="file-summary-panel" aria-label={t("fileSummaryAria")}>
       <div className="file-summary-header">
         <span className="summary-kicker">File Brief</span>
         <strong title={brief.title}>{brief.title}</strong>
@@ -114,16 +116,17 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
       </div>
 
       <div className="summary-actions">
-        <button type="button" onClick={onOpenInSystem}>用系统程序打开</button>
+        <button type="button" onClick={onOpenInSystem}>{t("openInSystem")}</button>
       </div>
     </aside>
   );
 }
 
 function CapabilityGrid({ format }: { format: FileFormatDefinition }) {
+  const { t } = useI18n();
   const capabilitySet = new Set(format.capabilities);
   return (
-    <div className="capability-grid" aria-label="格式能力卡">
+    <div className="capability-grid" aria-label={t("capabilityGridAria")}>
       {coreCapabilities.map((capability) => {
         const supported = capabilitySet.has(capability);
         return (
