@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { I18nProvider, useI18n } from "./i18n";
 import { ThemeProvider } from "./theme";
 import { SettingsProvider, useSettings } from "./settings";
@@ -16,6 +16,11 @@ import ViewerRouter from "./components/viewers/ViewerRouter";
 import { CheckIcon } from "./components/icons/CheckIcon";
 import { AlertIcon } from "./components/icons/AlertIcon";
 import { ConfirmProvider, useCloseAllConfirm, useCloseTabConfirm } from "./components/useConfirm";
+
+// Electron's preload extends the standard `File` with a `path` field —
+// declare the augmentation locally so we don't need `(file: any)` in
+// drag-and-drop handlers.
+type FileWithPath = File & { path?: string };
 
 export default function App() {
   const { t, tf } = useI18n();
@@ -78,12 +83,6 @@ export default function App() {
         else setToast({ kind: "error", message: result.message ?? tf("saveFailed") });
       }, [activeTab, t, tf]);
 
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key === "s") { event.preventDefault(); handleSaveCurrent(); } };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [handleSaveCurrent]);
-
   const openFileInTab = useCallback(async (fileInfo: FileInfo) => {
     const existingTab = tabs.find((t) => t.path === fileInfo.path);
     if (existingTab) { setActiveTabId(existingTab.id); return; }
@@ -105,9 +104,9 @@ export default function App() {
       for (const p of paths) {
         const fileInfo = await window.electronAPI.getFileInfo(p);
         if (isIpcFailure(fileInfo)) { setToast({ kind: "error", message: describeIpcError(t, fileInfo) }); continue; }
-        (fileInfo as FileInfo).file_type = detectCategory(p) as any;
-        await addToRecent(fileInfo as FileInfo);
-        await openFileInTab(fileInfo as FileInfo);
+        fileInfo.file_type = detectCategory(p);
+        await addToRecent(fileInfo);
+        await openFileInTab(fileInfo);
       }
     }, [addToRecent, openFileInTab, t]);
   const handleSelectFile = useCallback(async (file: FileInfo) => { await openFileInTab(file); }, [openFileInTab]);
@@ -116,10 +115,8 @@ export default function App() {
   const handleOpenDialog = useCallback(async () => { try { const paths = await window.electronAPI.openFileDialog(); if (paths?.length) handleFilePaths(paths); } catch (error) { console.error("Dialog error:", error); } }, [handleFilePaths]);
     const handleCloseAllTabs = useCallback(async () => { if (hasDirtyTabs && settings.confirmTabClose && !(await confirmCloseAll(tabs.filter((tab) => tab.isDirty).length))) return; setTabs([]); setActiveTabId(null); }, [hasDirtyTabs, tabs, confirmCloseAll, settings.confirmTabClose]);
 
-  useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "o") { event.preventDefault(); handleOpenDialog(); } }; window.addEventListener("keydown", handler); return () => window.removeEventListener("keydown", handler); }, [handleOpenDialog]);
-
   const handleContentChange = useCallback((content: string) => { if (!activeTabId) return; setTabs((prev) => prev.map((t) => t.id === activeTabId ? { ...t, content, isDirty: true } : t)); }, [activeTabId]);
-  const handleDrop = useCallback((event: React.DragEvent) => { event.preventDefault(); const paths = Array.from(event.dataTransfer.files).map((file: any) => file.path).filter(Boolean); if (paths.length) handleFilePaths(paths); }, [handleFilePaths]);
+  const handleDrop = useCallback((event: React.DragEvent) => { event.preventDefault(); const paths = Array.from(event.dataTransfer.files).map((file) => (file as FileWithPath).path).filter((path): path is string => typeof path === "string" && path.length > 0); if (paths.length) handleFilePaths(paths); }, [handleFilePaths]);
   const activateRelativeTab = useCallback((direction: 1 | -1) => { if (tabs.length < 2) return; const current = Math.max(0, tabs.findIndex((tab) => tab.id === activeTabId)); setActiveTabId(tabs[(current + direction + tabs.length) % tabs.length].id); }, [tabs, activeTabId]);
 
   const commands = useMemo<CommandItem[]>(() => {
@@ -138,7 +135,26 @@ export default function App() {
     return [...baseCommands, ...tabCommands, ...recentCommands];
   }, [handleOpenDialog, activeTab, tabs, searchQuery, handleSaveCurrent, activateRelativeTab, handleCloseTab, handleCloseAllTabs, recentFiles, openFileInTab, t, tf]);
 
-  useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "k") { event.preventDefault(); setCommandOpen((value) => !value); return; } if (commandOpen) return; if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "w") { event.preventDefault(); if (activeTab) handleCloseTab(activeTab.id); } if ((event.ctrlKey || event.metaKey) && event.key === "Tab") { event.preventDefault(); activateRelativeTab(event.shiftKey ? -1 : 1); } if (event.altKey && /^[1-9]$/.test(event.key)) { const target = tabs[Number(event.key) - 1]; if (target) { event.preventDefault(); setActiveTabId(target.id); } } }; window.addEventListener("keydown", handler, true); return () => window.removeEventListener("keydown", handler, true); }, [commandOpen, activeTab, handleCloseTab, activateRelativeTab, tabs]);
+  // Global keyboard shortcuts. Capture phase so the command palette
+  // (when open) still respects Esc-to-close and won't double-fire on
+  // Ctrl+S / Ctrl+O via the bubble-phase handler.
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const mod = event.ctrlKey || event.metaKey;
+      if (mod && event.key.toLowerCase() === "s") { event.preventDefault(); void handleSaveCurrent(); return; }
+      if (mod && event.key.toLowerCase() === "o") { event.preventDefault(); void handleOpenDialog(); return; }
+      if (mod && event.key.toLowerCase() === "k") { event.preventDefault(); setCommandOpen((value) => !value); return; }
+      if (commandOpen) return;
+      if (mod && event.key.toLowerCase() === "w") { event.preventDefault(); if (activeTab) void handleCloseTab(activeTab.id); return; }
+      if (mod && event.key === "Tab") { event.preventDefault(); activateRelativeTab(event.shiftKey ? -1 : 1); return; }
+      if (event.altKey && /^[1-9]$/.test(event.key)) {
+        const target = tabs[Number(event.key) - 1];
+        if (target) { event.preventDefault(); setActiveTabId(target.id); }
+      }
+    };
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
+  }, [handleSaveCurrent, handleOpenDialog, commandOpen, activeTab, handleCloseTab, activateRelativeTab, tabs]);
 
   return (
     <I18nProvider>
