@@ -51,7 +51,7 @@ export default function CadAssistant({ filePath, fileName }: Props) {
   const [baseUrl, setBaseUrl] = useState("https://api.openai.com/v1");
 
   useEffect(() => {
-    window.electronAPI.getAiConfig().then((config: any) => {
+    window.electronAPI.getAiConfig().then((config) => {
       setConfigured(config.configured);
       setModel(config.model);
       setBaseUrl(config.baseUrl);
@@ -61,7 +61,7 @@ export default function CadAssistant({ filePath, fileName }: Props) {
 
   const saveSettings = async () => {
     setError(null);
-      const result: any = await window.electronAPI.saveAiConfig({ apiKey, model, baseUrl });
+      const result = await window.electronAPI.saveAiConfig({ apiKey, model, baseUrl });
       if (!result.success) {
         setError(isIpcFailure(result) ? describeIpcError(t, result) : result.message ?? t("cadAssistantSaveSettingsFailed"));
         return;
@@ -76,7 +76,7 @@ export default function CadAssistant({ filePath, fileName }: Props) {
       if (!prompt.trim() || loading) return;
       setLoading(true); setError(null); setPlan(null);
       try {
-        const result: any = await window.electronAPI.planCadChange({ filePath, fileName, request: prompt.trim() });
+        const result = await window.electronAPI.planCadChange({ filePath, fileName, request: prompt.trim() });
         if (!result.success || !result.plan) {
           throw new Error(isIpcFailure(result) ? describeIpcError(t, result) : result.message ?? t("cadAssistantPlanEmpty"));
         }
