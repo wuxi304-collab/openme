@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../../i18n";
 import { describeIpcError, isIpcFailure } from "../../core/ipcError";
 
-type Chapter = { title: string; text: string };
+type Chapter = { title: string | null; index?: number; text: string };
 type Book = { title: string; creator?: string; language?: string; cover?: { data: string; mimeType: string } | null; chapters: Chapter[] };
 interface Props { filePath: string; }
 
@@ -50,6 +50,12 @@ export default function EpubViewer({ filePath }: Props) {
   if (!book) return <div className="viewer-busy" role="status"><span className="dwg-loader" />{t("epubLoading")}</div>;
   const needle = query.trim().toLocaleLowerCase();
   const progressPct = Math.round(((chapter + 1) / book.chapters.length) * 100);
+    // Renderer-side localization for chapter titles. Main process only ships the
+    // raw heading (or null) plus a stable 1-based index; we substitute the
+    // locale-appropriate fallback here so a mid-session language switch does not
+    // require re-reading the file.
+    const chapterLabel = (item: Chapter, index: number) =>
+      item.title || tf("epubChapterFallback", { index: item.index ?? index + 1 });
   return (
     <div className="epub-viewer">
       <aside className="epub-sidebar">
@@ -58,8 +64,8 @@ export default function EpubViewer({ filePath }: Props) {
         {book.creator && <p>{book.creator}</p>}
         <nav aria-label={t("epubTocAria")}>
           {book.chapters.map((item, index) => (
-            <button type="button" key={`${item.title}-${index}`} className={index === chapter ? "is-active" : ""} aria-current={index === chapter ? "page" : undefined} onClick={() => setChapter(index)}>
-              <span>{index + 1}</span>{item.title}
+            <button type="button" key={`${item.title ?? ""}-${index}`} className={index === chapter ? "is-active" : ""} aria-current={index === chapter ? "page" : undefined} onClick={() => setChapter(index)}>
+                          <span>{index + 1}</span>{chapterLabel(item, index)}
             </button>
           ))}
         </nav>
@@ -80,7 +86,7 @@ export default function EpubViewer({ filePath }: Props) {
           </div>
         </div>
         <article style={{ fontSize }}>
-          <h1>{book.chapters[chapter].title}</h1>
+          <h1>{chapterLabel(book.chapters[chapter], chapter)}</h1>
           {paragraphs.map((paragraph, index) => !needle || paragraph.toLocaleLowerCase().includes(needle) ? <p key={index}>{paragraph}</p> : null)}
         </article>
         <footer>
