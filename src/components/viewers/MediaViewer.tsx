@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "../../i18n";
+import ViewerError from "../ViewerError";
+import "../ViewerError.css";
 
 interface Props { filePath: string; kind: "audio" | "video"; }
 
@@ -75,63 +77,19 @@ function MediaFallback({ filePath, kind, message }: { filePath: string; kind: "a
   const { t } = useI18n();
   const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
   return (
-    <div
-      className="viewer-error"
-      role="alert"
-      style={{
-        minHeight: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
-      }}
+    <ViewerError
+      title={kind === "video" ? t("mediaVideoErrorTitle") : t("mediaAudioErrorTitle")}
+      badge={kind === "video" ? t("mediaBadgeVideo") : t("mediaBadgeAudio")}
+      caption={fileName}
+      message={message}
+      action={{ label: t("openInSystem"), onClick: () => window.electronAPI.openInSystem(filePath) }}
     >
-      <div
-        style={{
-          maxWidth: 520,
-          borderRadius: 20,
-          padding: "28px 32px",
-          background: "rgba(255,255,255,0.96)",
-          border: "1px solid rgba(148,163,184,0.28)",
-          boxShadow: "0 20px 60px rgba(15,23,42,0.12)",
-          textAlign: "left",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-          <div
-            aria-hidden="true"
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
-              display: "grid",
-              placeItems: "center",
-              background: "rgba(37,99,235,0.10)",
-              color: "#2563EB",
-              fontWeight: 900,
-              fontSize: 18,
-            }}
-          >
-            {kind === "video" ? t("mediaBadgeVideo") : t("mediaBadgeAudio")}
-          </div>
-          <div>
-            <strong style={{ display: "block", fontSize: 16, color: "#0F172A" }}>{kind === "video" ? t("mediaVideoErrorTitle") : t("mediaAudioErrorTitle")}</strong>
-            <span style={{ display: "block", fontSize: 12, color: "#64748B", marginTop: 2 }}>{fileName}</span>
-          </div>
-        </div>
-
-        <p style={{ margin: "0 0 10px", fontSize: 13, lineHeight: 1.7, color: "#334155" }}>{message}</p>
-        <p style={{ margin: "0 0 18px", fontSize: 12, lineHeight: 1.7, color: "#64748B" }}>
-          {t("mediaCodecExplainer1")}
-        </p>
-
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button type="button" className="btn-mario" onClick={() => window.electronAPI.openInSystem(filePath)}>
-            {t("openInSystem")}
-          </button>
-          <span style={{ alignSelf: "center", fontSize: 12, color: "#94A3B8" }}>{t("mediaLocalDisclaimer")}</span>
-        </div>
-      </div>
-    </div>
+      <p style={{ margin: "0 0 12px", fontSize: 12, lineHeight: 1.7, color: "var(--text-muted)" }}>
+        {t("mediaCodecExplainer1")}
+      </p>
+      <p style={{ margin: 0, fontSize: 11, lineHeight: 1.6, color: "var(--text-muted)" }}>
+        {t("mediaLocalDisclaimer")}
+      </p>
+    </ViewerError>
   );
 }

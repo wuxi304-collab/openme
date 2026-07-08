@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useI18n } from "../../i18n";
+import ViewerError from "../ViewerError";
+import "../ViewerError.css";
 
 interface Props { base64Data: string; }
 type SearchResult = { page: number; count: number; snippet: string };
@@ -136,11 +138,8 @@ export default function PdfViewer({ base64Data }: Props) {
           </div>
         )}
         {error && (
-          <div className="viewer-error" role="alert">
-            <strong>{t("pdfErrorTitle")}</strong>
-            <p>{error}</p>
-          </div>
-        )}
+                  <ViewerError title={t("pdfErrorTitle")} message={error} />
+                )}
       </div>
     </div>
   );

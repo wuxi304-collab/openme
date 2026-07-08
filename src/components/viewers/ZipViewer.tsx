@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "../../i18n";
 import { describeIpcError, isIpcFailure } from "../../core/ipcError";
+import ViewerError from "../ViewerError";
+import "../ViewerError.css";
 
 interface ZipEntry {
   name: string;
@@ -126,14 +128,12 @@ export default function ZipViewer({ zipPath }: Props) {
   }
 
   if (error) {
-    return (
-      <div className="flex flex-col h-full rounded-lg border" style={{ borderColor: "var(--border-default)", background: "var(--bg-base)" }}>
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-[12px]" style={{ color: "var(--error)" }}>{error}</p>
+      return (
+        <div className="flex flex-col h-full rounded-lg border" style={{ borderColor: "var(--border-default)", background: "var(--bg-base)" }}>
+          <ViewerError title={t("zipLoadError")} message={error} />
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
   return (
     <div className="flex flex-col h-full rounded-lg border overflow-hidden" style={{ borderColor: "var(--border-default)", background: "var(--bg-base)" }}>
@@ -153,11 +153,14 @@ export default function ZipViewer({ zipPath }: Props) {
       </div>
 
       {actionError && (
-        <div className="archive-action-error" role="alert">
-          <span>{actionError}</span>
-          <button type="button" aria-label={t("zipCloseErrorAria")} onClick={() => setActionError(null)}>×</button>
-        </div>
-      )}
+              <ViewerError
+                variant="inline"
+                title={t("zipActionErrorShort")}
+                message={actionError}
+                onClose={() => setActionError(null)}
+                closeLabel={t("zipCloseErrorAria")}
+              />
+            )}
       <div className="flex flex-1 min-h-0">
         {/* File list */}
         <div className="flex-1 overflow-auto border-r" style={{ borderColor: "var(--border-muted)" }}>

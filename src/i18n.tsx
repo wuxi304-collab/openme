@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 // Translator: minimal i18n contract usable by non-React utility modules.
 // Both `t` and `tf` returned by useI18n satisfy this shape; utilities can
@@ -286,6 +286,7 @@ export const translations: Record<string, Record<string, string>> = {
     zipReadError: "[ 读取失败: {message} ]",
     zipReadErrorShort: "[ 读取失败 ]",
     zipActionError: "解压失败：{message}",
+    zipActionErrorShort: "操作失败",
     zipCloseErrorAria: "关闭错误提示",
 
     // DwgViewer
@@ -327,6 +328,7 @@ export const translations: Record<string, Record<string, string>> = {
     cad3dStepEmpty: "STEP 解析结果为空",
     cad3dStepParseFailed: "STEP 解析失败：{message}",
     cad3dStepLoaderMissing: "STEP 加载器未就绪",
+    cad3dErrorTitle: "3D 模型加载失败",
     cad3dOpenInSystem: "用系统程序打开",
 
     // CadAssistant (CAD Copilot)
@@ -350,6 +352,7 @@ export const translations: Record<string, Record<string, string>> = {
     cadAssistantApiKeyNotice: "先填写 API Key。密钥只保存在 Electron 主进程的加密存储中。",
     cadAssistantPlanFailed: "规划失败",
     cadAssistantPlanEmpty: "模型没有返回可执行计划",
+    cadAssistantErrorTitle: "操作失败",
     cadAssistantRiskDestructive: "高风险",
     cadAssistantRiskReversible: "可撤销",
     cadAssistantRiskReadOnly: "只读",
@@ -435,6 +438,9 @@ export const translations: Record<string, Record<string, string>> = {
     confirmCloseAllTitle: "关闭全部标签",
     confirmCloseTabMessage: "“{name}”有未保存修改，确定要关闭吗？关闭后这些改动将无法恢复。",
     confirmCloseAllMessage: "当前有 {count, plural, one {# 个标签} other {# 个标签}}存在未保存修改，确定要关闭全部吗？关闭后这些改动将无法恢复。",
+
+    // ViewerError (shared viewer error state)
+    viewerErrorClose: "关闭错误提示",
 
     // Command palette items
     cmdOpenFile: "打开文件",
@@ -925,6 +931,7 @@ export const translations: Record<string, Record<string, string>> = {
     zipReadError: "[ Read failed: {message} ]",
     zipReadErrorShort: "[ Read failed ]",
     zipActionError: "Extraction failed: {message}",
+    zipActionErrorShort: "Action failed",
     zipCloseErrorAria: "Dismiss error",
 
     // DwgViewer
@@ -966,6 +973,7 @@ export const translations: Record<string, Record<string, string>> = {
     cad3dStepEmpty: "STEP parse produced no meshes",
     cad3dStepParseFailed: "STEP parse failed: {message}",
     cad3dStepLoaderMissing: "STEP loader not ready",
+    cad3dErrorTitle: "3D model could not be loaded",
     cad3dOpenInSystem: "Open in system",
 
     // CadAssistant (CAD Copilot)
@@ -989,6 +997,7 @@ export const translations: Record<string, Record<string, string>> = {
     cadAssistantApiKeyNotice: "Set the API key first. The key is stored only in Electron's encrypted main-process store.",
     cadAssistantPlanFailed: "Planning failed",
     cadAssistantPlanEmpty: "The model did not return an actionable plan",
+    cadAssistantErrorTitle: "Operation failed",
     cadAssistantRiskDestructive: "High risk",
     cadAssistantRiskReversible: "Reversible",
     cadAssistantRiskReadOnly: "Read only",
@@ -1074,6 +1083,9 @@ export const translations: Record<string, Record<string, string>> = {
     confirmCloseAllTitle: "Close all tabs",
     confirmCloseTabMessage: "“{name}” has unsaved changes. Close it? These changes will be lost.",
     confirmCloseAllMessage: "{count, plural, one {# tab} other {# tabs}} have unsaved changes. Close all of them? These changes will be lost.",
+
+    // ViewerError (shared viewer error state)
+    viewerErrorClose: "Dismiss error",
 
     // Command palette items
     cmdOpenFile: "Open file",

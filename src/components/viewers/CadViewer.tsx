@@ -4,6 +4,8 @@ import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { useI18n } from "../../i18n";
+import ViewerError from "../ViewerError";
+import "../ViewerError.css";
 
 interface Props {
   base64Data: string;
@@ -244,19 +246,12 @@ export default function CadViewer({ base64Data, filePath }: Props) {
           </div>
         )}
         {error && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-[13px]" style={{ color: "var(--error)" }}>{error}</p>
-              <button
-                onClick={() => window.electronAPI.openInSystem(filePath)}
-                className="mt-3 px-4 py-1.5 rounded text-[12px] font-medium"
-                style={{ background: "var(--accent)", color: "#fff" }}
-              >
-                {t("cad3dOpenInSystem")}
-              </button>
-            </div>
-          </div>
-        )}
+                  <ViewerError
+                    title={t("cad3dErrorTitle")}
+                    message={error}
+                    action={{ label: t("cad3dOpenInSystem"), onClick: () => window.electronAPI.openInSystem(filePath) }}
+                  />
+                )}
       </div>
     </div>
   );
