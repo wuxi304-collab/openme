@@ -168,7 +168,7 @@ export default function App() {
             <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
           <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} />
           <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
-            {tabs.length === 0 ? <EmptyState onOpenDialog={handleOpenDialog} /> : activeTab ? (
+            {tabs.length === 0 ? <EmptyState onOpenDialog={handleOpenDialog} recentFiles={recentFiles} onOpenRecent={(file) => { void openFileInTab(file); }} /> : activeTab ? (
               <div className="workspace-viewer-grid"><div className="workspace-viewer-main">{activeTab.isLoading ? <LoadingState /> : <ViewerRouter tab={activeTab} onChange={handleContentChange} />}</div><FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} /></div>
             ) : null}
           </main>
@@ -184,9 +184,24 @@ export default function App() {
             );
           }
 
-function EmptyState({ onOpenDialog }: { onOpenDialog: () => void }) {
+export function EmptyState({
+  onOpenDialog,
+  recentFiles,
+  onOpenRecent,
+}: {
+  onOpenDialog: () => void;
+  recentFiles: FileInfo[];
+  onOpenRecent: (file: FileInfo) => void;
+}) {
   const { t } = useI18n();
   const formats = ["PDF", "DOCX", "XLSX", "DWG", "PSD", "APK", "ISO", "ZIP"];
+  const shortcutRows: Array<{ keys: string; label: string }> = [
+    { keys: "Ctrl O", label: t("emptyShortcutOpen") },
+    { keys: "Ctrl K", label: t("emptyShortcutPalette") },
+    { keys: "Ctrl S", label: t("emptyShortcutSave") },
+    { keys: "Drag", label: t("emptyShortcutDrop") },
+  ];
+  const previewRecents = recentFiles.slice(0, 4);
   return (
     <section className="empty-workspace" aria-labelledby="empty-title">
       <div className="sky-grid" aria-hidden="true">
@@ -200,12 +215,12 @@ function EmptyState({ onOpenDialog }: { onOpenDialog: () => void }) {
       <div className="welcome-panel">
         <div className="welcome-eyebrow">
           <span className="eyebrow-line" />
-          OPENME WORKSPACE
+          {t("heroEyebrow")}
           <span className="eyebrow-line" />
         </div>
         <div className="hero-mark" aria-hidden="true">
           <i />
-          <span>OM</span>
+          <span>{t("heroMark")}</span>
         </div>
         <h1 id="empty-title">{t("heroTitle")}</h1>
         <p>{t("heroSubtitle")}</p>
@@ -214,6 +229,36 @@ function EmptyState({ onOpenDialog }: { onOpenDialog: () => void }) {
             {t("heroOpen")}
           </button>
           <span className="drop-hint">{t("heroDropHint")}</span>
+        </div>
+        <div className="empty-cards">
+          <div className="empty-card" aria-labelledby="empty-shortcuts-title">
+            <h2 id="empty-shortcuts-title" className="empty-card-title">{t("emptyShortcutsTitle")}</h2>
+            <ul className="empty-shortcuts">
+              {shortcutRows.map((row) => (
+                <li key={row.keys}>
+                  <kbd>{row.keys}</kbd>
+                  <span>{row.label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="empty-card" aria-labelledby="empty-recent-title">
+            <h2 id="empty-recent-title" className="empty-card-title">{t("emptyRecentTitle")}</h2>
+            {previewRecents.length ? (
+              <ul className="empty-recent-list">
+                {previewRecents.map((file) => (
+                  <li key={file.path}>
+                    <button type="button" className="empty-recent-row" onClick={() => onOpenRecent(file)}>
+                      <span className="empty-recent-name">{file.name}</span>
+                      <span className="empty-recent-ext">{file.extension.replace(/^\./, "").toUpperCase()}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty-recent-empty">{t("emptyRecentEmpty")}</p>
+            )}
+          </div>
         </div>
         <div className="format-row" aria-label={t("heroFormatsLabel")}>
           {formats.map((format) => <span key={format}>{format}</span>)}

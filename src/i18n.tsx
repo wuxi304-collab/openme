@@ -50,6 +50,13 @@ export const translations: Record<string, Record<string, string>> = {
     heroDropHint: "也可以拖放到这里",
     heroOpen: "选择文件",
     heroFormatsLabel: "支持的文件格式",
+    emptyShortcutsTitle: "键盘快捷键",
+    emptyShortcutOpen: "打开文件",
+    emptyShortcutPalette: "命令面板",
+    emptyShortcutSave: "保存当前文件",
+    emptyShortcutDrop: "拖放文件到任意位置",
+    emptyRecentTitle: "最近打开",
+    emptyRecentEmpty: "还没有最近文件",
 
     // LoadingState
     loadingFile: "正在加载文件...",
@@ -705,6 +712,13 @@ export const translations: Record<string, Record<string, string>> = {
     heroDropHint: "You can also drop files here",
     heroOpen: "Pick files",
     heroFormatsLabel: "Supported file formats",
+    emptyShortcutsTitle: "Keyboard shortcuts",
+    emptyShortcutOpen: "Open a file",
+    emptyShortcutPalette: "Command palette",
+    emptyShortcutSave: "Save current file",
+    emptyShortcutDrop: "Drop files anywhere",
+    emptyRecentTitle: "Recently opened",
+    emptyRecentEmpty: "No recent files yet",
 
     // LoadingState
     loadingFile: "Loading file...",
