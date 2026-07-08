@@ -67,10 +67,14 @@ export interface CadEngineStatus {
   available: boolean;
   kind: string;
   name: string;
+  nameCode?: string;
+  nameParams?: Record<string, string | number>;
   capabilities: string[];
   quality: string;
   fallback: boolean;
   message?: string;
+  messageCode?: string;
+  messageParams?: Record<string, string | number>;
 }
 
 export interface CadInspectionResult {

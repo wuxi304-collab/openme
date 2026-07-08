@@ -205,23 +205,24 @@ function findCadEngine() {
   const cadHost = getCadHostPath();
   if (fs.existsSync(cadHost)) {
     return {
-      available: true, kind: "acadsharp", name: "ACadSharp 语义引擎", executable: cadHost,
+      available: true, kind: "acadsharp", name: "ACadSharp 语义引擎", nameCode: "dwgEngineAcadSharp", executable: cadHost,
       capabilities: ["inspect", "read", "write", "layers", "blocks"], quality: "semantic", fallback: true,
-      message: "DWG 语义由 ACadSharp 解析，画布暂由 LibreDWG 兼容渲染。"
+      message: "DWG 语义由 ACadSharp 解析，画布暂由 LibreDWG 兼容渲染。",
+      messageCode: "dwgEngineMessageAcadSharp",
     };
   }
   const explicit = process.env.OPENME_CAD_ENGINE;
   const candidates = [];
-  if (explicit) candidates.push({ kind: "realdwg", name: "RealDWG Sidecar", executable: explicit, capabilities: ["read", "write", "layout", "font"] });
+  if (explicit) candidates.push({ kind: "realdwg", name: "RealDWG Sidecar", nameCode: "dwgEngineRealDwg", executable: explicit, capabilities: ["read", "write", "layout", "font"] });
 
   const programFiles = [process.env.ProgramFiles, process.env["ProgramFiles(x86)"]].filter(Boolean);
   for (const root of programFiles) {
-    candidates.push({ kind: "oda", name: "ODA File Converter", executable: path.join(root, "ODA", "ODAFileConverter", "ODAFileConverter.exe"), capabilities: ["convert"] });
+    candidates.push({ kind: "oda", name: "ODA File Converter", nameCode: "dwgEngineOda", executable: path.join(root, "ODA", "ODAFileConverter", "ODAFileConverter.exe"), capabilities: ["convert"] });
     const autodeskRoot = path.join(root, "Autodesk");
     try {
       for (const entry of fs.readdirSync(autodeskRoot, { withFileTypes: true })) {
         if (entry.isDirectory() && /^AutoCAD\s/i.test(entry.name)) {
-          candidates.push({ kind: "autocad", name: `AutoCAD Core Console (${entry.name})`, executable: path.join(autodeskRoot, entry.name, "accoreconsole.exe"), capabilities: ["read", "write", "script", "layout", "font"] });
+          candidates.push({ kind: "autocad", name: `AutoCAD Core Console (${entry.name})`, nameCode: "dwgEngineAutocad", executable: path.join(autodeskRoot, entry.name, "accoreconsole.exe"), capabilities: ["read", "write", "script", "layout", "font"] });
         }
       }
     } catch {}
@@ -233,11 +234,13 @@ function findCadEngine() {
     available: true,
     kind: "libredwg-web",
     name: "LibreDWG Web 兼容预览",
+    nameCode: "dwgEngineLibreDwg",
     executable: null,
     capabilities: ["preview", "basic-entities"],
     quality: "compatibility",
     fallback: true,
     message: "未检测到 Autodesk/ODA 原生引擎，复杂实体、字体和布局可能不完整。",
+    messageCode: "dwgEngineMessageLibreDwg",
   };
 }
 function createWindow() {
