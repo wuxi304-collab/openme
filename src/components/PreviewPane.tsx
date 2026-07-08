@@ -1,4 +1,5 @@
 import { FileInfo } from "../types";
+import { useI18n } from "../i18n";
 
 interface Props {
   file: FileInfo | null;
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export default function PreviewPane({ file, textContent, loading }: Props) {
+  const { t } = useI18n();
   if (!file) return null;
 
   if (loading) {
@@ -17,12 +19,13 @@ export default function PreviewPane({ file, textContent, loading }: Props) {
           style={{ borderColor: "var(--accent)", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }}
         />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <p className="mt-3 text-[12px]" style={{ color: "var(--text-muted)" }}>正在加载...</p>
+        <p className="mt-3 text-[12px]" style={{ color: "var(--text-muted)" }}>{t("previewLoading")}</p>
       </div>
     );
   }
 
   if (textContent !== null) {
+    const lineCount = textContent.split("\n").length;
     return (
       <div className="flex flex-col flex-1 min-h-0 rounded-xl border overflow-hidden" style={{ borderColor: "var(--border-default)", background: "var(--bg-surface)" }}>
         <div className="px-4 py-2.5 border-b flex items-center gap-2" style={{ borderColor: "var(--border-muted)" }}>
@@ -31,9 +34,9 @@ export default function PreviewPane({ file, textContent, loading }: Props) {
             <line x1="3" y1="9" x2="21" y2="9" />
             <line x1="9" y1="21" x2="9" y2="9" />
           </svg>
-          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>内容预览</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{t("contentPreview")}</span>
           <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded" style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
-            {textContent.split("\n").length} 行
+            {lineCount} {t("linesCountSuffix")}
           </span>
         </div>
         <pre
@@ -53,8 +56,8 @@ export default function PreviewPane({ file, textContent, loading }: Props) {
 
   const placeholders: Record<string, { icon: React.ReactNode; title: string; sub: string }> = {
     pdf: {
-      title: "PDF 预览功能即将到来",
-      sub: "点击上方按钮使用系统默认程序查看",
+      title: t("pdfPreviewTitle"),
+      sub: t("pdfPreviewSub"),
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f85149" strokeWidth="1.5">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -66,8 +69,8 @@ export default function PreviewPane({ file, textContent, loading }: Props) {
       ),
     },
     image: {
-      title: "图片预览功能即将到来",
-      sub: "点击上方按钮使用系统默认程序查看",
+      title: t("imagePreviewTitle"),
+      sub: t("imagePreviewSub"),
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a371f7" strokeWidth="1.5">
           <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -79,8 +82,8 @@ export default function PreviewPane({ file, textContent, loading }: Props) {
   };
 
   const p = placeholders[file.file_type] ?? {
-    title: "该文件类型暂不支持内置预览",
-    sub: "点击上方按钮使用系统默认程序查看",
+    title: t("unsupportedPreviewTitle"),
+    sub: t("unsupportedPreviewSub"),
     icon: (
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />

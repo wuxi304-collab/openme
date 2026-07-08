@@ -1,10 +1,12 @@
 import { useCallback, useState } from "react";
+import { useI18n } from "../i18n";
 
 interface Props {
   onFileDrop: (paths: string[]) => void;
 }
 
 export default function FileDropZone({ onFileDrop }: Props) {
+  const { t } = useI18n();
   const [dragging, setDragging] = useState(false);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -78,26 +80,26 @@ export default function FileDropZone({ onFileDrop }: Props) {
             className="text-[15px] font-semibold transition-colors duration-200"
             style={{ color }}
           >
-            {dragging ? "松开以打开" : "将文件拖入此处"}
+            {dragging ? t("dropRelease") : t("dropHere")}
           </p>
           <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
-            支持 PDF、图片、文档、代码等所有常见格式
+            {t("dropHint")}
           </p>
         </div>
 
         <div className="flex items-center gap-4 pt-2">
           {[
-            { label: "PDF", color: "#f85149" },
-            { label: "图片", color: "#a371f7" },
-            { label: "文本", color: "#3fb950" },
-            { label: "代码", color: "#58a6ff" },
-          ].map(({ label, color }) => (
+            { key: "PDF", color: "#f85149" },
+            { key: "imageCat", color: "#a371f7" },
+            { key: "textCat", color: "#3fb950" },
+            { key: "codeCat", color: "#58a6ff" },
+          ].map(({ key, color }) => (
             <span
-              key={label}
+              key={key}
               className="px-2 py-0.5 rounded text-[10px] font-medium"
               style={{ background: `${color}18`, color, border: `1px solid ${color}30` }}
             >
-              {label}
+              {key === "PDF" ? key : t(key)}
             </span>
           ))}
         </div>

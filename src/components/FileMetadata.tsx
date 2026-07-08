@@ -1,5 +1,6 @@
 import { FileInfo } from "../types";
 import { formatFileSize, formatDate, getFileTypeLabel } from "../utils/fileUtils";
+import { useI18n } from "../i18n";
 
 interface Props {
   file: FileInfo;
@@ -7,12 +8,13 @@ interface Props {
 }
 
 export default function FileMetadata({ file, onOpenSystem }: Props) {
+  const { t } = useI18n();
   const rows = [
-    { label: "文件名", value: file.name },
-    { label: "类型", value: getFileTypeLabel(file.file_type) },
-    { label: "大小", value: formatFileSize(file.size) },
-    { label: "修改时间", value: formatDate(file.modified_at) },
-    { label: "路径", value: file.path, mono: true },
+    { label: t("metaName"), value: file.name },
+    { label: t("metaType"), value: getFileTypeLabel(file.file_type) },
+    { label: t("metaSize"), value: formatFileSize(file.size) },
+    { label: t("metaModified"), value: formatDate(file.modified_at) },
+    { label: t("metaPath"), value: file.path, mono: true },
   ];
 
   return (
@@ -23,7 +25,7 @@ export default function FileMetadata({ file, onOpenSystem }: Props) {
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
             <polyline points="14 2 14 8 20 8" />
           </svg>
-          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>文件信息</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{t("fileInfoTitle")}</span>
         </div>
         <span className="text-[11px] px-2 py-0.5 rounded" style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
           {file.extension.toUpperCase().replace(".", "") || "FILE"}
@@ -70,7 +72,7 @@ export default function FileMetadata({ file, onOpenSystem }: Props) {
             <polyline points="15 3 21 3 21 9" />
             <line x1="10" y1="14" x2="21" y2="3" />
           </svg>
-          用系统默认程序打开
+          {t("openInSystemLong")}
         </button>
       </div>
     </div>
