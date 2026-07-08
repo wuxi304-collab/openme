@@ -41,7 +41,8 @@ const isDev = !app.isPackaged && process.env.OPENME_USE_DIST !== "1";
 const DEV_ORIGIN = "http://localhost:1420";
 
 function buildContentSecurityPolicy() {
-  const scriptSrc = isDev ? "'self' 'unsafe-eval' http://localhost:1420" : "'self'";
+  // For dev allow inline scripts injected by Vite (HMR/react-refresh). Do NOT include 'unsafe-inline' in production.
+  const scriptSrc = isDev ? "'self' 'unsafe-eval' 'unsafe-inline' http://localhost:1420" : "'self'";
   const connectSrc = isDev ? "'self' http://localhost:1420 ws://localhost:1420 openme-media:" : "'self' openme-media:";
   return [
     "default-src 'self'",
@@ -248,6 +249,7 @@ function createWindow() {
   });
 
   hardenWebContents(mainWindow.webContents);
+
   log.info("Main window created");
 
   if (isDev) {
@@ -256,6 +258,7 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
   }
+
 
   mainWindow.on("close", (event) => {
     if (!hasUnsavedChanges) return;

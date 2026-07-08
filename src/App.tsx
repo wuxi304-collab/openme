@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { I18nProvider } from "./i18n";
+import { ThemeProvider } from "./theme";
 import { FileInfo, FileTabState } from "./types";
 import { detectCategory } from "./utils/fileTypeDetector";
 import { loadFileTabData } from "./core/fileOpenPipeline";
@@ -20,7 +22,23 @@ export default function App() {
   const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [commandOpen, setCommandOpen] = useState(false);
 
-  useEffect(() => { window.electronAPI.loadRecentFiles().then((store) => setRecentFiles(store.files)).catch(console.error); }, []);
+  useEffect(() => {
+    const load = async () => {
+      try {
+        if (typeof (window as any).electronAPI?.loadRecentFiles === "function") {
+          const store = await (window as any).electronAPI.loadRecentFiles();
+          setRecentFiles(store?.files ?? []);
+        } else {
+          // Browser fallback during dev: use empty recent list
+          setRecentFiles([]);
+        }
+      } catch (err) {
+        console.error("loadRecentFiles failed:", err);
+        setRecentFiles([]);
+      }
+    };
+    void load();
+  }, []);
 
   const filteredFiles = useMemo(() => {
     if (!searchQuery.trim()) return recentFiles;
@@ -32,7 +50,15 @@ export default function App() {
   const hasDirtyTabs = tabs.some((tab) => tab.isDirty);
 
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(timer); }, [toast]);
-  useEffect(() => { window.electronAPI.setDirtyState(hasDirtyTabs).catch(() => undefined); }, [hasDirtyTabs]);
+  useEffect(() => {
+    try {
+      if (typeof (window as any).electronAPI?.setDirtyState === "function") {
+        (window as any).electronAPI.setDirtyState(hasDirtyTabs).catch(() => undefined);
+      }
+    } catch (err) {
+      // ignore in browser
+    }
+  }, [hasDirtyTabs]);
 
   const handleSaveCurrent = useCallback(async () => {
     const tab = activeTab;
@@ -99,21 +125,25 @@ export default function App() {
   useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "k") { event.preventDefault(); setCommandOpen((value) => !value); return; } if (commandOpen) return; if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "w") { event.preventDefault(); if (activeTab) handleCloseTab(activeTab.id); } if ((event.ctrlKey || event.metaKey) && event.key === "Tab") { event.preventDefault(); activateRelativeTab(event.shiftKey ? -1 : 1); } if (event.altKey && /^[1-9]$/.test(event.key)) { const target = tabs[Number(event.key) - 1]; if (target) { event.preventDefault(); setActiveTabId(target.id); } } }; window.addEventListener("keydown", handler, true); return () => window.removeEventListener("keydown", handler, true); }, [commandOpen, activeTab, handleCloseTab, activateRelativeTab, tabs]);
 
   return (
-    <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
-      <TitleBar />
-      <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} />
-      <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
+    <I18nProvider>
+      <ThemeProvider>
+        <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
+          <TitleBar />
+          <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} />
+          <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
         <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} />
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
           {tabs.length === 0 ? <EmptyState onOpenDialog={handleOpenDialog} /> : activeTab ? (
             <div className="workspace-viewer-grid"><div className="workspace-viewer-main">{activeTab.isLoading ? <LoadingState /> : <ViewerRouter tab={activeTab} onChange={handleContentChange} />}</div><FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} /></div>
           ) : null}
         </main>
-      </div>
-      <StatusBar activeTab={activeTab ? { name: activeTab.name, path: activeTab.path, size: activeTab.sourceFile?.size, content: activeTab.content ?? undefined, isDirty: activeTab.isDirty } : null} />
-      {toast && <div className={`app-toast is-${toast.kind}`} role="status" aria-live="polite"><i aria-hidden="true">{toast.kind === "success" ? "✓" : "!"}</i>{toast.message}</div>}
-      <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
-    </div>
+          </div>
+          <StatusBar activeTab={activeTab ? { name: activeTab.name, path: activeTab.path, size: activeTab.sourceFile?.size, content: activeTab.content ?? undefined, isDirty: activeTab.isDirty } : null} />
+          {toast && <div className={`app-toast is-${toast.kind}`} role="status" aria-live="polite"><i aria-hidden="true">{toast.kind === "success" ? "✓" : "!"}</i>{toast.message}</div>}
+          <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
+        </div>
+      </ThemeProvider>
+    </I18nProvider>
   );
 }
 
