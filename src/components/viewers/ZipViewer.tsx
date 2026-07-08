@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useI18n } from "../../i18n";
 
 interface ZipEntry {
   name: string;
@@ -32,6 +33,7 @@ function getFileExt(name: string): string {
 const PREVIEWABLE = new Set(["txt", "md", "json", "js", "ts", "html", "css", "xml", "yml", "yaml", "ini", "log", "py", "rs", "go", "java", "c", "cpp", "h", "sql", "sh", "bat", "ps1", "env", "toml", "cfg", "conf", "properties"]);
 
 export default function ZipViewer({ zipPath }: Props) {
+  const { t, tf } = useI18n();
   const [entries, setEntries] = useState<ZipEntry[]>([]);
   const [directoryCount, setDirectoryCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -53,12 +55,12 @@ export default function ZipViewer({ zipPath }: Props) {
           setEntries(archiveEntries.filter((entry) => !entry.isDir).sort((a, b) => a.name.localeCompare(b.name)));
           setLoading(false);
         } else {
-          setError(res.message ?? "无法读取压缩包");
+          setError(res.message ?? t("zipLoadError"));
           setLoading(false);
         }
       })
       .catch((e: any) => { setError(e.message); setLoading(false); });
-  }, [zipPath]);
+  }, [zipPath, t]);
 
   const handleSelectEntry = async (entryName: string) => {
     setSelectedEntry(entryName);
@@ -71,9 +73,11 @@ export default function ZipViewer({ zipPath }: Props) {
         const binary = atob(res.data);
         setPreviewContent(binary);
       } else {
-        setPreviewContent("[ 读取失败: " + res.message + " ]");
+        setPreviewContent(tf("zipReadError", { message: res.message ?? "" }));
       }
-    } catch (e: any) { setPreviewContent("[ 读取失败 ]"); }
+    } catch {
+      setPreviewContent(t("zipReadErrorShort"));
+    }
     finally { setPreviewLoading(false); }
   };
 
@@ -89,9 +93,11 @@ export default function ZipViewer({ zipPath }: Props) {
         const finalDir = targetDir + (targetDir.endsWith("\\") || targetDir.endsWith("/") ? "" : "\\") + folderName;
         await window.electronAPI.openInSystem(finalDir);
       } else {
-        setActionError("解压失败：" + res.message);
+        setActionError(tf("zipActionError", { message: res.message ?? "" }));
       }
-    } catch (e: any) { setActionError("解压失败：" + e.message); }
+    } catch (e: any) {
+      setActionError(tf("zipActionError", { message: e?.message ?? "" }));
+    }
     finally { setUnzipping(false); }
   };
 
@@ -104,7 +110,7 @@ export default function ZipViewer({ zipPath }: Props) {
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#56d4dd", borderTopColor: "transparent" }} />
-            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>正在读取压缩包…</p>
+            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{t("zipLoading")}</p>
           </div>
         </div>
       </div>
@@ -126,7 +132,7 @@ export default function ZipViewer({ zipPath }: Props) {
       <div className="flex items-center justify-between px-3 py-1.5 border-b flex-shrink-0" style={{ borderColor: "var(--border-muted)", background: "var(--bg-surface)" }}>
         <div className="flex items-center gap-3">
           <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "var(--text-muted)" }}>ZIP</span>
-          <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{fileCount} 文件 / {dirCount} 文件夹</span>
+          <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{tf("zipCount", { files: fileCount, dirs: dirCount })}</span>
         </div>
         <button
           onClick={handleUnzip}
@@ -134,17 +140,22 @@ export default function ZipViewer({ zipPath }: Props) {
           className="flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-medium transition-opacity disabled:opacity-50"
           style={{ background: "#56d4dd", color: "#fff" }}
         >
-          {unzipping ? "解压中…" : "解压到文件夹"}
+          {unzipping ? t("zipUnzipping") : t("zipUnzip")}
         </button>
       </div>
 
-      {actionError && <div className="archive-action-error" role="alert"><span>{actionError}</span><button type="button" aria-label="关闭错误提示" onClick={() => setActionError(null)}>×</button></div>}
+      {actionError && (
+        <div className="archive-action-error" role="alert">
+          <span>{actionError}</span>
+          <button type="button" aria-label={t("zipCloseErrorAria")} onClick={() => setActionError(null)}>×</button>
+        </div>
+      )}
       <div className="flex flex-1 min-h-0">
         {/* File list */}
         <div className="flex-1 overflow-auto border-r" style={{ borderColor: "var(--border-muted)" }}>
           {entries.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>压缩包为空</p>
+              <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{t("zipEmpty")}</p>
             </div>
           ) : (
             <ul>
@@ -192,7 +203,7 @@ export default function ZipViewer({ zipPath }: Props) {
             ) : previewContent !== null ? (
               <div className="flex flex-col h-full">
                 <div className="px-3 py-1.5 border-b flex-shrink-0" style={{ borderColor: "var(--border-muted)", background: "var(--bg-surface)" }}>
-                  <span className="text-[10px] uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>预览：{getFileName(selectedEntry)}</span>
+                  <span className="text-[10px] uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{tf("zipPreviewHeader", { name: getFileName(selectedEntry) })}</span>
                 </div>
                 <pre
                   className="flex-1 overflow-auto p-3 text-[11px] leading-relaxed"
@@ -212,7 +223,7 @@ export default function ZipViewer({ zipPath }: Props) {
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                 </svg>
-                <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>该文件不支持预览</p>
+                <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{t("zipPreviewUnsupported")}</p>
               </div>
             )
           ) : (
@@ -221,7 +232,7 @@ export default function ZipViewer({ zipPath }: Props) {
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
               </svg>
-              <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>点击文件预览内容</p>
+              <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{t("zipPreviewPrompt")}</p>
             </div>
           )}
         </div>
@@ -229,5 +240,3 @@ export default function ZipViewer({ zipPath }: Props) {
     </div>
   );
 }
-
-

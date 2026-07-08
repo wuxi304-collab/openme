@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { useI18n } from "../../i18n";
 
 interface Props { base64Data: string; }
 type SearchResult = { page: number; count: number; snippet: string };
 const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 
 export default function PdfViewer({ base64Data }: Props) {
+  const { t, tf } = useI18n();
   const [pdfDocument, setPdfDocument] = useState<any>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -28,10 +30,10 @@ export default function PdfViewer({ base64Data }: Props) {
         task = pdfjs.getDocument({ data: Uint8Array.from(atob(base64Data), (character) => character.charCodeAt(0)) });
         const document = await task.promise;
         if (!disposed) { setPdfDocument(document); setTotalPages(document.numPages); setPage(1); setLoading(false); }
-      } catch (reason) { if (!disposed) { setError(reason instanceof Error ? reason.message : "PDF 加载失败"); setLoading(false); } }
+      } catch (reason) { if (!disposed) { setError(reason instanceof Error ? reason.message : t("pdfLoadFailed")); setLoading(false); } }
     })();
     return () => { disposed = true; task?.destroy(); };
-  }, [base64Data]);
+  }, [base64Data, t]);
 
   useEffect(() => {
     if (!pdfDocument || !canvasRef.current) return;
@@ -44,15 +46,19 @@ export default function PdfViewer({ base64Data }: Props) {
         const pixelRatio = Math.max(1, window.devicePixelRatio);
         const viewport = pdfPage.getViewport({ scale: zoom * pixelRatio, rotation });
         const canvas = canvasRef.current!; const context = canvas.getContext("2d");
-        if (!context) throw new Error("无法初始化 PDF 画布");
+        if (!context) throw new Error(t("pdfCanvasInitFailed"));
         canvas.width = Math.floor(viewport.width); canvas.height = Math.floor(viewport.height);
         canvas.style.width = `${viewport.width / pixelRatio}px`; canvas.style.height = `${viewport.height / pixelRatio}px`;
         renderTask = pdfPage.render({ canvasContext: context, viewport }); await renderTask.promise;
-      } catch (reason: any) { if (!disposed && reason?.name !== "RenderingCancelledException") setError(reason?.message ?? "页面渲染失败"); }
+      } catch (reason: any) {
+        if (!disposed && reason?.name !== "RenderingCancelledException") {
+          setError(reason?.message ?? t("pdfRenderFailed"));
+        }
+      }
       finally { if (!disposed) setRendering(false); }
     })();
     return () => { disposed = true; renderTask?.cancel(); };
-  }, [pdfDocument, page, zoom, rotation]);
+  }, [pdfDocument, page, zoom, rotation, t]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -81,15 +87,61 @@ export default function PdfViewer({ base64Data }: Props) {
         matches.push(...batch.filter((item): item is SearchResult => item !== null));
       }
       setResults(matches);
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "PDF 搜索失败"); }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : t("pdfSearchFailed")); }
     finally { setSearching(false); }
   };
 
+  const totalMatches = results.reduce((sum, result) => sum + result.count, 0);
+
   return (
     <div className="pdf-viewer-shell">
-      <div className="pdf-toolbar"><span className="viewer-label">PDF</span><form className="pdf-search" onSubmit={(event) => { event.preventDefault(); search(); }}><label><span className="sr-only">全文搜索</span><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="全文搜索…" /></label><button type="submit" disabled={searching}>{searching ? "搜索中…" : "搜索"}</button></form><div className="viewer-tools"><button type="button" onClick={() => goTo(page - 1)} disabled={page <= 1}>上一页</button><label className="pdf-page-field"><span className="sr-only">页码</span><input type="number" min={1} max={totalPages} value={page} onChange={(event) => goTo(Number(event.target.value) || 1)} /> / {totalPages}</label><button type="button" onClick={() => goTo(page + 1)} disabled={page >= totalPages}>下一页</button><button type="button" aria-label="顺时针旋转" onClick={() => setRotation((value) => (value + 90) % 360)}>↻</button><select aria-label="缩放比例" value={zoom} onChange={(event) => setZoom(Number(event.target.value))}>{ZOOM_LEVELS.map((level) => <option key={level} value={level}>{Math.round(level * 100)}%</option>)}</select></div></div>
-      {searchQuery.trim() && !searching && <div className="pdf-results" role="status"><span>{results.reduce((sum, result) => sum + result.count, 0)} 处匹配</span>{results.slice(0, 30).map((result) => <button type="button" key={result.page} title={result.snippet} onClick={() => goTo(result.page)}>第 {result.page} 页 <i>{result.count}</i></button>)}</div>}
-      <div className="pdf-stage"><canvas ref={canvasRef} className="pdf-page-canvas" />{(loading || rendering) && !error && <div className="viewer-busy" role="status"><span className="dwg-loader" />{loading ? "正在打开 PDF…" : "正在绘制页面…"}</div>}{error && <div className="viewer-error" role="alert"><strong>PDF 无法预览</strong><p>{error}</p></div>}</div>
+      <div className="pdf-toolbar">
+        <span className="viewer-label">{t("pdfLabel")}</span>
+        <form className="pdf-search" onSubmit={(event) => { event.preventDefault(); search(); }}>
+          <label>
+            <span className="sr-only">{t("pdfSearchAria")}</span>
+            <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder={t("pdfSearchPlaceholder")} />
+          </label>
+          <button type="submit" disabled={searching}>{searching ? t("pdfSearchBusy") : t("pdfSearchSubmit")}</button>
+        </form>
+        <div className="viewer-tools">
+          <button type="button" onClick={() => goTo(page - 1)} disabled={page <= 1}>{t("pdfPrevPage")}</button>
+          <label className="pdf-page-field">
+            <span className="sr-only">{t("pdfPageAria")}</span>
+            <input type="number" min={1} max={totalPages} value={page} onChange={(event) => goTo(Number(event.target.value) || 1)} /> / {totalPages}
+          </label>
+          <button type="button" onClick={() => goTo(page + 1)} disabled={page >= totalPages}>{t("pdfNextPage")}</button>
+          <button type="button" aria-label={t("pdfRotateCwAria")} onClick={() => setRotation((value) => (value + 90) % 360)}>↻</button>
+          <select aria-label={t("pdfZoomAria")} value={zoom} onChange={(event) => setZoom(Number(event.target.value))}>
+            {ZOOM_LEVELS.map((level) => <option key={level} value={level}>{Math.round(level * 100)}%</option>)}
+          </select>
+        </div>
+      </div>
+      {searchQuery.trim() && !searching && (
+        <div className="pdf-results" role="status">
+          <span>{tf("pdfMatchCount", { count: totalMatches })}</span>
+          {results.slice(0, 30).map((result) => (
+            <button type="button" key={result.page} title={result.snippet} onClick={() => goTo(result.page)}>
+              {tf("pdfMatchPage", { n: result.page })} <i>{result.count}</i>
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="pdf-stage">
+        <canvas ref={canvasRef} className="pdf-page-canvas" />
+        {(loading || rendering) && !error && (
+          <div className="viewer-busy" role="status">
+            <span className="dwg-loader" />
+            {loading ? t("pdfOpening") : t("pdfRenderingPage")}
+          </div>
+        )}
+        {error && (
+          <div className="viewer-error" role="alert">
+            <strong>{t("pdfErrorTitle")}</strong>
+            <p>{error}</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
