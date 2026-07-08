@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../../i18n";
 
 interface DocxData { type: "docx"; html: string; }
 interface ExcelData { type: "excel"; sheets: { name: string; data: string[][] }[]; }
@@ -10,32 +11,66 @@ interface Props { data: OfficeData; }
 const EXCEL_PAGE_SIZE = 500;
 
 function ExcelSheet({ sheet }: { sheet: { name: string; data: string[][] } }) {
+  const { t, tf } = useI18n();
   const [page, setPage] = useState(0);
   const columnCount = sheet.data.reduce((maximum, row) => Math.max(maximum, row.length), 0);
-  const headers = Array.from({ length: columnCount }, (_, index) => sheet.data[0]?.[index] || `第 ${index + 1} 列`);
+  const headers = Array.from({ length: columnCount }, (_, index) => sheet.data[0]?.[index] || tf("officeExcelCol", { n: index + 1 }));
   const rows = sheet.data.slice(1);
   const totalPages = Math.max(1, Math.ceil(rows.length / EXCEL_PAGE_SIZE));
   const visibleRows = rows.slice(page * EXCEL_PAGE_SIZE, (page + 1) * EXCEL_PAGE_SIZE);
-  if (columnCount === 0) return <div className="viewer-error"><strong>工作表为空</strong><p>“{sheet.name}”中没有单元格数据。</p></div>;
+  if (columnCount === 0) {
+    return (
+      <div className="viewer-error">
+        <strong>{t("officeSheetEmptyTitle")}</strong>
+        <p>{tf("officeSheetEmptyBody", { name: sheet.name })}</p>
+      </div>
+    );
+  }
   return (
     <div className="excel-sheet">
-      <div className="excel-grid-wrap"><table className="excel-grid"><thead><tr><th className="excel-row-number">#</th>{headers.map((header, index) => <th key={index}>{header}</th>)}</tr></thead><tbody>{visibleRows.map((row, rowIndex) => <tr key={page * EXCEL_PAGE_SIZE + rowIndex}><td className="excel-row-number">{page * EXCEL_PAGE_SIZE + rowIndex + 1}</td>{headers.map((_, columnIndex) => <td key={columnIndex} title={row[columnIndex] ?? ""}>{row[columnIndex] ?? ""}</td>)}</tr>)}</tbody></table></div>
-      <div className="csv-pagination"><span>{rows.length.toLocaleString()} 行 × {columnCount} 列</span><button type="button" disabled={page === 0} onClick={() => setPage((value) => value - 1)}>上一页</button><span>{page + 1} / {totalPages}</span><button type="button" disabled={page >= totalPages - 1} onClick={() => setPage((value) => value + 1)}>下一页</button></div>
+      <div className="excel-grid-wrap">
+        <table className="excel-grid">
+          <thead>
+            <tr>
+              <th className="excel-row-number">#</th>
+              {headers.map((header, index) => <th key={index}>{header}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {visibleRows.map((row, rowIndex) => (
+              <tr key={page * EXCEL_PAGE_SIZE + rowIndex}>
+                <td className="excel-row-number">{page * EXCEL_PAGE_SIZE + rowIndex + 1}</td>
+                {headers.map((_, columnIndex) => (
+                  <td key={columnIndex} title={row[columnIndex] ?? ""}>{row[columnIndex] ?? ""}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="csv-pagination">
+        <span>{tf("officeRowColSummary", { rows: rows.length, cols: columnCount })}</span>
+        <button type="button" disabled={page === 0} onClick={() => setPage((value) => value - 1)}>{t("officeExcelPrev")}</button>
+        <span>{tf("officeExcelPage", { current: page + 1, total: totalPages })}</span>
+        <button type="button" disabled={page >= totalPages - 1} onClick={() => setPage((value) => value + 1)}>{t("officeExcelNext")}</button>
+      </div>
     </div>
   );
 }
+
 export default function OfficeViewer({ data }: Props) {
+  const { t } = useI18n();
   const [activeSheet, setActiveSheet] = useState(0);
 
   if (data.type === "docx") {
     return (
       <div className="flex flex-col h-full overflow-hidden rounded-lg border" style={{ borderColor: "var(--border-default)", background: "var(--bg-base)" }}>
         <div className="flex items-center px-3 py-1.5 border-b" style={{ borderColor: "var(--border-muted)", background: "var(--bg-surface)" }}>
-          <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "var(--text-muted)" }}>Word 文档</span>
+          <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "var(--text-muted)" }}>{t("officeWordLabel")}</span>
         </div>
         <iframe
           className="office-doc-frame"
-          title="Word 文档预览"
+          title={t("officeWordFrameTitle")}
           sandbox=""
           srcDoc={`<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'"><style>body{box-sizing:border-box;max-width:850px;margin:24px auto;padding:48px 56px;background:#fff;color:#222;font:14px/1.75 system-ui,sans-serif;box-shadow:0 8px 30px #0002}img{max-width:100%}table{border-collapse:collapse;max-width:100%}td,th{border:1px solid #ccc;padding:5px 8px}</style>${data.html}`}
         />
@@ -49,7 +84,7 @@ export default function OfficeViewer({ data }: Props) {
     return (
       <div className="flex flex-col h-full overflow-hidden rounded-lg border" style={{ borderColor: "var(--border-default)", background: "var(--bg-base)" }}>
         <div className="excel-sheet-tabs" style={{ borderColor: "var(--border-muted)", background: "var(--bg-surface)" }}>
-          <span className="text-[10px] uppercase tracking-widest font-semibold mr-2" style={{ color: "var(--text-muted)" }}>Excel</span>
+          <span className="text-[10px] uppercase tracking-widest font-semibold mr-2" style={{ color: "var(--text-muted)" }}>{t("officeExcelLabel")}</span>
           {sheets.map((s, i) => (
             <button type="button" key={i} onClick={() => setActiveSheet(i)}
               className="px-2 py-0.5 rounded text-[10px] transition-colors"
@@ -62,7 +97,12 @@ export default function OfficeViewer({ data }: Props) {
           ))}
         </div>
         <div className="flex-1 overflow-hidden">
-          {current ? <ExcelSheet key={current.name} sheet={current} /> : <div className="viewer-error"><strong>没有工作表</strong><p>该文件未包含可读取的表格。</p></div>}
+          {current ? <ExcelSheet key={current.name} sheet={current} /> : (
+            <div className="viewer-error">
+              <strong>{t("officeSheetMissingTitle")}</strong>
+              <p>{t("officeSheetMissingBody")}</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -76,11 +116,8 @@ export default function OfficeViewer({ data }: Props) {
         <line x1="16" y1="13" x2="8" y2="13"/>
         <line x1="16" y1="17" x2="8" y2="17"/>
       </svg>
-      <p className="text-[13px]" style={{ color: "var(--text-secondary)" }}>PPTX 动画无法预览</p>
-      <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>请使用「用系统默认程序打开」查看完整内容</p>
+      <p className="text-[13px]" style={{ color: "var(--text-secondary)" }}>{t("officePptxTitle")}</p>
+      <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t("officePptxBody")}</p>
     </div>
   );
 }
-
-
-
