@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useI18n } from "../../i18n";
 import { useTheme } from "../../theme";
 import { SunIcon, MoonIcon } from "../icons/TitleBarIcons";
-import AboutDialog from "../AboutDialog";
-import SettingsDialog from "../SettingsDialog";
+
+// Lazy-load the dialogs so their CSS + JS ship in a separate chunk. They're
+// only rendered when the user opens them, so the initial bundle doesn't pay
+// the cost of code that almost nobody touches in any given session.
+const AboutDialog = lazy(() => import("../AboutDialog"));
+const SettingsDialog = lazy(() => import("../SettingsDialog"));
 
 export default function TitleBar() {
   const { t, lang, setLang } = useI18n();
@@ -65,8 +69,10 @@ export default function TitleBar() {
         <button type="button" aria-label={maximized ? t('restore') : t('maximize')} onClick={toggleMaximize}><svg aria-hidden="true" width="11" height="11" viewBox="0 0 12 12">{maximized ? <><rect x="3" y="2" width="7" height="7" rx="1" /><path d="M8 9v1H2V4h1" /></> : <rect x="2" y="2" width="8" height="8" rx="1" />}</svg></button>
         <button type="button" className="window-close" aria-label={t('close')} onClick={() => window.electronAPI.windowClose()}><svg aria-hidden="true" width="11" height="11" viewBox="0 0 12 12"><path d="m2.5 2.5 7 7m0-7-7 7" /></svg></button>
       </div>
-      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
-            <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-          </header>
-        );
-      }
+      <Suspense fallback={null}>
+        {aboutOpen && <AboutDialog open onClose={() => setAboutOpen(false)} />}
+        {settingsOpen && <SettingsDialog open onClose={() => setSettingsOpen(false)} />}
+      </Suspense>
+    </header>
+  );
+}
