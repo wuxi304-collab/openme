@@ -718,7 +718,7 @@ export const translations: Record<string, Record<string, string>> = {
     csvColumns: "columns",
     csvSearchAria: "Search table",
     csvSearchPlaceholder: "Search cells…",
-    csvErrors: "{count} format issue(s)",
+    csvErrors: "{count, plural, one {# format issue} other {# format issues}}",
     csvEmptyTitle: "CSV is empty",
     csvEmptySub: "No displayable rows in the file.",
     csvNoMatchTitle: "No matches",
@@ -739,7 +739,7 @@ export const translations: Record<string, Record<string, string>> = {
     pdfPageAria: "Page number",
     pdfRotateCwAria: "Rotate clockwise",
     pdfZoomAria: "Zoom level",
-    pdfMatchCount: "{count} match(es)",
+    pdfMatchCount: "{count, plural, one {# match} other {# matches}}",
     pdfMatchPage: "Page {n}",
     pdfOpening: "Opening PDF…",
     pdfRenderingPage: "Rendering page…",
@@ -821,7 +821,7 @@ export const translations: Record<string, Record<string, string>> = {
     zipLoading: "Reading archive…",
     zipUnzipping: "Extracting…",
     zipUnzip: "Extract to folder",
-    zipCount: "{files} files / {dirs} folders",
+    zipCount: "{files, plural, one {# file} other {# files}} / {dirs, plural, one {# folder} other {# folders}}",
     zipEmpty: "Archive is empty",
     zipPreviewHeader: "Preview: {name}",
     zipPreviewUnsupported: "Preview not supported for this file",
@@ -865,8 +865,8 @@ export const translations: Record<string, Record<string, string>> = {
     cad3dHint: "Drag to rotate · scroll to zoom",
     cad3dLoading: "Loading 3D model…",
     cad3dUnsupported: "Unsupported format: {ext}",
-    cad3dVertices: "{count} vertices",
-    cad3dMeshes: "{count} mesh(es)",
+    cad3dVertices: "{count, plural, one {# vertex} other {# vertices}}",
+    cad3dMeshes: "{count, plural, one {# mesh} other {# meshes}}",
     cad3dStepEmpty: "STEP parse produced no meshes",
     cad3dStepParseFailed: "STEP parse failed: {message}",
     cad3dStepLoaderMissing: "STEP loader not ready",
@@ -978,7 +978,7 @@ export const translations: Record<string, Record<string, string>> = {
     cmdOpenInSystemDetailNoFile: "No file open",
     cmdNextTab: "Switch to next tab",
     cmdPrevTab: "Switch to previous tab",
-    cmdTabCountDetail: "{count} open tabs",
+    cmdTabCountDetail: "{count, plural, one {# open tab} other {# open tabs}}",
     cmdCloseTab: "Close current tab",
     cmdCloseAll: "Close all tabs",
     cmdClearSearch: "Clear recent file search",
@@ -1116,17 +1116,117 @@ export const translations: Record<string, Record<string, string>> = {
       }
     };
 
-// Simple template substitution: replaces {name} / {count} / {query} with values
-export function format(template: string, params?: Record<string, string | number>): string {
+type Lang = "zh" | "en";
+const STORAGE_KEY = "openme.lang";
+
+/**
+ * Format a template string with a small ICU MessageFormat subset.
+ *
+ * Two template forms are supported:
+ *   1. Simple: "Hello {name}"  →  "Hello Alice"
+ *   2. ICU plural:
+ *        "{count, plural, one {# vertex} other {# vertices}}"
+ *      →  "1 vertex" / "2 vertices"
+ *
+ * In ICU plural branches, `#` is the CLDR placeholder for the actual
+ * number. Other `{key}` placeholders inside a plural branch are
+ * substituted as normal.
+ *
+ * Plural rules (intentionally tiny — only the categories needed for
+ * zh + en are implemented, with everything else falling back to
+ * "other"):
+ *   - zh: "other" for every n (Chinese has no grammatical plural).
+ *   - en: "one" for n === 1, "other" otherwise.
+ *
+ * Nested ICU is not supported (and not used by this project).
+ */
+export function formatIcu(
+  template: string,
+  params?: Record<string, string | number>,
+  lang: Lang = "zh",
+): string {
   if (!params) return template;
-  return template.replace(/\{(\w+)\}/g, (_, key) => {
-    const value = params[key];
-    return value === undefined || value === null ? `{${key}}` : String(value);
+  let out = "";
+  let i = 0;
+  while (i < template.length) {
+    const c = template[i];
+    if (c !== "{") { out += c; i++; continue; }
+    // Find the matching closing "}" that balances all nested "{...}".
+    // `start` is the index of the opening "{", so depth begins at 0.
+    const end = findBalancedClose(template, i);
+    if (end === -1) {
+      // Unbalanced — emit the rest verbatim and stop.
+      out += template.slice(i);
+      break;
+    }
+    const inner = template.slice(i + 1, end);
+    if (inner.includes(",")) {
+      const parts = inner.split(/\s*,\s*/);
+      if (parts.length >= 3 && parts[1] === "plural") {
+        const key = parts[0];
+        const body = parts.slice(2).join(",");
+        const n = Number(params[key]);
+        const branch = pickPluralBranch(lang, n);
+        const branchText = extractBranch(body, branch)
+          ?? extractBranch(body, "other");
+        if (branchText !== null) {
+          out += branchText.replace(/#/g, String(n));
+          i = end + 1;
+          continue;
+        }
+      }
+    }
+    // Simple {key} form (or an ICU form we couldn't parse — fall through
+    // to plain substitution; missing params are left as their token).
+    const v = params[inner];
+    out += v === undefined || v === null ? `{${inner}}` : String(v);
+    i = end + 1;
+  }
+  // Final pass: substitute any remaining {key} tokens (in case a plural
+  // branch text contains nested {key} references that need params).
+  return out.replace(/\{(\w+)\}/g, (_, k) => {
+    const v = params[k];
+    return v === undefined || v === null ? `{${k}}` : String(v);
   });
 }
 
-type Lang = "zh" | "en";
-const STORAGE_KEY = "openme.lang";
+/** Index of the `}` that balances the `{` at `start`. Depth begins at 0
+ *  because `start` is the position of the opening brace. */
+function findBalancedClose(template: string, start: number): number {
+  let depth = 0;
+  let i = start;
+  while (i < template.length) {
+    const c = template[i];
+    if (c === "{") depth++;
+    else if (c === "}") {
+      depth--;
+      if (depth === 0) return i;
+    }
+    i++;
+  }
+  return -1;
+}
+
+/** Pull the text inside `{...}` for a given plural branch name. */
+function extractBranch(body: string, branch: "one" | "other"): string | null {
+  const idx = body.indexOf(`${branch} {`);
+  if (idx === -1) return null;
+  const braceStart = idx + branch.length + 1;
+  const braceEnd = findBalancedClose(body, braceStart);
+  if (braceEnd === -1) return null;
+  return body.slice(braceStart + 1, braceEnd);
+}
+
+function pickPluralBranch(lang: Lang, n: number): "one" | "other" {
+  if (lang === "zh") return "other";
+  return n === 1 ? "one" : "other";
+}
+
+// Backward-compatible shim: the previous (pre-ICU) `format` signature
+// is preserved as a no-lang alias. New callers should prefer formatIcu.
+export function format(template: string, params?: Record<string, string | number>): string {
+  return formatIcu(template, params, "zh");
+}
 
 const I18nContext = createContext({
   lang: "zh" as Lang,
@@ -1153,7 +1253,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   };
   const tf = (key: string, params?: Record<string, string | number>) => {
     const raw = (translations[lang] && translations[lang][key]) ? translations[lang][key] : key;
-    return format(raw, params);
+    return formatIcu(raw, params, lang);
   };
   // Push the locale-dependent strings the main process needs for native
   // dialogs (file picker title, unsaved-changes prompt). Re-pushed on every
