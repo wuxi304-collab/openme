@@ -1,3 +1,15 @@
+// Preload script — runs in the renderer's process but with a restricted
+// execution context. The renderer is OS-sandboxed (sandbox: true in
+// main.js), so this script can only use Electron's sandbox-safe module
+// subset. The current preload only touches:
+//
+//   - contextBridge : bridge functions into window.electronAPI
+//   - ipcRenderer   : send invoke() messages to the main process
+//
+// Do NOT add require()s for any other Node module (e.g. fs, path,
+// child_process) — they will be undefined under sandbox: true and
+// fail loudly at startup. If you need a new capability, add a new
+// IPC channel in main.js and expose it via contextBridge here.
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {

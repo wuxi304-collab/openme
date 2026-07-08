@@ -35,6 +35,17 @@ process.on("unhandledRejection", (reason) => {
 app.setAppUserModelId("com.openme.desktop");
 protocol.registerSchemesAsPrivileged([{ scheme: "openme-media", privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } }]);
 
+// Defense-in-depth: apply the same web-contents hardening (CSP, blocked
+// window.open, blocked will-navigate) to ANY web contents the app
+// creates — not just the main window. Without this, a future feature
+// that opens a BrowserWindow, a `<webview>`, or a child webContents
+// could spawn an unhardened renderer. The main window is hardened
+// explicitly via hardenWebContents() inside createWindow(); this is the
+// catch-all for everything else.
+app.on("web-contents-created", (_event, contents) => {
+  hardenWebContents(contents);
+});
+
 let mainWindow = null;
 let hasUnsavedChanges = false;
 
@@ -261,7 +272,12 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      // OS-level renderer sandbox. Combined with contextIsolation: true
+      // and nodeIntegration: false, the renderer cannot escape its
+      // process even if a V8 vulnerability is exploited. The preload
+      // script (preload.js) only uses contextBridge + ipcRenderer,
+      // both of which are part of Electron's sandbox-safe subset.
+      sandbox: true,
       webSecurity: true,
       allowRunningInsecureContent: false,
     },
