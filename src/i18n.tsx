@@ -505,6 +505,53 @@ export const translations: Record<string, Record<string, string>> = {
     packResearchTagline: "论文、笔记、引用与阅读摘要。",
     packDeveloperName: "匠作包",
     packDeveloperTagline: "代码树、依赖、脚本与配置摘要。",
+
+    // Main process IPC error codes (electron/main.js + electron/epub.js)
+    FILE_NOT_FOUND: "文件不存在",
+    FILE_TOO_LARGE: "文件过大（{sizeMb} MB），已超过预览限制",
+    TEXT_FILE_TOO_LARGE: "[文件太大（{sizeBytes} 字节），已限制预览大小]",
+    READ_FILE_FAILED: "无法读取文件：{message}",
+    READ_TEXT_FAILED: "无法读取：{message}",
+    READ_FILE_CONTENT_FAILED: "无法读取：{message}",
+    READ_BINARY_FAILED: "无法读取：{message}",
+    SAVE_FILE_FAILED: "无法保存：{message}",
+    SAVE_RECENT_FAILED: "无法保存：{message}",
+    CONVERT_DOCX_FAILED: "Word 转换失败：{message}",
+    CONVERT_EXCEL_FAILED: "Excel 转换失败：{message}",
+    EXCEL_TOO_LARGE: "Excel 文件超过 50 MB 预览限制",
+    OPEN_IN_SYSTEM_FAILED: "无法打开：{message}",
+    MEDIA_NOT_FOUND: "媒体文件不存在",
+    ZIP_TOO_MANY_FILES: "压缩包文件过多（超过 100,000 项）",
+    ZIP_TOO_LARGE: "解压后体积超过 2 GB 安全限制",
+    ZIP_UNSAFE_PATH: "压缩包包含不安全路径：{entry}",
+    ZIP_PATH_TRAVERSAL: "路径越界：{entry}",
+    ZIP_ENTRY_NOT_FOUND: "压缩包内未找到该文件",
+    ZIP_ENTRY_TOO_LARGE: "文件超过 2 MB 预览限制",
+    EPUB_TOO_LARGE: "EPUB 超过 100 MB 预览限制",
+    EPUB_MISSING_CONTAINER: "EPUB 缺少内容目录",
+    EPUB_INVALID_CONTAINER: "EPUB 内容目录无效",
+    EPUB_NO_CHAPTERS: "没有找到可阅读的文本章节",
+    CADHOST_NOT_BUILT: "ACadSharp CadHost 尚未构建，无法做 DWG 语义检查。请先构建 cad-host 侧的发布物。",
+    CADHOST_INVALID_DATA: "CadHost 返回无效数据：{message}",
+    CADHOST_RENDER_FAILED: "CadHost 渲染失败：{message}",
+    AI_NO_ENCRYPTION: "系统加密存储不可用，请检查操作系统凭据。",
+    AI_INVALID_URL: "接口地址必须使用 HTTPS（本地服务除外）",
+    AI_MISSING_KEY: "请输入 API Key",
+    AI_NOT_CONFIGURED: "请先配置 API Key",
+    AI_EMPTY_REQUEST: "修改要求不能为空",
+    AI_REQUEST_FAILED: "模型请求失败（{status}）：{message}",
+    AI_NO_PLAN: "模型没有返回结构化计划",
+
+    // Native dialogs (pushed from renderer to main via set-ui-strings)
+    dialogSelectFile: "选择文件",
+    dialogSelectFolder: "选择解压目标文件夹",
+    closePromptTitle: "还有未保存修改",
+    closePromptMessage: "关闭 OpenMe Qiwu？",
+    closePromptDetail: "未保存的文本、代码或 Markdown 修改将丢失。",
+    closePromptKeepEditing: "继续编辑",
+    closePromptDiscard: "放弃并关闭",
+
+    ipcUnknownError: "未知错误",
     },
     en: {
     // TitleBar
@@ -1005,6 +1052,53 @@ export const translations: Record<string, Record<string, string>> = {
     packResearchTagline: "Summarize papers, notes, citations, and reading evidence.",
     packDeveloperName: "Developer Pack",
     packDeveloperTagline: "Inspect source trees, dependencies, scripts, and configuration.",
+
+    // Main process IPC error codes (electron/main.js + electron/epub.js)
+    FILE_NOT_FOUND: "File not found",
+    FILE_TOO_LARGE: "File too large ({sizeMb} MB), exceeds the preview limit",
+    TEXT_FILE_TOO_LARGE: "[File too large ({sizeBytes} bytes), preview size capped]",
+    READ_FILE_FAILED: "Failed to read file: {message}",
+    READ_TEXT_FAILED: "Failed to read: {message}",
+    READ_FILE_CONTENT_FAILED: "Failed to read: {message}",
+    READ_BINARY_FAILED: "Failed to read: {message}",
+    SAVE_FILE_FAILED: "Failed to save: {message}",
+    SAVE_RECENT_FAILED: "Failed to save: {message}",
+    CONVERT_DOCX_FAILED: "Word conversion failed: {message}",
+    CONVERT_EXCEL_FAILED: "Excel conversion failed: {message}",
+    EXCEL_TOO_LARGE: "Excel file exceeds the 50 MB preview limit",
+    OPEN_IN_SYSTEM_FAILED: "Failed to open: {message}",
+    MEDIA_NOT_FOUND: "Media file not found",
+    ZIP_TOO_MANY_FILES: "Archive has more than 100,000 entries",
+    ZIP_TOO_LARGE: "Extracted size exceeds the 2 GB safety limit",
+    ZIP_UNSAFE_PATH: "Archive contains an unsafe path: {entry}",
+    ZIP_PATH_TRAVERSAL: "Path traversal blocked: {entry}",
+    ZIP_ENTRY_NOT_FOUND: "Entry not found inside the archive",
+    ZIP_ENTRY_TOO_LARGE: "Entry exceeds the 2 MB preview limit",
+    EPUB_TOO_LARGE: "EPUB exceeds the 100 MB preview limit",
+    EPUB_MISSING_CONTAINER: "EPUB is missing its content directory",
+    EPUB_INVALID_CONTAINER: "EPUB content directory is invalid",
+    EPUB_NO_CHAPTERS: "No readable text chapters were found",
+    CADHOST_NOT_BUILT: "ACadSharp CadHost is not built. Build the cad-host publish artifacts first.",
+    CADHOST_INVALID_DATA: "CadHost returned invalid data: {message}",
+    CADHOST_RENDER_FAILED: "CadHost render failed: {message}",
+    AI_NO_ENCRYPTION: "OS-encrypted storage is unavailable. Check the system keychain.",
+    AI_INVALID_URL: "API endpoint must use HTTPS (except for localhost)",
+    AI_MISSING_KEY: "Enter an API key",
+    AI_NOT_CONFIGURED: "Configure an API key first",
+    AI_EMPTY_REQUEST: "Modification request cannot be empty",
+    AI_REQUEST_FAILED: "Model request failed ({status}): {message}",
+    AI_NO_PLAN: "The model did not return a structured plan",
+
+    // Native dialogs (pushed from renderer to main via set-ui-strings)
+    dialogSelectFile: "Select files",
+    dialogSelectFolder: "Choose destination folder",
+    closePromptTitle: "Unsaved changes",
+    closePromptMessage: "Close OpenMe Qiwu?",
+    closePromptDetail: "Unsaved text, code, or Markdown edits will be lost.",
+    closePromptKeepEditing: "Keep editing",
+    closePromptDiscard: "Discard and close",
+
+    ipcUnknownError: "Unknown error",
       }
     };
 
@@ -1047,6 +1141,22 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     const raw = (translations[lang] && translations[lang][key]) ? translations[lang][key] : key;
     return format(raw, params);
   };
+  // Push the locale-dependent strings the main process needs for native
+  // dialogs (file picker title, unsaved-changes prompt). Re-pushed on every
+  // language change so a mid-session switch takes effect immediately.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.electronAPI?.setUiStrings) return;
+    const bundle: Record<string, string> = {
+      dialogSelectFile: t("dialogSelectFile"),
+      dialogSelectFolder: t("dialogSelectFolder"),
+      closePromptTitle: t("closePromptTitle"),
+      closePromptMessage: t("closePromptMessage"),
+      closePromptDetail: t("closePromptDetail"),
+      closePromptKeepEditing: t("closePromptKeepEditing"),
+      closePromptDiscard: t("closePromptDiscard"),
+    };
+    window.electronAPI.setUiStrings(bundle).catch(() => undefined);
+  }, [lang, t]);
   return <I18nContext.Provider value={{ lang, setLang, t, tf }}>{children}</I18nContext.Provider>;
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "../../i18n";
+import { describeIpcError, isIpcFailure } from "../../core/ipcError";
 
 interface ZipEntry {
   name: string;
@@ -54,11 +55,14 @@ export default function ZipViewer({ zipPath }: Props) {
           setDirectoryCount(archiveEntries.filter((entry) => entry.isDir).length);
           setEntries(archiveEntries.filter((entry) => !entry.isDir).sort((a, b) => a.name.localeCompare(b.name)));
           setLoading(false);
-        } else {
-          setError(res.message ?? t("zipLoadError"));
+              } else if (isIpcFailure(res)) {
+                setError(describeIpcError(t, res));
           setLoading(false);
-        }
-      })
+              } else {
+                setError(res.message ?? t("zipLoadError"));
+                setLoading(false);
+              }
+            })
       .catch((e: any) => { setError(e.message); setLoading(false); });
   }, [zipPath, t]);
 
@@ -72,9 +76,11 @@ export default function ZipViewer({ zipPath }: Props) {
       if (res.success) {
         const binary = atob(res.data);
         setPreviewContent(binary);
-      } else {
-        setPreviewContent(tf("zipReadError", { message: res.message ?? "" }));
-      }
+            } else if (isIpcFailure(res)) {
+              setPreviewContent(tf("zipReadError", { message: describeIpcError(t, res) }));
+            } else {
+              setPreviewContent(tf("zipReadError", { message: res.message ?? "" }));
+            }
     } catch {
       setPreviewContent(t("zipReadErrorShort"));
     }
@@ -92,9 +98,11 @@ export default function ZipViewer({ zipPath }: Props) {
         const folderName = getFileName(zipPath).replace(/\.[^.]+$/, "");
         const finalDir = targetDir + (targetDir.endsWith("\\") || targetDir.endsWith("/") ? "" : "\\") + folderName;
         await window.electronAPI.openInSystem(finalDir);
-      } else {
-        setActionError(tf("zipActionError", { message: res.message ?? "" }));
-      }
+            } else if (isIpcFailure(res)) {
+              setActionError(tf("zipActionError", { message: describeIpcError(t, res) }));
+            } else {
+              setActionError(tf("zipActionError", { message: res.message ?? "" }));
+            }
     } catch (e: any) {
       setActionError(tf("zipActionError", { message: e?.message ?? "" }));
     }

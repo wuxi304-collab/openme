@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useI18n } from "../../i18n";
+import { describeIpcError, isIpcFailure } from "../../core/ipcError";
 
 interface CadPlanOperation {
   id: string;
@@ -57,25 +58,30 @@ export default function CadAssistant({ filePath, fileName }: Props) {
 
   const saveSettings = async () => {
     setError(null);
-    const result = await window.electronAPI.saveAiConfig({ apiKey, model, baseUrl });
-    if (!result.success) { setError(result.message ?? t("cadAssistantSaveSettingsFailed")); return; }
-    setConfigured(true);
-    setApiKey("");
-    setSettingsOpen(false);
-  };
+      const result: any = await window.electronAPI.saveAiConfig({ apiKey, model, baseUrl });
+      if (!result.success) {
+        setError(isIpcFailure(result) ? describeIpcError(t, result) : result.message ?? t("cadAssistantSaveSettingsFailed"));
+        return;
+      }
+      setConfigured(true);
+      setApiKey("");
+      setSettingsOpen(false);
+    };
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!prompt.trim() || loading) return;
-    setLoading(true); setError(null); setPlan(null);
-    try {
-      const result: any = await window.electronAPI.planCadChange({ filePath, fileName, request: prompt.trim() });
-      if (!result.success || !result.plan) throw new Error(result.message ?? t("cadAssistantPlanEmpty"));
-      setPlan(result.plan as CadPlan);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : t("cadAssistantPlanFailed"));
-    } finally { setLoading(false); }
-  };
+    const submit = async (event: FormEvent) => {
+      event.preventDefault();
+      if (!prompt.trim() || loading) return;
+      setLoading(true); setError(null); setPlan(null);
+      try {
+        const result: any = await window.electronAPI.planCadChange({ filePath, fileName, request: prompt.trim() });
+        if (!result.success || !result.plan) {
+          throw new Error(isIpcFailure(result) ? describeIpcError(t, result) : result.message ?? t("cadAssistantPlanEmpty"));
+        }
+        setPlan(result.plan as CadPlan);
+      } catch (reason) {
+        setError(reason instanceof Error ? reason.message : t("cadAssistantPlanFailed"));
+      } finally { setLoading(false); }
+    };
 
   return (
     <aside className="cad-assistant" aria-label={t("cadAssistantAria")}>

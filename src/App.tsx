@@ -4,6 +4,7 @@ import { ThemeProvider } from "./theme";
 import { FileInfo, FileTabState } from "./types";
 import { detectCategory } from "./utils/fileTypeDetector";
 import { loadFileTabData } from "./core/fileOpenPipeline";
+import { describeIpcError, isIpcFailure } from "./core/ipcError";
 import Sidebar from "./components/layout/Sidebar";
 import TitleBar from "./components/layout/TitleBar";
 import StatusBar from "./components/layout/StatusBar";
@@ -68,8 +69,9 @@ export default function App() {
       if (result.success) {
         setTabs((prev) => prev.map((t) => t.id === tab.id ? { ...t, isDirty: false } : t));
         setToast({ kind: "success", message: tf("saveSuccess", { name: tab.name }) });
-      } else setToast({ kind: "error", message: result.message ?? tf("saveFailed") });
-    }, [activeTab, tf]);
+        } else if (isIpcFailure(result)) setToast({ kind: "error", message: describeIpcError(t, result) });
+        else setToast({ kind: "error", message: result.message ?? tf("saveFailed") });
+      }, [activeTab, t, tf]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key === "s") { event.preventDefault(); handleSaveCurrent(); } };
@@ -93,8 +95,16 @@ export default function App() {
     }
   }, [tabs, t]);
 
-  const addToRecent = useCallback(async (file: FileInfo) => { const updated = [file, ...recentFiles.filter((f) => f.path !== file.path)].slice(0, MAX_RECENT); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); }, [recentFiles]);
-  const handleFilePaths = useCallback(async (paths: string[]) => { for (const p of paths) { try { const fileInfo = await window.electronAPI.getFileInfo(p); fileInfo.file_type = detectCategory(p) as any; await addToRecent(fileInfo); await openFileInTab(fileInfo); } catch (error) { console.error("Open file error:", error); } } }, [addToRecent, openFileInTab]);
+  const addToRecent = useCallback(async (file: FileInfo) => { const updated = [file, ...recentFiles.filter((f) => f.path !== file.path)].slice(0, MAX_RECENT); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }).catch(() => undefined); }, [recentFiles]);
+    const handleFilePaths = useCallback(async (paths: string[]) => {
+      for (const p of paths) {
+        const fileInfo = await window.electronAPI.getFileInfo(p);
+        if (isIpcFailure(fileInfo)) { setToast({ kind: "error", message: describeIpcError(t, fileInfo) }); continue; }
+        (fileInfo as FileInfo).file_type = detectCategory(p) as any;
+        await addToRecent(fileInfo as FileInfo);
+        await openFileInTab(fileInfo as FileInfo);
+      }
+    }, [addToRecent, openFileInTab, t]);
   const handleSelectFile = useCallback(async (file: FileInfo) => { await openFileInTab(file); }, [openFileInTab]);
   const handleRemoveRecent = useCallback(async (file: FileInfo) => { const updated = recentFiles.filter((item) => item.path !== file.path); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); setToast({ kind: "success", message: tf("removeFromRecentToast", { name: file.name }) }); }, [recentFiles, tf]);
   const handleCloseTab = useCallback((tabId: string) => { const closingTab = tabs.find((tab) => tab.id === tabId); if (closingTab?.isDirty && !window.confirm(tf("unsavedCloseOne", { name: closingTab.name }))) return; setTabs((prev) => { const idx = prev.findIndex((t) => t.id === tabId); const newTabs = prev.filter((t) => t.id !== tabId); if (activeTabId === tabId) { if (newTabs.length > 0) setActiveTabId(newTabs[Math.min(idx, newTabs.length - 1)].id); else setActiveTabId(null); } return newTabs; }); }, [activeTabId, tabs, tf]);

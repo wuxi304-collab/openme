@@ -3,17 +3,28 @@ const path = require("path");
 const JSZip = require("jszip");
 const { DOMParser } = require("@xmldom/xmldom");
 
+// epub.js throws a tagged error so the main IPC handler can convert it into
+// the localized { success: false, code, params, message } shape without
+// needing to know the precise failure reason. The caller does
+// `catch (e) { return e && e.code ? ipcError(e.code, e.params, e.message) : ipcError(...) }`.
+function epubError(code, params) {
+  const err = new Error(code);
+  err.code = code;
+  err.params = params || {};
+  return err;
+}
+
 async function readEpub(filePath) {
   const stats = await fs.promises.stat(filePath);
-  if (stats.size > 100 * 1024 * 1024) throw new Error("EPUB 超过 100 MB 预览限制");
+  if (stats.size > 100 * 1024 * 1024) throw epubError("EPUB_TOO_LARGE");
   const archive = await JSZip.loadAsync(await fs.promises.readFile(filePath));
   const containerFile = archive.file("META-INF/container.xml");
-  if (!containerFile) throw new Error("EPUB 缺少内容目录");
+  if (!containerFile) throw epubError("EPUB_MISSING_CONTAINER");
   const container = new DOMParser().parseFromString(await containerFile.async("string"), "application/xml");
   const rootfile = Array.from(container.getElementsByTagName("*")).find((node) => node.localName === "rootfile");
   const packagePath = rootfile?.getAttribute("full-path");
   const packageFile = packagePath ? archive.file(packagePath) : null;
-  if (!packagePath || !packageFile) throw new Error("EPUB 内容目录无效");
+  if (!packagePath || !packageFile) throw epubError("EPUB_INVALID_CONTAINER");
   const packageDocument = new DOMParser().parseFromString(await packageFile.async("string"), "application/xml");
   const all = Array.from(packageDocument.getElementsByTagName("*"));
   const textOf = (name) => all.find((node) => node.localName === name)?.textContent?.trim() || "";
@@ -46,7 +57,7 @@ async function readEpub(filePath) {
     const coverFile = archive.file(path.posix.normalize(path.posix.join(baseDirectory, coverItem.href)));
     if (coverFile && (coverFile._data?.uncompressedSize ?? 0) < 5 * 1024 * 1024) cover = { data: await coverFile.async("base64"), mimeType: coverItem.mediaType || "image/jpeg" };
   }
-  if (chapters.length === 0) throw new Error("没有找到可阅读的文本章节");
+  if (chapters.length === 0) throw epubError("EPUB_NO_CHAPTERS");
   return { title: textOf("title") || path.basename(filePath, path.extname(filePath)), creator: textOf("creator"), language: textOf("language"), cover, chapters };
 }
 
