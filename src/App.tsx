@@ -192,7 +192,7 @@ export default function App() {
             ) : null}
           </main>
             </div>
-            <StatusBar activeTab={activeTab ? { name: activeTab.name, path: activeTab.path, size: activeTab.sourceFile?.size, content: activeTab.content ?? undefined, isDirty: activeTab.isDirty } : null} />
+            <StatusBar activeTab={activeTab ? { name: activeTab.name, path: activeTab.path, size: activeTab.sourceFile?.size, content: activeTab.content ?? undefined, isDirty: activeTab.isDirty, isLoading: activeTab.isLoading } : null} />
             <ToastStack toasts={toasts} onDismiss={dismissToast} />
             <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
           </div>
