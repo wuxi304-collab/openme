@@ -13,7 +13,7 @@ interface Props {
 }
 
 export default function StatusBar({ activeTab }: Props) {
-  const { t } = useI18n();
+  const { t, tf } = useI18n();
   const lines = activeTab?.content !== undefined ? activeTab.content.split("\n").length : 0;
   const sizeLabel = typeof activeTab?.size === "number" ? formatBytes(activeTab.size, t("unknownSize")) : null;
   const format = activeTab?.path ? getFileFormatByPath(activeTab.path) : undefined;
@@ -26,7 +26,7 @@ export default function StatusBar({ activeTab }: Props) {
           {activeTab?.isDirty ? t("modified") : t("ready")}
         </span>
         <span className="status-file">{activeTab?.name ?? t("waitingForFile")}</span>
-        {format && <SupportBadge level={format.supportLevel} label={format.name} />}
+        {format && <SupportBadge level={format.supportLevel} label={format.name} tf={tf} />}
         {sizeLabel && <span className="status-meta">{sizeLabel}</span>}
         {lines > 0 && <span className="status-meta">{`${lines.toLocaleString()} ${t("lines")}`}</span>}
       </div>
@@ -40,8 +40,8 @@ export default function StatusBar({ activeTab }: Props) {
   );
 }
 
-function SupportBadge({ level, label }: { level: HonestSupportLevel; label: string }) {
-  return <span className={`status-support-badge support-${level.replace("+", "plus")}`} title={label}>Support {level}</span>;
+function SupportBadge({ level, label, tf }: { level: HonestSupportLevel; label: string; tf: (key: string, params?: Record<string, string | number>) => string }) {
+  return <span className={`status-support-badge support-${level.replace("+", "plus")}`} title={label}>{tf("summarySupportBadge", { level })}</span>;
 }
 
 function formatBytes(bytes: number, unknownLabel: string): string {
