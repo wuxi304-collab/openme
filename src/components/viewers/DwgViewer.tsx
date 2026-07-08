@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AcApDocManager, AcEdOpenMode } from "@mlightcad/cad-simple-viewer";
+import { useI18n } from "../../i18n";
 
 interface Props { filePath: string; fileName: string; }
 
@@ -15,41 +16,52 @@ function resourceUrl(fileName: string): string {
 }
 
 export default function DwgViewer({ filePath, fileName }: Props) {
+  const { t, tf } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [manager, setManager] = useState<AcApDocManager | null>(null);
-  const [engineName, setEngineName] = useState("正在检测引擎");
+  const [engineName, setEngineName] = useState(t("dwgEngineDetecting"));
   const [fallbackEngine, setFallbackEngine] = useState(false);
   const [cadSummary, setCadSummary] = useState<string | null>(null);
   const [nativeSvgUrl, setNativeSvgUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"native" | "compat">("native");
 
   useEffect(() => {
-    window.electronAPI.getCadEngineStatus().then((engine) => {
-      setEngineName(engine.name);
-      setFallbackEngine(engine.fallback);
+    let cancelled = false;
+    window.electronAPI.getCadEngineStatus().then((engine: any) => {
+      if (cancelled) return;
+      setEngineName(engine.name || t("dwgEngineDetecting"));
+      setFallbackEngine(!!engine.fallback);
       if (engine.kind === "acadsharp") {
-        window.electronAPI.inspectCadDocument(filePath).then((result) => {
+        window.electronAPI.inspectCadDocument(filePath).then((result: any) => {
+          if (cancelled) return;
           const info = result.document?.document;
-          if (result.success && info) setCadSummary(`${info.entityCount ?? 0} 实体 · ${info.layerCount ?? 0} 图层`);
+          if (result.success && info) {
+            setCadSummary(tf("dwgEntityLayerSummary", {
+              entities: info.entityCount ?? 0,
+              layers: info.layerCount ?? 0,
+            }));
+          }
         }).catch(() => undefined);
       }
     }).catch(() => {
-      setEngineName("LibreDWG Web 兼容预览");
+      if (cancelled) return;
+      setEngineName(t("dwgEngineLibreDwg"));
       setFallbackEngine(true);
     });
-  }, [filePath]);
+    return () => { cancelled = true; };
+  }, [filePath, t, tf]);
 
   useEffect(() => {
     let disposed = false;
     let objectUrl: string | null = null;
-    window.electronAPI.renderCadDocument(filePath).then((result) => {
+    window.electronAPI.renderCadDocument(filePath).then((result: any) => {
       if (disposed) return;
       if (!result.success || !result.svg) { setViewMode("compat"); return; }
       objectUrl = URL.createObjectURL(new Blob([result.svg], { type: "image/svg+xml" }));
       setNativeSvgUrl(objectUrl);
-    }).catch(() => setViewMode("compat"));
+    }).catch(() => { if (!disposed) setViewMode("compat"); });
     return () => { disposed = true; if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [filePath]);
 
@@ -73,17 +85,17 @@ export default function DwgViewer({ filePath, fileName }: Props) {
             mtextRender: resourceUrl("mtext-renderer-worker.js"),
           },
         });
-        if (!currentManager) throw new Error("无法初始化 CAD 画布");
+        if (!currentManager) throw new Error(t("dwgInitFailed"));
         const response = await window.electronAPI.readBinary(filePath, 100 * 1024 * 1024);
-        if (!response.success || !response.data) throw new Error(response.message ?? "无法读取 DWG 文件");
+        if (!response.success || !response.data) throw new Error(response.message ?? t("dwgReadFailed"));
         const opened = await currentManager.openDocument(fileName, decodeBase64(response.data), {
           mode: AcEdOpenMode.Write,
           progressiveRendering: true,
         });
-        if (!opened) throw new Error("DWG 解析失败；该图纸可能包含暂不支持的实体或版本");
+        if (!opened) throw new Error(t("dwgParseFailed"));
         if (!cancelled) setManager(currentManager);
       } catch (reason) {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : "DWG 加载失败");
+        if (!cancelled) setError(reason instanceof Error ? reason.message : t("dwgLoadFailed"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -95,35 +107,31 @@ export default function DwgViewer({ filePath, fileName }: Props) {
       setManager(null);
       currentManager?.destroy().catch(console.error);
     };
-  }, [filePath, fileName]);
+  }, [filePath, fileName, t]);
 
   const run = (command: string) => {
     try { manager?.sendStringToExecute(command); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "命令执行失败"); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : t("dwgCommandFailed")); }
   };
 
   return (
     <div className="dwg-viewer">
-      <div className="dwg-toolbar" aria-label="CAD 工具栏">
+      <div className="dwg-toolbar" aria-label={t("dwgToolbarAria")}>
         <span className="dwg-file-label" title={filePath}><i aria-hidden="true" />{fileName}<em className={fallbackEngine ? "is-fallback" : ""}>{engineName}{cadSummary ? ` · ${cadSummary}` : ""}</em></span>
         <div className="dwg-toolbar-group">
-          {nativeSvgUrl && <button type="button" className="dwg-engine-switch" onClick={() => setViewMode(viewMode === "native" ? "compat" : "native")}>{viewMode === "native" ? "兼容画布" : "工程预览"}</button>}
-          <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("zoom\ne")}>适应窗口</button>
-          <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("pan")}>平移</button>
-          <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("select")}>选择</button>
+          {nativeSvgUrl && <button type="button" className="dwg-engine-switch" onClick={() => setViewMode(viewMode === "native" ? "compat" : "native")}>{viewMode === "native" ? t("dwgCompatCanvas") : t("dwgEngineeringPreview")}</button>}
+          <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("zoom\ne")}>{t("dwgFitWindow")}</button>
+          <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("pan")}>{t("dwgPan")}</button>
+          <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("select")}>{t("dwgSelect")}</button>
           <span className="dwg-tool-separator" />
-          <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("undo")}>撤销</button>
-          <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("redo")}>重做</button>
+          <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("undo")}>{t("dwgUndo")}</button>
+          <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("redo")}>{t("dwgRedo")}</button>
         </div>
       </div>
       <div ref={containerRef} className={`dwg-canvas-host ${viewMode === "native" ? "is-hidden" : ""}`} />
-      {viewMode === "native" && nativeSvgUrl && <div className="dwg-native-canvas"><img src={nativeSvgUrl} alt={`${fileName} ACadSharp 工程预览`} /></div>}
-      {loading && viewMode === "compat" && <div className="dwg-overlay" role="status"><span className="dwg-loader" /><strong>正在解析 DWG</strong><small>大型图纸可能需要一些时间</small></div>}
-      {error && <div className="dwg-overlay dwg-error" role="alert"><strong>图纸打开失败</strong><p>{error}</p><button type="button" onClick={() => window.electronAPI.openInSystem(filePath)}>用系统程序打开</button></div>}
+      {viewMode === "native" && nativeSvgUrl && <div className="dwg-native-canvas"><img src={nativeSvgUrl} alt={tf("dwgAcadSharpAlt", { name: fileName })} /></div>}
+      {loading && viewMode === "compat" && <div className="dwg-overlay" role="status"><span className="dwg-loader" /><strong>{t("dwgParsingTitle")}</strong><small>{t("dwgParsingHint")}</small></div>}
+      {error && <div className="dwg-overlay dwg-error" role="alert"><strong>{t("dwgErrorTitle")}</strong><p>{error}</p><button type="button" onClick={() => window.electronAPI.openInSystem(filePath)}>{t("dwgOpenInSystem")}</button></div>}
     </div>
   );
 }
-
-
-
-

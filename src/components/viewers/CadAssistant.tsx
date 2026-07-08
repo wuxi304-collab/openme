@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { useI18n } from "../../i18n";
 
 interface CadPlanOperation {
   id: string;
@@ -27,7 +28,14 @@ interface CadPlan {
 
 interface Props { filePath: string; fileName: string; }
 
+const RISK_LABEL_KEYS: Record<CadPlan["risk_level"], string> = {
+  destructive: "cadAssistantRiskDestructive",
+  reversible: "cadAssistantRiskReversible",
+  read_only: "cadAssistantRiskReadOnly",
+};
+
 export default function CadAssistant({ filePath, fileName }: Props) {
+  const { t } = useI18n();
   const [prompt, setPrompt] = useState("");
   const [plan, setPlan] = useState<CadPlan | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,7 +47,7 @@ export default function CadAssistant({ filePath, fileName }: Props) {
   const [baseUrl, setBaseUrl] = useState("https://api.openai.com/v1");
 
   useEffect(() => {
-    window.electronAPI.getAiConfig().then((config) => {
+    window.electronAPI.getAiConfig().then((config: any) => {
       setConfigured(config.configured);
       setModel(config.model);
       setBaseUrl(config.baseUrl);
@@ -50,7 +58,7 @@ export default function CadAssistant({ filePath, fileName }: Props) {
   const saveSettings = async () => {
     setError(null);
     const result = await window.electronAPI.saveAiConfig({ apiKey, model, baseUrl });
-    if (!result.success) { setError(result.message ?? "无法保存模型设置"); return; }
+    if (!result.success) { setError(result.message ?? t("cadAssistantSaveSettingsFailed")); return; }
     setConfigured(true);
     setApiKey("");
     setSettingsOpen(false);
@@ -61,43 +69,43 @@ export default function CadAssistant({ filePath, fileName }: Props) {
     if (!prompt.trim() || loading) return;
     setLoading(true); setError(null); setPlan(null);
     try {
-      const result = await window.electronAPI.planCadChange({ filePath, fileName, request: prompt.trim() });
-      if (!result.success || !result.plan) throw new Error(result.message ?? "模型没有返回可执行计划");
+      const result: any = await window.electronAPI.planCadChange({ filePath, fileName, request: prompt.trim() });
+      if (!result.success || !result.plan) throw new Error(result.message ?? t("cadAssistantPlanEmpty"));
       setPlan(result.plan as CadPlan);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "规划失败");
+      setError(reason instanceof Error ? reason.message : t("cadAssistantPlanFailed"));
     } finally { setLoading(false); }
   };
 
   return (
-    <aside className="cad-assistant" aria-label="CAD AI 助手">
+    <aside className="cad-assistant" aria-label={t("cadAssistantAria")}>
       <div className="cad-assistant-head">
-        <div><span className="cad-ai-kicker">CAD COPILOT</span><h2>图纸助手</h2></div>
-        <button type="button" className="cad-icon-button" aria-label="模型设置" onClick={() => setSettingsOpen((value) => !value)}>⚙</button>
+        <div><span className="cad-ai-kicker">{t("cadAssistantKicker")}</span><h2>{t("cadAssistantTitle")}</h2></div>
+        <button type="button" className="cad-icon-button" aria-label={t("cadAssistantSettingsAria")} onClick={() => setSettingsOpen((value) => !value)}>⚙</button>
       </div>
 
       {settingsOpen && <div className="cad-ai-settings">
-        <label>API Key<input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={configured ? "已安全保存，留空不修改" : "sk-…"} autoComplete="off" /></label>
-        <label>模型<input value={model} onChange={(event) => setModel(event.target.value)} /></label>
-        <label>接口地址<input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} /></label>
-        <button type="button" onClick={saveSettings}>保存设置</button>
+        <label>{t("cadAssistantApiKey")}<input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={configured ? t("cadAssistantApiKeyPlaceholderConfigured") : t("cadAssistantApiKeyPlaceholder")} autoComplete="off" /></label>
+        <label>{t("cadAssistantModel")}<input value={model} onChange={(event) => setModel(event.target.value)} /></label>
+        <label>{t("cadAssistantBaseUrl")}<input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} /></label>
+        <button type="button" onClick={saveSettings}>{t("cadAssistantSaveSettings")}</button>
       </div>}
 
-      <div className="cad-ai-context"><span>当前图纸</span><strong title={filePath}>{fileName}</strong><small>修改前会生成操作计划，不会直接覆盖原文件</small></div>
+      <div className="cad-ai-context"><span>{t("cadAssistantContextLabel")}</span><strong title={filePath}>{fileName}</strong><small>{t("cadAssistantContextHint")}</small></div>
 
       <form className="cad-ai-form" onSubmit={submit}>
-        <label htmlFor="cad-request">你想怎么改？</label>
-        <textarea id="cad-request" value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="例如：把所有尺寸标注移到 DIM 图层，并将文字高度统一为 2.5" />
-        <button type="submit" disabled={!configured || loading || !prompt.trim()}>{loading ? "正在分析…" : "生成修改计划"}</button>
+        <label htmlFor="cad-request">{t("cadAssistantPromptLabel")}</label>
+        <textarea id="cad-request" value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder={t("cadAssistantPromptPlaceholder")} />
+        <button type="submit" disabled={!configured || loading || !prompt.trim()}>{loading ? t("cadAssistantSubmitting") : t("cadAssistantSubmit")}</button>
       </form>
 
-      {!configured && <p className="cad-ai-notice">先填写 API Key。密钥只保存在 Electron 主进程的加密存储中。</p>}
+      {!configured && <p className="cad-ai-notice">{t("cadAssistantApiKeyNotice")}</p>}
       {error && <p className="cad-ai-error" role="alert">{error}</p>}
       {plan && <section className="cad-plan" aria-live="polite">
-        <div className="cad-plan-title"><strong>{plan.summary}</strong><span data-risk={plan.risk_level}>{plan.risk_level === "destructive" ? "高风险" : plan.risk_level === "reversible" ? "可撤销" : "只读"}</span></div>
+        <div className="cad-plan-title"><strong>{plan.summary}</strong><span data-risk={plan.risk_level}>{t(RISK_LABEL_KEYS[plan.risk_level])}</span></div>
         {plan.needs_clarification && <p className="cad-plan-question">{plan.clarification_question}</p>}
         <ol>{plan.operations.map((operation) => <li key={operation.id}><code>{operation.action}</code><span>{operation.reason}</span></li>)}</ol>
-        <button type="button" className="cad-apply-button" disabled title="安装 CAD 引擎后启用">应用修改（引擎待接入）</button>
+        <button type="button" className="cad-apply-button" disabled title={t("cadAssistantApplyHint")}>{t("cadAssistantApply")}</button>
       </section>}
     </aside>
   );
