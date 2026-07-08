@@ -14,6 +14,7 @@ import CommandPalette, { type CommandItem } from "./components/CommandPalette";
 import FileSummaryPanel from "./components/FileSummaryPanel";
 import ViewerRouter from "./components/viewers/ViewerRouter";
 import { ConfirmProvider, useCloseAllConfirm, useCloseTabConfirm } from "./components/useConfirm";
+import { ToastProvider } from "./components/useToast";
 import { ToastStack, nextToastId, type ToastEntry, type ToastKind } from "./components/Toast";
 
 // Electron's preload extends the standard `File` with a `path` field —
@@ -180,6 +181,7 @@ export default function App() {
         <SettingsProvider>
           <ConfirmProvider>
           <ThemeProvider>
+            <ToastProvider value={{ pushToast }}>
             <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
                       <a href="#main-content" className="skip-link">{t("skipToContent")}</a>
                       <TitleBar />
@@ -196,6 +198,7 @@ export default function App() {
             <ToastStack toasts={toasts} onDismiss={dismissToast} />
             <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
           </div>
+            </ToastProvider>
         </ThemeProvider>
           </ConfirmProvider>
                 </SettingsProvider>

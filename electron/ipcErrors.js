@@ -43,6 +43,10 @@ const IPC_ERROR_CODES = {
   AI_EMPTY_REQUEST: { defaultMessage: "修改要求不能为空" },
   AI_REQUEST_FAILED: { defaultMessage: "模型请求失败" },
   AI_NO_PLAN: { defaultMessage: "模型没有返回结构化计划" },
+  // Settings sync
+  SETTINGS_EXPORT_FAILED: { defaultMessage: "无法导出设置" },
+  SETTINGS_IMPORT_FAILED: { defaultMessage: "无法导入设置" },
+  SETTINGS_IMPORT_INVALID_JSON: { defaultMessage: "设置文件不是合法 JSON" },
 };
 
 function ipcError(code, params, message) {

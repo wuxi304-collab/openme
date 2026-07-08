@@ -43,6 +43,8 @@ export interface ElectronAPI {
   getAiConfig: () => Promise<{ configured: boolean; model: string; baseUrl: string }>;
   saveAiConfig: (config: { apiKey: string; model: string; baseUrl: string }) => Promise<{ success: boolean; message?: string }>;
   planCadChange: (input: { filePath: string; fileName: string; request: string }) => Promise<{ success: boolean; plan?: unknown; message?: string }>;
+  exportSettingsToFile: (payload: unknown, defaultName?: string) => Promise<{ ok: true; path: string } | { ok: false; canceled: true } | IpcFailureResult>;
+  importSettingsFromFile: () => Promise<{ ok: true; path: string; data: unknown } | { ok: false; canceled: true } | IpcFailureResult>;
 }
 
   export interface UiStrings {
@@ -53,6 +55,8 @@ export interface ElectronAPI {
     closePromptDetail: string;
     closePromptKeepEditing: string;
     closePromptDiscard: string;
+    settingsExportDialogTitle: string;
+    settingsImportDialogTitle: string;
   }
 
 export interface EpubBook {

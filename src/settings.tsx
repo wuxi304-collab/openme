@@ -28,21 +28,67 @@ const DEFAULTS: Settings = {
   wordWrap: "off",
 };
 
+export { DEFAULTS };
+
 const STORAGE_KEY = "openme.settings.v1";
+
+export const SETTINGS_FILE_VERSION = 1;
+export const SETTINGS_FILE_TYPE = "openme-settings";
+
+export interface SettingsFile {
+  type: typeof SETTINGS_FILE_TYPE;
+  version: typeof SETTINGS_FILE_VERSION;
+  exportedAt: string;
+  app: { name: string; version: string };
+  settings: Settings;
+}
+
+export type SettingsImportResult =
+  | { ok: true; settings: Settings }
+  | { ok: false; reason: "invalid-json" }
+  | { ok: false; reason: "wrong-shape" };
+
+export function serializeSettings(settings: Settings, appMeta: { name: string; version: string }): SettingsFile {
+  return {
+    type: SETTINGS_FILE_TYPE,
+    version: SETTINGS_FILE_VERSION,
+    exportedAt: new Date().toISOString(),
+    app: appMeta,
+    settings: { ...settings },
+  };
+}
+
+export function parseSettingsFile(raw: unknown): SettingsImportResult {
+  if (raw == null || typeof raw !== "object") return { ok: false, reason: "wrong-shape" };
+  const obj = raw as Record<string, unknown>;
+  if (obj.type !== SETTINGS_FILE_TYPE) return { ok: false, reason: "wrong-shape" };
+  if (obj.version !== SETTINGS_FILE_VERSION) return { ok: false, reason: "wrong-shape" };
+  const candidate = obj.settings as Partial<Settings> | undefined;
+  if (!candidate || typeof candidate !== "object") return { ok: false, reason: "wrong-shape" };
+  return { ok: true, settings: mergeWithDefaults(candidate) };
+}
+
+function mergeWithDefaults(candidate: Partial<Settings>): Settings {
+  return {
+    theme: candidate.theme === "light" ? "light" : "dark",
+    confirmTabClose: typeof candidate.confirmTabClose === "boolean" ? candidate.confirmTabClose : DEFAULTS.confirmTabClose,
+    recentLimit: candidate.recentLimit === 10 || candidate.recentLimit === 25 || candidate.recentLimit === 50
+      ? candidate.recentLimit
+      : DEFAULTS.recentLimit,
+    tabSize: candidate.tabSize === 2 || candidate.tabSize === 4 || candidate.tabSize === 8
+      ? candidate.tabSize
+      : DEFAULTS.tabSize,
+    lineNumbers: candidate.lineNumbers === "off" ? "off" : "on",
+    wordWrap: candidate.wordWrap === "on" ? "on" : "off",
+  };
+}
 
 function readPersisted(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULTS;
     const parsed = JSON.parse(raw) as Partial<Settings>;
-    return {
-      theme: parsed.theme === "light" ? "light" : "dark",
-      confirmTabClose: typeof parsed.confirmTabClose === "boolean" ? parsed.confirmTabClose : DEFAULTS.confirmTabClose,
-      recentLimit: parsed.recentLimit === 10 || parsed.recentLimit === 25 ? parsed.recentLimit : DEFAULTS.recentLimit,
-      tabSize: parsed.tabSize === 2 || parsed.tabSize === 8 ? parsed.tabSize : DEFAULTS.tabSize,
-      lineNumbers: parsed.lineNumbers === "off" ? "off" : "on",
-      wordWrap: parsed.wordWrap === "on" ? "on" : "off",
-    };
+    return mergeWithDefaults(parsed);
   } catch {
     return DEFAULTS;
   }
@@ -61,12 +107,14 @@ interface SettingsContextValue {
   settings: Settings;
   update: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
   reset: () => void;
+  replaceAll: (next: Settings) => void;
 }
 
 const SettingsContext = createContext<SettingsContextValue>({
   settings: DEFAULTS,
   update: () => undefined,
   reset: () => undefined,
+  replaceAll: () => undefined,
 });
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
@@ -85,8 +133,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   const reset = useCallback(() => { setSettings(DEFAULTS); }, []);
 
+  const replaceAll = useCallback((next: Settings) => {
+    setSettings(mergeWithDefaults(next));
+  }, []);
+
   return (
-    <SettingsContext.Provider value={{ settings, update, reset }}>
+    <SettingsContext.Provider value={{ settings, update, reset, replaceAll }}>
       {children}
     </SettingsContext.Provider>
   );
