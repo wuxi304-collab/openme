@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../../i18n";
+import { describeIpcError, isIpcFailure } from "../../core/ipcError";
 
 type Chapter = { title: string; text: string };
 type Book = { title: string; creator?: string; language?: string; cover?: { data: string; mimeType: string } | null; chapters: Chapter[] };
@@ -20,7 +21,8 @@ export default function EpubViewer({ filePath }: Props) {
       if (result.success && result.book) {
         setBook(result.book);
         setChapter((value) => Math.min(value, result.book!.chapters.length - 1));
-      } else setError(result.message ?? t("epubLoadFailed"));
+      } else if (isIpcFailure(result)) setError(describeIpcError(t, result));
+      else setError(result.message ?? t("epubLoadFailed"));
     }).catch((reason) => {
       if (!disposed) setError(reason instanceof Error ? reason.message : t("epubLoadFailed"));
     });

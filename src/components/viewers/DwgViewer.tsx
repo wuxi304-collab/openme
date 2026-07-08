@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AcApDocManager, AcEdOpenMode } from "@mlightcad/cad-simple-viewer";
 import { useI18n } from "../../i18n";
+import { describeIpcError, isIpcFailure } from "../../core/ipcError";
 
 interface Props { filePath: string; fileName: string; }
 
@@ -87,7 +88,7 @@ export default function DwgViewer({ filePath, fileName }: Props) {
         });
         if (!currentManager) throw new Error(t("dwgInitFailed"));
         const response = await window.electronAPI.readBinary(filePath, 100 * 1024 * 1024);
-        if (!response.success || !response.data) throw new Error(response.message ?? t("dwgReadFailed"));
+                if (!response.success || !response.data) throw new Error(isIpcFailure(response) ? describeIpcError(t, response) : response.message ?? t("dwgReadFailed"));
         const opened = await currentManager.openDocument(fileName, decodeBase64(response.data), {
           mode: AcEdOpenMode.Write,
           progressiveRendering: true,

@@ -2,7 +2,9 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {
   getFileInfo: (path) => ipcRenderer.invoke("get-file-info", path),
+  setUiStrings: (strings) => ipcRenderer.invoke("set-ui-strings", strings),
   loadRecentFiles: () => ipcRenderer.invoke("load-recent-files"),
+  saveRecentFiles: (store) => ipcRenderer.invoke("save-recent-files", store),
   saveRecentFiles: (store) => ipcRenderer.invoke("save-recent-files", store),
   readTextFile: (path, maxSize) => ipcRenderer.invoke("read-text-file", path, maxSize),
   openFileDialog: () => ipcRenderer.invoke("open-file-dialog"),

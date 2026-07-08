@@ -1,4 +1,5 @@
 import type { FileInfo, RecentFilesStore } from "../types";
+import type { IpcFailure } from "../core/ipcError";
 
 declare global {
   interface Window {
@@ -6,8 +7,15 @@ declare global {
   }
 }
 
+// Handlers that previously threw now return an IpcFailure shape so the
+// renderer can resolve the message through describeIpcError() with locale
+// awareness. Successful returns keep their plain object shape.
+export type IpcSuccess<T> = T & { success?: true };
+export type IpcFailureResult = IpcFailure;
+
 export interface ElectronAPI {
-  getFileInfo: (path: string) => Promise<FileInfo>;
+  getFileInfo: (path: string) => Promise<FileInfo | IpcFailureResult>;
+  setUiStrings: (strings: Partial<UiStrings>) => Promise<void>;
   loadRecentFiles: () => Promise<RecentFilesStore>;
   saveRecentFiles: (store: { files: FileInfo[]; version: number }) => Promise<void>;
   readFileContent: (path: string, maxSize?: number) => Promise<{ type: string; data?: string; mimeType?: string; message?: string }>;
@@ -36,6 +44,16 @@ export interface ElectronAPI {
   saveAiConfig: (config: { apiKey: string; model: string; baseUrl: string }) => Promise<{ success: boolean; message?: string }>;
   planCadChange: (input: { filePath: string; fileName: string; request: string }) => Promise<{ success: boolean; plan?: unknown; message?: string }>;
 }
+
+  export interface UiStrings {
+    dialogSelectFile: string;
+    dialogSelectFolder: string;
+    closePromptTitle: string;
+    closePromptMessage: string;
+    closePromptDetail: string;
+    closePromptKeepEditing: string;
+    closePromptDiscard: string;
+  }
 
 export interface EpubBook {
   title: string;

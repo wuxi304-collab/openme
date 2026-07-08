@@ -6,6 +6,7 @@ const log = require("electron-log");
 const { execFile } = require("child_process");
 const { pathToFileURL } = require("url");
 const { readEpub } = require("./epub");
+const { ipcError } = require("./ipcErrors");
 
 // Allow managed environments to place Chromium state in an explicitly writable directory.
 if (process.env.OPENME_USER_DATA_DIR) {
@@ -36,6 +37,21 @@ protocol.registerSchemesAsPrivileged([{ scheme: "openme-media", privileges: { st
 
 let mainWindow = null;
 let hasUnsavedChanges = false;
+
+// Localized strings pushed from the renderer on mount (and whenever the user
+// switches language). Main process uses these for native dialogs that the OS
+// renders — file picker title, unzip destination title, and the unsaved-changes
+// close prompt. Falls back to Chinese defaults when the renderer hasn't pushed
+// any values yet (cold start).
+let uiStrings = {
+  dialogSelectFile: "选择文件",
+  dialogSelectFolder: "选择解压目标文件夹",
+  closePromptTitle: "还有未保存修改",
+  closePromptMessage: "关闭 OpenMe Qiwu？",
+  closePromptDetail: "未保存的文本、代码或 Markdown 修改将丢失。",
+  closePromptKeepEditing: "继续编辑",
+  closePromptDiscard: "放弃并关闭",
+};
 
 const isDev = !app.isPackaged && process.env.OPENME_USE_DIST !== "1";
 const DEV_ORIGIN = "http://localhost:1420";
@@ -162,25 +178,25 @@ function getCadHostPath() {
 
 function inspectCadDocument(filePath) {
   const executable = getCadHostPath();
-  if (!fs.existsSync(executable)) return Promise.resolve({ success: false, message: "ACadSharp CadHost 尚未构建" });
+  if (!fs.existsSync(executable)) return Promise.resolve(ipcError("CADHOST_NOT_BUILT"));
   return new Promise((resolve) => {
     execFile(executable, ["--inspect", filePath], { windowsHide: true, timeout: 120000, maxBuffer: 32 * 1024 * 1024 }, (error, stdout, stderr) => {
-      if (error) return resolve({ success: false, message: stderr.trim() || error.message });
+      if (error) return resolve(ipcError("CADHOST_RENDER_FAILED", { message: stderr.trim() || error.message }));
       try { resolve({ success: true, document: JSON.parse(stdout) }); }
-      catch (parseError) { resolve({ success: false, message: `CadHost 返回无效数据: ${parseError.message}` }); }
+      catch (parseError) { resolve(ipcError("CADHOST_INVALID_DATA", { message: parseError.message })); }
     });
   });
 }
 function renderCadDocument(filePath) {
   const executable = getCadHostPath();
-  if (!fs.existsSync(executable)) return Promise.resolve({ success: false, message: "ACadSharp CadHost 尚未构建" });
+  if (!fs.existsSync(executable)) return Promise.resolve(ipcError("CADHOST_NOT_BUILT"));
   return new Promise((resolve) => {
     execFile(executable, ["--render-svg", filePath], { windowsHide: true, timeout: 120000, maxBuffer: 128 * 1024 * 1024, encoding: "buffer" }, (error, stdout, stderr) => {
       const decode = (value) => {
         try { return new TextDecoder("utf-8", { fatal: true }).decode(value); }
         catch { return new TextDecoder("gbk").decode(value); }
       };
-      if (error) return resolve({ success: false, message: decode(stderr).trim() || error.message });
+      if (error) return resolve(ipcError("CADHOST_RENDER_FAILED", { message: decode(stderr).trim() || error.message }));
       resolve({ success: true, svg: decode(stdout) });
     });
   });
@@ -264,10 +280,10 @@ function createWindow() {
     if (!hasUnsavedChanges) return;
     const choice = dialog.showMessageBoxSync(mainWindow, {
       type: "warning",
-      title: "还有未保存修改",
-      message: "关闭 OpenMe Qiwu？",
-      detail: "未保存的文本、代码或 Markdown 修改将丢失。",
-      buttons: ["继续编辑", "放弃并关闭"],
+        title: uiStrings.closePromptTitle,
+        message: uiStrings.closePromptMessage,
+        detail: uiStrings.closePromptDetail,
+        buttons: [uiStrings.closePromptKeepEditing, uiStrings.closePromptDiscard],
       defaultId: 0,
       cancelId: 0,
       noLink: true,
@@ -296,6 +312,12 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
+ipcMain.handle("set-ui-strings", (_, strings) => {
+  if (strings && typeof strings === "object") {
+    uiStrings = { ...uiStrings, ...strings };
+  }
+});
+
 ipcMain.handle("get-file-info", async (_, filePath) => {
   try {
     const stats = fs.statSync(filePath);
@@ -313,7 +335,7 @@ ipcMain.handle("get-file-info", async (_, filePath) => {
     };
   } catch (e) {
     log.error("get-file-info failed", e);
-    throw new Error(`无法读取文件: ${e.message}`);
+    return ipcError("READ_FILE_FAILED", { message: e.message });
   }
 });
 
@@ -335,7 +357,7 @@ ipcMain.handle("save-recent-files", async (_, store) => {
     fs.writeFileSync(p, JSON.stringify(store, null, 2), "utf-8");
   } catch (e) {
     log.error("save-recent-files failed", e);
-    throw new Error(`无法保存: ${e.message}`);
+    return ipcError("SAVE_RECENT_FAILED", { message: e.message });
   }
 });
 
@@ -348,7 +370,7 @@ ipcMain.handle("read-text-file", async (_, filePath, maxSize = 1024 * 500) => {
     return fs.readFileSync(filePath, "utf-8");
   } catch (e) {
     log.error("read-text-file failed", e);
-    throw new Error(`无法读取: ${e.message}`);
+    return ipcError("READ_TEXT_FAILED", { message: e.message });
   }
 });
 
@@ -359,19 +381,19 @@ ipcMain.handle("read-file-content", async (_, filePath, maxSize = 10 * 1024 * 10
     const imageExts = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg", ".pdf"];
     if (imageExts.includes(ext)) {
       if (stats.size > maxSize) {
-        return { type: "error", message: `文件过大 (${(stats.size / 1024 / 1024).toFixed(1)} MB)` };
+        return ipcError("FILE_TOO_LARGE", { sizeMb: (stats.size / 1024 / 1024).toFixed(1) });
       }
       const buffer = fs.readFileSync(filePath);
       return { type: "binary", data: buffer.toString("base64"), mimeType: getMimeType(ext) };
     }
     if (stats.size > maxSize) {
-      return { type: "error", message: `文件过大 (${(stats.size / 1024 / 1024).toFixed(1)} MB)` };
+      return ipcError("FILE_TOO_LARGE", { sizeMb: (stats.size / 1024 / 1024).toFixed(1) });
     }
     const content = fs.readFileSync(filePath, "utf-8");
     return { type: "text", data: content };
   } catch (e) {
     log.error("read-file-content failed", e);
-    return { type: "error", message: e.message };
+    return ipcError("READ_FILE_CONTENT_FAILED", { message: e.message });
   }
 });
 
@@ -379,13 +401,13 @@ ipcMain.handle("read-binary", async (_, filePath, maxSize = 10 * 1024 * 1024) =>
   try {
     const stats = fs.statSync(filePath);
     if (stats.size > maxSize) {
-      return { success: false, message: `文件过大 (${(stats.size / 1024 / 1024).toFixed(1)} MB)` };
+      return ipcError("FILE_TOO_LARGE", { sizeMb: (stats.size / 1024 / 1024).toFixed(1) });
     }
     const buffer = fs.readFileSync(filePath);
     return { success: true, data: buffer.toString("base64") };
   } catch (e) {
     log.error("read-binary failed", e);
-    return { success: false, message: e.message };
+    return ipcError("READ_BINARY_FAILED", { message: e.message });
   }
 });
 
@@ -395,7 +417,7 @@ ipcMain.handle("save-file", async (_, filePath, content) => {
     return { success: true };
   } catch (e) {
     log.error("save-file failed", e);
-    return { success: false, message: e.message };
+    return ipcError("SAVE_FILE_FAILED", { message: e.message });
   }
 });
 
@@ -406,14 +428,14 @@ ipcMain.handle("convert-docx", async (_, filePath) => {
     return { success: true, html: result.value };
   } catch (e) {
     log.error("convert-docx failed", e);
-    return { success: false, message: e.message };
+    return ipcError("CONVERT_DOCX_FAILED", { message: e.message });
   }
 });
 
 ipcMain.handle("convert-excel", async (_, filePath) => {
   try {
     const stats = await fs.promises.stat(filePath);
-    if (stats.size > 50 * 1024 * 1024) return { success: false, message: "Excel 文件超过 50 MB 预览限制" };
+    if (stats.size > 50 * 1024 * 1024) return ipcError("EXCEL_TOO_LARGE");
     const { default: readWorkbook } = await import("read-excel-file/node");
     const workbook = await readWorkbook(filePath);
     const sheets = workbook.map(({ sheet, data }) => ({
@@ -423,13 +445,13 @@ ipcMain.handle("convert-excel", async (_, filePath) => {
     return { success: true, sheets };
   } catch (e) {
     log.error("convert-excel failed", e);
-    return { success: false, message: e.message };
+    return ipcError("CONVERT_EXCEL_FAILED", { message: e.message });
   }
 });
 
 ipcMain.handle("open-file-dialog", async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    title: "选择文件",
+    title: uiStrings.dialogSelectFile,
     properties: ["openFile", "multiSelections"],
   });
   if (result.canceled) return [];
@@ -441,7 +463,7 @@ ipcMain.handle("open-in-system", async (_, filePath) => {
     await shell.openPath(filePath);
   } catch (e) {
     log.error("open-in-system failed", e);
-    throw new Error(`无法打开: ${e.message}`);
+    return ipcError("OPEN_IN_SYSTEM_FAILED", { message: e.message });
   }
 });
 
@@ -466,7 +488,7 @@ ipcMain.handle("list-zip-contents", async (_, filePath) => {
     return { success: true, entries, totalSize };
   } catch (e) {
     log.error("list-zip-contents failed", e);
-    return { success: false, message: e.message };
+    return ipcError("READ_FILE_CONTENT_FAILED", { message: e.message });
   }
 });
 
@@ -479,14 +501,14 @@ ipcMain.handle("unzip-file", async (_, filePath, targetDir) => {
     const destinationRoot = path.resolve(targetDir, archiveName);
     const files = Object.entries(zip.files);
     const totalSize = files.reduce((sum, [, file]) => sum + (file._data?.uncompressedSize ?? 0), 0);
-    if (files.length > 100000) throw new Error("压缩包文件过多（超过 100,000 项）");
-    if (totalSize > 2 * 1024 * 1024 * 1024) throw new Error("解压后体积超过 2 GB 安全限制");
+    if (files.length > 100000) return ipcError("ZIP_TOO_MANY_FILES");
+    if (totalSize > 2 * 1024 * 1024 * 1024) return ipcError("ZIP_TOO_LARGE");
     await fs.promises.mkdir(destinationRoot, { recursive: true });
     for (const [entryName, file] of files) {
       const relativePath = safeArchiveRelativePath(entryName);
-      if (!relativePath) throw new Error(`压缩包包含不安全路径：${entryName}`);
+      if (!relativePath) return ipcError("ZIP_UNSAFE_PATH", { entry: entryName });
       const destination = path.resolve(destinationRoot, ...relativePath.split("/"));
-      if (destination !== destinationRoot && !destination.startsWith(destinationRoot + path.sep)) throw new Error(`路径越界：${entryName}`);
+      if (destination !== destinationRoot && !destination.startsWith(destinationRoot + path.sep)) return ipcError("ZIP_PATH_TRAVERSAL", { entry: entryName });
       if (file.dir) await fs.promises.mkdir(destination, { recursive: true });
       else {
         await fs.promises.mkdir(path.dirname(destination), { recursive: true });
@@ -496,7 +518,7 @@ ipcMain.handle("unzip-file", async (_, filePath, targetDir) => {
     return { success: true, destination: destinationRoot };
   } catch (e) {
     log.error("unzip-file failed", e);
-    return { success: false, message: e.message };
+    return ipcError("READ_FILE_CONTENT_FAILED", { message: e.message });
   }
 });
 
@@ -506,18 +528,18 @@ ipcMain.handle("read-zip-entry", async (_, filePath, entryName) => {
     const data = await fs.promises.readFile(filePath);
     const zip = await JSZip.loadAsync(data);
     const file = zip.file(entryName);
-    if (!file || file.dir) return { success: false, message: "压缩包内未找到该文件" };
+    if (!file || file.dir) return ipcError("ZIP_ENTRY_NOT_FOUND");
     const size = file._data?.uncompressedSize ?? 0;
-    if (size > 2 * 1024 * 1024) return { success: false, message: "文件超过 2 MB 预览限制" };
+    if (size > 2 * 1024 * 1024) return ipcError("ZIP_ENTRY_TOO_LARGE");
     return { success: true, data: await file.async("base64") };
   } catch (e) {
     log.error("read-zip-entry failed", e);
-    return { success: false, message: e.message };
+    return ipcError("READ_FILE_CONTENT_FAILED", { message: e.message });
   }
 });
 ipcMain.handle("select-folder-dialog", async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    title: "选择解压目标文件夹",
+    title: uiStrings.dialogSelectFolder,
     properties: ["openDirectory", "createDirectory"],
   });
   if (result.canceled || result.filePaths.length === 0) return null;
@@ -530,13 +552,17 @@ ipcMain.handle("render-cad-document", (_, filePath) => renderCadDocument(filePat
 
 ipcMain.handle("get-media-url", async (_, filePath) => {
   const resolved = path.resolve(filePath);
-  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) throw new Error("媒体文件不存在");
+  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) return ipcError("MEDIA_NOT_FOUND");
   return `openme-media://local/?path=${encodeURIComponent(resolved)}`;
 });
 
 ipcMain.handle("read-epub", async (_, filePath) => {
   try { return { success: true, book: await readEpub(filePath) }; }
-  catch (e) { log.error("read-epub failed", e); return { success: false, message: e.message }; }
+  catch (e) {
+    log.error("read-epub failed", e);
+    if (e && e.code) return ipcError(e.code, e.params);
+    return ipcError("READ_FILE_CONTENT_FAILED", { message: e.message });
+  }
 });
 ipcMain.handle("get-app-version", () => app.getVersion());
 
@@ -576,22 +602,22 @@ ipcMain.handle("get-ai-config", () => {
 
 ipcMain.handle("save-ai-config", (_, input) => {
   try {
-    if (!safeStorage.isEncryptionAvailable()) return { success: false, message: "系统加密存储不可用" };
+    if (!safeStorage.isEncryptionAvailable()) return ipcError("AI_NO_ENCRYPTION");
     const previous = readAiConfig();
     const apiKey = String(input?.apiKey || previous?.apiKey || "").trim();
     const model = String(input?.model || "gpt-5.4-mini").trim();
     const baseUrl = String(input?.baseUrl || "https://api.openai.com/v1").trim().replace(/\/$/, "");
     const parsedUrl = new URL(baseUrl);
     if (parsedUrl.protocol !== "https:" && parsedUrl.hostname !== "localhost" && parsedUrl.hostname !== "127.0.0.1") {
-      return { success: false, message: "接口地址必须使用 HTTPS（本地服务除外）" };
+      return ipcError("AI_INVALID_URL");
     }
-    if (!apiKey) return { success: false, message: "请输入 API Key" };
+    if (!apiKey) return ipcError("AI_MISSING_KEY");
     const payload = { encryptedApiKey: safeStorage.encryptString(apiKey).toString("base64"), model, baseUrl };
     fs.writeFileSync(getAiConfigPath(), JSON.stringify(payload, null, 2), { encoding: "utf8", mode: 0o600 });
     return { success: true };
   } catch (error) {
     log.error("save-ai-config failed", error);
-    return { success: false, message: error.message };
+    return ipcError("READ_FILE_CONTENT_FAILED", { message: error.message });
   }
 });
 
@@ -623,9 +649,9 @@ const cadPlanSchema = {
 ipcMain.handle("plan-cad-change", async (_, input) => {
   try {
     const config = readAiConfig();
-    if (!config?.apiKey) return { success: false, message: "请先配置 API Key" };
+    if (!config?.apiKey) return ipcError("AI_NOT_CONFIGURED");
     const request = String(input?.request || "").trim();
-    if (!request) return { success: false, message: "修改要求不能为空" };
+    if (!request) return ipcError("AI_EMPTY_REQUEST");
     const response = await fetch(`${config.baseUrl}/responses`, {
       method: "POST",
       headers: { "Authorization": `Bearer ${config.apiKey}`, "Content-Type": "application/json" },
@@ -638,12 +664,12 @@ ipcMain.handle("plan-cad-change", async (_, input) => {
       })
     });
     const body = await response.json();
-    if (!response.ok) return { success: false, message: body?.error?.message || `模型请求失败 (${response.status})` };
+    if (!response.ok) return ipcError("AI_REQUEST_FAILED", { status: response.status, message: body?.error?.message || "" });
     const outputText = body.output?.flatMap((item) => item.content || []).find((content) => content.type === "output_text")?.text;
-    if (!outputText) return { success: false, message: "模型没有返回结构化计划" };
+    if (!outputText) return ipcError("AI_NO_PLAN");
     return { success: true, plan: JSON.parse(outputText) };
   } catch (error) {
     log.error("plan-cad-change failed", error);
-    return { success: false, message: error.message };
+    return ipcError("AI_REQUEST_FAILED", { status: 0, message: error.message });
   }
 });
