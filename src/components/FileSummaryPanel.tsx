@@ -4,6 +4,8 @@ import type { FileCapability, FileFormatDefinition } from "../file-registry";
 import { extractMetadata } from "../metadata";
 import { buildFileBrief } from "../brief";
 import { useI18n } from "../i18n";
+import { CheckIcon } from "./icons/CheckIcon";
+import { CrossIcon } from "./icons/CrossIcon";
 
 interface FileSummaryPanelProps {
   tab: FileTabState;
@@ -131,7 +133,7 @@ function CapabilityGrid({ format }: { format: FileFormatDefinition }) {
         const supported = capabilitySet.has(capability);
         return (
           <div key={capability} className={`capability-cell is-${supported ? "yes" : "no"}`}>
-            <span>{supported ? "✓" : "×"}</span>
+            <span>{supported ? <CheckIcon size={11} strokeWidth={2} /> : <CrossIcon size={10} strokeWidth={1.75} />}</span>
             <strong>{t(capabilityKeys[capability])}</strong>
           </div>
         );

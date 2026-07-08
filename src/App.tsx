@@ -12,6 +12,8 @@ import FileTabs from "./components/layout/FileTabs";
 import CommandPalette, { type CommandItem } from "./components/CommandPalette";
 import FileSummaryPanel from "./components/FileSummaryPanel";
 import ViewerRouter from "./components/viewers/ViewerRouter";
+import { CheckIcon } from "./components/icons/CheckIcon";
+import { AlertIcon } from "./components/icons/AlertIcon";
 
 const MAX_RECENT = 50;
 
@@ -150,7 +152,7 @@ export default function App() {
         </main>
           </div>
           <StatusBar activeTab={activeTab ? { name: activeTab.name, path: activeTab.path, size: activeTab.sourceFile?.size, content: activeTab.content ?? undefined, isDirty: activeTab.isDirty } : null} />
-          {toast && <div className={`app-toast is-${toast.kind}`} role="status" aria-live="polite"><i aria-hidden="true">{toast.kind === "success" ? "✓" : "!"}</i>{toast.message}</div>}
+          {toast && <div className={`app-toast is-${toast.kind}`} role="status" aria-live="polite"><i aria-hidden="true">{toast.kind === "success" ? <CheckIcon size={12} strokeWidth={2.25} /> : <AlertIcon size={13} strokeWidth={1.75} />}</i>{toast.message}</div>}
           <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
         </div>
       </ThemeProvider>
