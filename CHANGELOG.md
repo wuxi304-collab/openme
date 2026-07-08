@@ -5,11 +5,12 @@ ISO-8601 (YYYY-MM-DD). Versions follow [Semantic Versioning](https://semver.org/
 
 ## [Unreleased]
 
-### i18n + Chrome + Polish arc (PRs #31–#51, 2025-Q4)
+### i18n + Chrome + Polish arc (PRs #31–#55, 2025-Q4)
 
-A 21-PR sequence of i18n hardening, chrome polish, security hardening,
-and bundle performance. All PRs merged sequentially on `main`, each
-~150–650 lines, all passing 165 vitest tests and `tsc --noEmit`.
+A 25-PR sequence of i18n hardening, chrome polish, security hardening,
+bundle performance, and a real Settings surface. All PRs merged
+sequentially on `main`, each ~150–650 lines, all passing 179 vitest
+tests and `tsc --noEmit`.
 
 #### i18n: complex viewers (PRs #31, #32)
 
@@ -199,18 +200,73 @@ and bundle performance. All PRs merged sequentially on `main`, each
   `aboutLocaleNameEn`. Audit WHITELIST extended to allow the en value
   to literally be "English". 454 zh / 454 en keys (was 452/452).
 
+#### Phase 2: Settings + bundle polish (PRs #52–#55, 2025-Q4)
+
+A focused 4-PR follow-up that landed a real Settings surface and
+squeezed the bundle further. Each PR is small (~150–400 lines) and
+keeps the chrome-coherent design language.
+
+- **PR #52 — CHANGELOG refresh** (`wuxi304-collab-changelog-refresh`):
+  Refreshed the changelog header to record PRs #46–#51 (file-type icon,
+  About dialog, type cleanup, vendor split, locale display) and
+  refreshed the bundle trajectory numbers to 182.19 kB index / 44.81
+  kB gzip.
+
+- **PR #53 — Settings dialog** (`wuxi304-collab-settings-dialog`):
+  First user-tunable preferences surface. Click the gear button in the
+  titlebar to open a backdrop-blurred modal with three radio groups:
+  **Theme** (dark/light), **Confirm before closing tabs** (on/off),
+  **Recent files kept** (10/25/50). Footer has **Reset to defaults**
+  + **Close**. All settings persist to `localStorage["openme.settings.v1"]`
+  and apply immediately (theme re-skins via `data-theme` on
+  `<html>`). Introduced `src/settings.tsx` (`SettingsProvider` +
+  `useSettings()` hook) and restructured `ThemeProvider` to be a
+  thin wrapper around `useSettings()`. 21 zh+en `settings.*` keys
+  added. 10 new RTL tests in `src/components/SettingsDialog.test.tsx`
+  (175/175 total). Bundle: +3.6 kB index, +7.3 kB SettingsDialog
+  chunk.
+
+- **PR #54 — Lazy-load dialogs** (`wuxi304-collab-lazy-dialogs`):
+  Both dialogs (About + Settings) are render-gated — TitleBar only
+  mounts them when the user clicks the gear or info button. Switched
+  the static imports to `React.lazy()` and wrapped conditional
+  mounts in a single `<Suspense fallback={null}>`. Vite automatically
+  extracted the dialogs' CSS into separate chunks.
+  - `index.js`: 185.96 → **177.04 kB** raw (-8.92 kB)
+  - `index.css`: 80.63 → **69.34 kB** raw (-11.29 kB)
+  - AboutDialog chunk: 10.35 kB (4.77 JS + 5.58 CSS) new
+  - SettingsDialog chunk: 10.47 kB (4.76 JS + 5.71 CSS) new
+  A session that never opens either dialog saves the full ~20 kB.
+  175/175 tests pass.
+
+- **PR #55 — Editor preferences** (`wuxi304-collab-settings-editor`):
+  Expands the Settings dialog with an **Editor** sub-section: **Tab
+  size** (2/4/8 spaces), **Line numbers** (show/hide), **Word wrap**
+  (on/off). All three wire into the Monaco `options` prop in
+  `CodeEditor`; `wordWrap` also drives the MarkdownViewer's
+  `<textarea wrap="...">` attribute. 15 new zh+en keys (468/468
+  audit clean). 4 new RTL tests (179/179 total). Bundle: +1.4 kB
+  index, +3.1 kB SettingsDialog chunk.
+
 ### Notes
 
-- **No breaking changes.** All 21 PRs preserved the existing public
+- **No breaking changes.** All 25 PRs preserved the existing public
   IPC API, the file format registry schema, the command palette
   commands, and the ViewerRouter protocol.
-- **Bundle trajectory**: 359.12 kB → **182.19 kB** index (gzip: 102.41 →
-  **44.81 kB**), -176.93 kB raw / -57.60 kB gzip. The headline win is
-  PR #50's vendor chunk split — `vendor-react` (194 kB / 60 kB gzip)
-  caches separately from chrome, so chrome-only updates don't
-  re-download React. CAD code-split (-1.4 MB initial chunk,
-  lazy-loaded) plus the vendor split together mean the index chunk on
-  first paint is now smaller than at the start of the arc.
+- **Bundle trajectory**: 359.12 kB → **178.44 kB** index (gzip: 102.41 →
+  **~46 kB**), -180.68 kB raw / -56 kB gzip. The headline wins are
+  PR #50's vendor chunk split (`vendor-react` caches separately from
+  chrome) and PR #54's lazy dialogs (the two modal surfaces ship on
+  demand). CAD code-split (-1.4 MB initial chunk, lazy-loaded) plus
+  the vendor split plus the dialog lazy load together mean the index
+  chunk on first paint is now 50% smaller than at the start of the
+  arc, with two more dialog-shaped chunks available on demand.
+- **Settings persistence model**: all user preferences live in
+  `localStorage["openme.settings.v1"]` as a single JSON blob. The
+  `readPersisted` validator in `src/settings.tsx` falls back to
+  per-field defaults for unknown / missing values, so adding a new
+  setting field is backward-compatible — users on a stale settings
+  file silently land on the new default.
 - **HonestSupportLevel vs SupportLevel**: a small refactor target.
   Two separate type systems (letter grades A+/A/B/C/D/E/F in
   `file-registry/types.ts`, kebab-case words in
