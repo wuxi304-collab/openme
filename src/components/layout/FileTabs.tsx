@@ -28,7 +28,7 @@ export default function FileTabs({ tabs, activeId, onSelect, onClose }: Props) {
                 }}
                 onClick={() => onSelect(tab.id)}
               >
-                <FileTypeIcon type={detectCategory(tab.path)} size={17} />
+                <FileTypeIcon type={detectCategory(tab.path)} size={17} extension={tab.sourceFile?.extension} />
                 <span>{tab.name}</span>
                 {tab.isDirty && <i className="dirty-dot" aria-label={t("unsaved")} />}
               </button>
