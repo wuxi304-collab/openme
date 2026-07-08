@@ -51,7 +51,7 @@ export default function ZipViewer({ zipPath }: Props) {
     setLoading(true);
     setError(null);
     window.electronAPI.listZipContents(zipPath)
-      .then((res: any) => {
+      .then((res) => {
         if (res.success) {
           const archiveEntries = res.entries as ZipEntry[];
           setDirectoryCount(archiveEntries.filter((entry) => entry.isDir).length);
@@ -65,7 +65,7 @@ export default function ZipViewer({ zipPath }: Props) {
                 setLoading(false);
               }
             })
-      .catch((e: any) => { setError(e.message); setLoading(false); });
+      .catch((e) => { setError(e instanceof Error ? e.message : String(e)); setLoading(false); });
   }, [zipPath, t]);
 
   const handleSelectEntry = async (entryName: string) => {
@@ -74,9 +74,9 @@ export default function ZipViewer({ zipPath }: Props) {
     if (!PREVIEWABLE.has(ext)) { setPreviewContent(null); return; }
     setPreviewLoading(true);
     try {
-      const res: any = await window.electronAPI.readZipEntry(zipPath, entryName);
+      const res = await window.electronAPI.readZipEntry(zipPath, entryName);
       if (res.success) {
-        const binary = atob(res.data);
+        const binary = atob(res.data ?? "");
         setPreviewContent(binary);
             } else if (isIpcFailure(res)) {
               setPreviewContent(tf("zipReadError", { message: describeIpcError(t, res) }));
@@ -95,7 +95,7 @@ export default function ZipViewer({ zipPath }: Props) {
     try {
       const targetDir = await window.electronAPI.selectFolderDialog();
       if (!targetDir) { setUnzipping(false); return; }
-      const res: any = await window.electronAPI.unzipFile(zipPath, targetDir);
+      const res = await window.electronAPI.unzipFile(zipPath, targetDir);
       if (res.success) {
         const folderName = getFileName(zipPath).replace(/\.[^.]+$/, "");
         const finalDir = targetDir + (targetDir.endsWith("\\") || targetDir.endsWith("/") ? "" : "\\") + folderName;
@@ -105,8 +105,9 @@ export default function ZipViewer({ zipPath }: Props) {
             } else {
               setActionError(tf("zipActionError", { message: res.message ?? "" }));
             }
-    } catch (e: any) {
-      setActionError(tf("zipActionError", { message: e?.message ?? "" }));
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "";
+      setActionError(tf("zipActionError", { message }));
     }
     finally { setUnzipping(false); }
   };

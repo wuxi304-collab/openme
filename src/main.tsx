@@ -6,11 +6,15 @@ import "./file-summary.css";
 
 // Browser fallback shim for window.electronAPI so the app can render in a normal browser during dev.
 // Provides no-op async functions to avoid runtime errors when Electron preload isn't present.
-// We keep this as a one-off typed cast: preload.js installs the real bridge
-// in production, but during vite dev / unit tests the value is missing and we
-// want a one-line placeholder without re-declaring the global Window shape.
-type AnyElectronShim = Record<string, (...args: unknown[]) => Promise<unknown>>;
-const win = window as unknown as { electronAPI?: AnyElectronShim };
+// The shim assignment widens `window.electronAPI` to a Proxy, but the global
+// Window augmentation in `src/types/electron-api.d.ts` declares the
+// production shape. This is the one place a cast is unavoidable: the shim
+// runs before any code that depends on `electronAPI`, and we can't ask TS
+// to forget the augmentation just for the install check. We escape the
+// global Window type via `unknown` and stash the optionality only locally
+// so the rest of the codebase still sees the typed `ElectronAPI` shape.
+type ElectronShim = Record<string, (...args: unknown[]) => Promise<unknown>>;
+const win = window as unknown as { electronAPI?: ElectronShim | undefined };
 if (!win.electronAPI) {
   const noopAsync = async (..._args: unknown[]) => null;
   win.electronAPI = new Proxy({}, { get: () => noopAsync });

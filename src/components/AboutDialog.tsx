@@ -16,11 +16,14 @@ const PROJECT_ISSUES = `${PROJECT_REPO}/issues/new`;
 // a no-op shim (see src/main.tsx). Either an empty string or "—".
 const UNKNOWN = "—";
 
-// Read electronAPI defensively so a missing preload (browser dev) still
-// renders the dialog instead of crashing on a TypeError.
+// Read electronAPI defensively so a missing preload (browser dev / unit
+// tests) still renders the dialog instead of crashing on a TypeError. The
+// global Window type declares electronAPI as ElectronAPI, so we widen it
+// to optional only locally — main.tsx's shim guarantees the value at
+// runtime in production and browser dev.
 function getApi(): ElectronAPI | null {
   if (typeof window === "undefined") return null;
-  const api = (window as { electronAPI?: ElectronAPI }).electronAPI;
+  const api: ElectronAPI | undefined = (window as { electronAPI?: ElectronAPI | undefined }).electronAPI;
   return api ?? null;
 }
 

@@ -53,7 +53,7 @@ export default function DwgViewer({ filePath, fileName }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    window.electronAPI.getCadEngineStatus().then((engine: any) => {
+    window.electronAPI.getCadEngineStatus().then((engine) => {
       if (cancelled) return;
         const resolved = localizeEngineField(t, tf, {
           code: engine.nameCode,
@@ -68,7 +68,7 @@ export default function DwgViewer({ filePath, fileName }: Props) {
           fallback: engine.message,
         });
         if (engine.kind === "acadsharp") {
-          window.electronAPI.inspectCadDocument(filePath).then((result: any) => {
+          window.electronAPI.inspectCadDocument(filePath).then((result) => {
             if (cancelled) return;
             const info = result.document?.document;
             if (result.success && info) {
@@ -92,7 +92,7 @@ export default function DwgViewer({ filePath, fileName }: Props) {
   useEffect(() => {
     let disposed = false;
     let objectUrl: string | null = null;
-    window.electronAPI.renderCadDocument(filePath).then((result: any) => {
+    window.electronAPI.renderCadDocument(filePath).then((result) => {
       if (disposed) return;
       if (!result.success || !result.svg) { setViewMode("compat"); return; }
       objectUrl = URL.createObjectURL(new Blob([result.svg], { type: "image/svg+xml" }));
