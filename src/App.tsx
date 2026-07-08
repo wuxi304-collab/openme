@@ -86,12 +86,12 @@ export default function App() {
     setTabs((prev) => [...prev, newTab]);
     setActiveTabId(id);
     try {
-      const loaded = await loadFileTabData(fileInfo, category);
+      const loaded = await loadFileTabData(fileInfo, category, t);
       setTabs((prev) => prev.map((t) => t.id === id ? { ...t, ...loaded, isLoading: false } : t));
     } catch (error) {
       setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, error: error instanceof Error ? error.message : tf("readFailed") } : t));
     }
-  }, [tabs]);
+  }, [tabs, t]);
 
   const addToRecent = useCallback(async (file: FileInfo) => { const updated = [file, ...recentFiles.filter((f) => f.path !== file.path)].slice(0, MAX_RECENT); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); }, [recentFiles]);
   const handleFilePaths = useCallback(async (paths: string[]) => { for (const p of paths) { try { const fileInfo = await window.electronAPI.getFileInfo(p); fileInfo.file_type = detectCategory(p) as any; await addToRecent(fileInfo); await openFileInTab(fileInfo); } catch (error) { console.error("Open file error:", error); } } }, [addToRecent, openFileInTab]);

@@ -1,4 +1,5 @@
 import type { FileCategory } from "../types";
+import type { Translator } from "../i18n";
 import type { SupportLevel } from "./types";
 
 export function getSupportLevel(category: FileCategory): SupportLevel {
@@ -34,19 +35,19 @@ export function getSupportLevel(category: FileCategory): SupportLevel {
   }
 }
 
-export function getSupportLevelLabel(level: SupportLevel): string {
+export function getSupportLevelLabel(level: SupportLevel, t: Translator): string {
   switch (level) {
     case "full-built-in":
-      return "完整内置浏览";
+      return t("supportFullBuiltIn");
     case "high-fidelity":
-      return "高保真浏览";
+      return t("supportHighFidelity");
     case "safe-approximate":
-      return "安全近似预览";
+      return t("supportSafeApproximate");
     case "semantic-inspection":
-      return "语义检查";
+      return t("supportSemanticInspection");
     case "external-open":
-      return "外部打开";
+      return t("supportExternalOpen");
     case "experimental":
-      return "实验性";
+      return t("supportExperimental");
   }
 }

@@ -156,10 +156,10 @@ function PackSuggestionPanel({ suggestions }: { suggestions: PackSuggestion[] })
           {visible.map(({ suggestion, pack }) => (
             <div key={suggestion.packId} style={{ padding: "9px 10px", borderRadius: 12, background: "rgba(248,250,252,0.86)", border: "1px solid rgba(148,163,184,0.2)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
-                <strong style={{ fontSize: 12, color: "#111827" }}>{pack!.zhName}</strong>
+                <strong style={{ fontSize: 12, color: "#111827" }}>{t(pack!.zhName)}</strong>
                 <span style={{ fontSize: 10, color: "#475569", fontWeight: 800 }}>{Math.round(suggestion.confidence * 100)}%</span>
               </div>
-              <p style={{ margin: "3px 0 0", fontSize: 11, color: "#64748B", lineHeight: 1.45 }}>{pack!.tagline}</p>
+              <p style={{ margin: "3px 0 0", fontSize: 11, color: "#64748B", lineHeight: 1.45 }}>{t(pack!.tagline)}</p>
             </div>
           ))}
         </div>

@@ -1,59 +1,60 @@
 import { getViewerRouteByPath } from "../viewer-registry";
 import type { ViewerRoute } from "../viewer-registry";
+import type { Translator } from "../i18n";
 import type { FileCategory, FileInfo, FileOpenLoader, FileOpenOutcome, FileOpenOutcomeStatus, FileTabState } from "../types";
 
 export type LoadedFileTabData = Partial<Pick<FileTabState, "content" | "binaryData" | "mimeType" | "officeData" | "openOutcome" | "error">>;
 
-export async function loadFileTabData(fileInfo: FileInfo, category: FileCategory): Promise<LoadedFileTabData> {
+export async function loadFileTabData(fileInfo: FileInfo, category: FileCategory, t: Translator): Promise<LoadedFileTabData> {
   const route = getViewerRouteByPath(fileInfo.path);
 
-  if (category === "office") return loadOfficeData(fileInfo, route);
-  if (category === "audio" || category === "video") return { openOutcome: buildOutcome(route, "loaded", "media", `${fileInfo.name} 已进入 OpenMe 媒体打开面。`) };
-  if (category === "epub") return { openOutcome: buildOutcome(route, "loaded", "epub", `${fileInfo.name} 已进入 OpenMe EPUB 打开面。`) };
+  if (category === "office") return loadOfficeData(fileInfo, route, t);
+  if (category === "audio" || category === "video") return { openOutcome: buildOutcome(route, "loaded", "media", t("openOutcomeMedia", { name: fileInfo.name })) };
+  if (category === "epub") return { openOutcome: buildOutcome(route, "loaded", "epub", t("openOutcomeEpub", { name: fileInfo.name })) };
   if (category === "design" || category === "package" || category === "disk" || category === "other") return {};
-  if (category === "svg" || category === "image" || category === "pdf" || category === "cad" || category === "font") return loadBinaryData(fileInfo, category, route);
-  return loadTextLikeData(fileInfo, route);
+  if (category === "svg" || category === "image" || category === "pdf" || category === "cad" || category === "font") return loadBinaryData(fileInfo, category, route, t);
+  return loadTextLikeData(fileInfo, route, t);
 }
 
-async function loadOfficeData(fileInfo: FileInfo, route: ViewerRoute): Promise<LoadedFileTabData> {
+async function loadOfficeData(fileInfo: FileInfo, route: ViewerRoute, t: Translator): Promise<LoadedFileTabData> {
   const ext = fileInfo.extension.toLowerCase();
   if (ext === ".docx") {
     const res = await window.electronAPI.convertDocx(fileInfo.path);
     return {
       officeData: res.success ? { type: "docx", html: res.html ?? "" } : undefined,
-      openOutcome: buildOutcome(route, res.success ? "loaded" : "route-card", "office", res.success ? `${fileInfo.name} 已进入 OpenMe Office 打开面。` : res.message ?? "Word conversion failed"),
-      error: res.success ? undefined : res.message ?? "Word conversion failed",
+      openOutcome: buildOutcome(route, res.success ? "loaded" : "route-card", "office", res.success ? t("openOutcomeOffice", { name: fileInfo.name }) : res.message ?? t("loadFailedWord")),
+      error: res.success ? undefined : res.message ?? t("loadFailedWord"),
     };
   }
   if (ext === ".xlsx") {
     const res = await window.electronAPI.convertExcel(fileInfo.path);
     return {
       officeData: res.success ? { type: "excel", sheets: res.sheets ?? [] } : undefined,
-      openOutcome: buildOutcome(route, res.success ? "loaded" : "route-card", "office", res.success ? `${fileInfo.name} 已进入 OpenMe Excel 打开面。` : res.message ?? "Excel conversion failed"),
-      error: res.success ? undefined : res.message ?? "Excel conversion failed",
+      openOutcome: buildOutcome(route, res.success ? "loaded" : "route-card", "office", res.success ? t("openOutcomeExcel", { name: fileInfo.name }) : res.message ?? t("loadFailedExcel")),
+      error: res.success ? undefined : res.message ?? t("loadFailedExcel"),
     };
   }
-  return { officeData: { type: "pptx" }, openOutcome: buildOutcome(route, "loaded", "office", `${fileInfo.name} 已进入 OpenMe Office 打开面。`) };
+  return { officeData: { type: "pptx" }, openOutcome: buildOutcome(route, "loaded", "office", t("openOutcomeOffice", { name: fileInfo.name })) };
 }
 
-async function loadBinaryData(fileInfo: FileInfo, category: FileCategory, route: ViewerRoute): Promise<LoadedFileTabData> {
+async function loadBinaryData(fileInfo: FileInfo, category: FileCategory, route: ViewerRoute, t: Translator): Promise<LoadedFileTabData> {
   const res = await window.electronAPI.readBinary(fileInfo.path, getBinaryReadLimit(category));
   return {
     binaryData: res.success ? res.data : undefined,
     mimeType: getMimeType(fileInfo.extension),
-    openOutcome: buildOutcome(route, res.success ? "loaded" : "route-card", "binary", res.success ? `${fileInfo.name} 已进入 OpenMe 二进制预览面。` : res.message ?? "Failed to read file"),
-    error: res.success ? undefined : res.message ?? "Failed to read file",
+    openOutcome: buildOutcome(route, res.success ? "loaded" : "route-card", "binary", res.success ? t("openOutcomeBinary", { name: fileInfo.name }) : res.message ?? t("loadFailedRead")),
+    error: res.success ? undefined : res.message ?? t("loadFailedRead"),
   };
 }
 
-async function loadTextLikeData(fileInfo: FileInfo, route: ViewerRoute): Promise<LoadedFileTabData> {
+async function loadTextLikeData(fileInfo: FileInfo, route: ViewerRoute, t: Translator): Promise<LoadedFileTabData> {
   const res = await window.electronAPI.readFileContent(fileInfo.path);
   return {
     content: res.type === "text" ? res.data ?? null : null,
     binaryData: res.type === "binary" ? res.data : undefined,
     mimeType: res.mimeType,
-    openOutcome: buildOutcome(route, res.type === "error" ? "error" : "loaded", "text", res.type === "error" ? res.message ?? "Failed to read file" : `${fileInfo.name} 已进入 OpenMe 文本打开面。`),
-    error: res.type === "error" ? res.message ?? "Failed to read file" : undefined,
+    openOutcome: buildOutcome(route, res.type === "error" ? "error" : "loaded", "text", res.type === "error" ? res.message ?? t("loadFailedRead") : t("openOutcomeText", { name: fileInfo.name })),
+    error: res.type === "error" ? res.message ?? t("loadFailedRead") : undefined,
   };
 }
 

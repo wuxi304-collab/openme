@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { getSupportLevel, getSupportLevelLabel } from "./supportLevels";
+import type { Translator } from "../i18n";
+
+const labelsZh: Record<string, string> = {
+  supportFullBuiltIn: "完整内置浏览",
+  supportHighFidelity: "高保真浏览",
+  supportSafeApproximate: "安全近似预览",
+  supportSemanticInspection: "语义检查",
+  supportExternalOpen: "外部打开",
+  supportExperimental: "实验性",
+};
+
+const tZh: Translator = (key) => labelsZh[key] ?? key;
 
 describe("getSupportLevel", () => {
   it("maps strong built-in viewers to full or high fidelity support", () => {
@@ -32,11 +44,11 @@ describe("getSupportLevel", () => {
 
 describe("getSupportLevelLabel", () => {
   it("returns Chinese product labels", () => {
-    expect(getSupportLevelLabel("full-built-in")).toBe("完整内置浏览");
-    expect(getSupportLevelLabel("high-fidelity")).toBe("高保真浏览");
-    expect(getSupportLevelLabel("safe-approximate")).toBe("安全近似预览");
-    expect(getSupportLevelLabel("semantic-inspection")).toBe("语义检查");
-    expect(getSupportLevelLabel("external-open")).toBe("外部打开");
-    expect(getSupportLevelLabel("experimental")).toBe("实验性");
+    expect(getSupportLevelLabel("full-built-in", tZh)).toBe("完整内置浏览");
+    expect(getSupportLevelLabel("high-fidelity", tZh)).toBe("高保真浏览");
+    expect(getSupportLevelLabel("safe-approximate", tZh)).toBe("安全近似预览");
+    expect(getSupportLevelLabel("semantic-inspection", tZh)).toBe("语义检查");
+    expect(getSupportLevelLabel("external-open", tZh)).toBe("外部打开");
+    expect(getSupportLevelLabel("experimental", tZh)).toBe("实验性");
   });
 });
