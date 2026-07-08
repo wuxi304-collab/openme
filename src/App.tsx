@@ -13,9 +13,8 @@ import FileTabs from "./components/layout/FileTabs";
 import CommandPalette, { type CommandItem } from "./components/CommandPalette";
 import FileSummaryPanel from "./components/FileSummaryPanel";
 import ViewerRouter from "./components/viewers/ViewerRouter";
-import { CheckIcon } from "./components/icons/CheckIcon";
-import { AlertIcon } from "./components/icons/AlertIcon";
 import { ConfirmProvider, useCloseAllConfirm, useCloseTabConfirm } from "./components/useConfirm";
+import { ToastStack, nextToastId, type ToastEntry, type ToastKind } from "./components/Toast";
 
 // Electron's preload extends the standard `File` with a `path` field —
 // declare the augmentation locally so we don't need `(file: any)` in
@@ -29,7 +28,16 @@ export default function App() {
   const [tabs, setTabs] = useState<FileTabState[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  const [toasts, setToasts] = useState<ToastEntry[]>([]);
+
+  const pushToast = useCallback((kind: ToastKind, message: string) => {
+    const id = nextToastId();
+    setToasts((prev) => [...prev, { id, kind, message, ttlMs: 2600 }]);
+  }, []);
+
+  const dismissToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((entry) => entry.id !== id));
+  }, []);
   const [commandOpen, setCommandOpen] = useState(false);
   const confirmCloseTab = useCloseTabConfirm();
   const confirmCloseAll = useCloseAllConfirm();
@@ -61,7 +69,18 @@ export default function App() {
   const activeTab = useMemo(() => tabs.find((t) => t.id === activeTabId) ?? null, [tabs, activeTabId]);
   const hasDirtyTabs = tabs.some((tab) => tab.isDirty);
 
-  useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(timer); }, [toast]);
+  // Auto-dismiss each toast when its TTL elapses. Re-runs only when the
+  // toast list reference changes; cheaper than per-entry timers because
+  // we'd otherwise schedule N timers per push. Two-layer limit: toast
+  // list is capped at MAX_VISIBLE in <ToastStack> so the slice stays
+  // bounded even on a long load-path.
+  useEffect(() => {
+    if (toasts.length === 0) return;
+    const timers = toasts.map((entry) => window.setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== entry.id));
+    }, entry.ttlMs));
+    return () => { for (const id of timers) window.clearTimeout(id); };
+  }, [toasts]);
   useEffect(() => {
     try {
       if (typeof window.electronAPI?.setDirtyState === "function") {
@@ -78,9 +97,9 @@ export default function App() {
       const result = await window.electronAPI.saveFile(tab.path, tab.content);
       if (result.success) {
         setTabs((prev) => prev.map((t) => t.id === tab.id ? { ...t, isDirty: false } : t));
-        setToast({ kind: "success", message: tf("saveSuccess", { name: tab.name }) });
-        } else if (isIpcFailure(result)) setToast({ kind: "error", message: describeIpcError(t, result) });
-        else setToast({ kind: "error", message: result.message ?? tf("saveFailed") });
+        pushToast("success", tf("saveSuccess", { name: tab.name }));
+        } else if (isIpcFailure(result)) pushToast("error", describeIpcError(t, result));
+        else pushToast("error", result.message ?? tf("saveFailed"));
       }, [activeTab, t, tf]);
 
   const openFileInTab = useCallback(async (fileInfo: FileInfo) => {
@@ -103,14 +122,14 @@ export default function App() {
     const handleFilePaths = useCallback(async (paths: string[]) => {
       for (const p of paths) {
         const fileInfo = await window.electronAPI.getFileInfo(p);
-        if (isIpcFailure(fileInfo)) { setToast({ kind: "error", message: describeIpcError(t, fileInfo) }); continue; }
+        if (isIpcFailure(fileInfo)) { pushToast("error", describeIpcError(t, fileInfo)); continue; }
         fileInfo.file_type = detectCategory(p);
         await addToRecent(fileInfo);
         await openFileInTab(fileInfo);
       }
     }, [addToRecent, openFileInTab, t]);
   const handleSelectFile = useCallback(async (file: FileInfo) => { await openFileInTab(file); }, [openFileInTab]);
-  const handleRemoveRecent = useCallback(async (file: FileInfo) => { const updated = recentFiles.filter((item) => item.path !== file.path); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); setToast({ kind: "success", message: tf("removeFromRecentToast", { name: file.name }) }); }, [recentFiles, tf]);
+  const handleRemoveRecent = useCallback(async (file: FileInfo) => { const updated = recentFiles.filter((item) => item.path !== file.path); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); pushToast("success", tf("removeFromRecentToast", { name: file.name })); }, [recentFiles, tf, pushToast]);
   const handleCloseTab = useCallback(async (tabId: string) => { const closingTab = tabs.find((tab) => tab.id === tabId); if (closingTab?.isDirty && settings.confirmTabClose && !(await confirmCloseTab(closingTab.name))) return; setTabs((prev) => { const idx = prev.findIndex((t) => t.id === tabId); const newTabs = prev.filter((t) => t.id !== tabId); if (activeTabId === tabId) { if (newTabs.length > 0) setActiveTabId(newTabs[Math.min(idx, newTabs.length - 1)].id); else setActiveTabId(null); } return newTabs; }); }, [activeTabId, tabs, confirmCloseTab, settings.confirmTabClose]);
   const handleOpenDialog = useCallback(async () => { try { const paths = await window.electronAPI.openFileDialog(); if (paths?.length) handleFilePaths(paths); } catch (error) { console.error("Dialog error:", error); } }, [handleFilePaths]);
     const handleCloseAllTabs = useCallback(async () => { if (hasDirtyTabs && settings.confirmTabClose && !(await confirmCloseAll(tabs.filter((tab) => tab.isDirty).length))) return; setTabs([]); setActiveTabId(null); }, [hasDirtyTabs, tabs, confirmCloseAll, settings.confirmTabClose]);
@@ -174,7 +193,7 @@ export default function App() {
           </main>
             </div>
             <StatusBar activeTab={activeTab ? { name: activeTab.name, path: activeTab.path, size: activeTab.sourceFile?.size, content: activeTab.content ?? undefined, isDirty: activeTab.isDirty } : null} />
-            {toast && <div className={`app-toast is-${toast.kind}`} role="status" aria-live="polite"><i aria-hidden="true">{toast.kind === "success" ? <CheckIcon size={12} strokeWidth={2.25} /> : <AlertIcon size={13} strokeWidth={1.75} />}</i>{toast.message}</div>}
+            <ToastStack toasts={toasts} onDismiss={dismissToast} />
             <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
           </div>
         </ThemeProvider>

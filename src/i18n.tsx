@@ -441,6 +441,8 @@ export const translations: Record<string, Record<string, string>> = {
     saveFailed: "保存失败",
     readFailed: "读取失败",
     removeFromRecentToast: "已从最近文件移除 {name}",
+    toastClose: "关闭提示",
+    toastLimitHint: "{count} 条更早的提示已收起",
 
     // Close confirm (legacy window.confirm prompts)
     unsavedCloseOne: "“{name}”有未保存修改，仍要关闭吗？",
@@ -1103,6 +1105,8 @@ export const translations: Record<string, Record<string, string>> = {
     saveFailed: "Save failed",
     readFailed: "Read failed",
     removeFromRecentToast: "Removed {name} from recent",
+    toastClose: "Dismiss notification",
+    toastLimitHint: "{count} earlier notifications hidden",
 
     // Close confirm (legacy window.confirm prompts)
     unsavedCloseOne: "“{name}” has unsaved changes. Close anyway?",
