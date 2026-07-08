@@ -86,6 +86,16 @@ export const translations: Record<string, Record<string, string>> = {
     paletteKindSystem: "系统",
     paletteKindRecent: "最近",
     paletteKindCommand: "命令",
+    paletteEmptyQuery: "没有匹配的命令",
+    paletteFuzzyHint: "支持模糊匹配，例如 {example}",
+    // Relative time for recent file entries
+    recentJustNow: "刚刚",
+    recentMinAgo: "{n, plural, one {# 分钟前} other {# 分钟前}}",
+    recentHourAgo: "{n, plural, one {# 小时前} other {# 小时前}}",
+    recentYesterday: "昨天",
+    recentDaysAgo: "{n, plural, one {# 天前} other {# 天前}}",
+    recentWeeksAgo: "{n, plural, one {# 周前} other {# 周前}}",
+    recentMonthsAgo: "{n, plural, one {# 个月前} other {# 个月前}}",
 
     // FileDropZone
     dropHere: "将文件拖入此处",
@@ -731,6 +741,16 @@ export const translations: Record<string, Record<string, string>> = {
     paletteKindSystem: "System",
     paletteKindRecent: "Recent",
     paletteKindCommand: "Command",
+    paletteEmptyQuery: "No matching commands",
+    paletteFuzzyHint: "Fuzzy match supported, e.g. {example}",
+    // Relative time for recent file entries
+    recentJustNow: "Just now",
+    recentMinAgo: "{n, plural, one {# min ago} other {# min ago}}",
+    recentHourAgo: "{n, plural, one {# hr ago} other {# hr ago}}",
+    recentYesterday: "Yesterday",
+    recentDaysAgo: "{n, plural, one {# day ago} other {# days ago}}",
+    recentWeeksAgo: "{n, plural, one {# wk ago} other {# wks ago}}",
+    recentMonthsAgo: "{n, plural, one {# mo ago} other {# mo ago}}",
 
     // FileDropZone
     dropHere: "Drop files here",

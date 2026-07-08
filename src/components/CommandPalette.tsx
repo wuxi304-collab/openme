@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useI18n } from "../i18n";
+import { bucketRelativeTime, rankByFuzzy } from "../core/commandPaletteSearch";
 
 export type CommandItem = {
   id: string;
@@ -9,6 +10,13 @@ export type CommandItem = {
   disabled?: boolean;
   kind?: "file" | "tab" | "workspace" | "system" | "recent";
   keywords?: string[];
+  /**
+   * Optional ISO-8601 timestamp used by the palette to render a relative-time
+   * tag next to recent-file commands. The command palette doesn't have a
+   * "now" clock of its own, so callers should pass the timestamp of the file
+   * the command would open.
+   */
+  openedAt?: string;
   run: () => void;
 };
 
@@ -40,12 +48,12 @@ export default function CommandPalette({ open, commands, onClose }: Props) {
   const previousFocus = useRef<HTMLElement | null>(null);
 
   const filtered = useMemo(() => {
-    const tokens = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-    if (!tokens.length) return commands;
-    return commands.filter((command) => {
-      const haystack = [command.label, command.detail, command.shortcut, command.kind, ...(command.keywords ?? [])].filter(Boolean).join(" ").toLocaleLowerCase();
-      return tokens.every((token) => haystack.includes(token));
-    });
+    const trimmed = query.trim();
+    if (!trimmed) return commands;
+    return rankByFuzzy(commands, trimmed, (command) =>
+      [command.label, command.detail, command.shortcut, command.kind, ...(command.keywords ?? [])]
+        .filter(Boolean).join(" ")
+    );
   }, [commands, query]);
 
   useEffect(() => {
@@ -62,6 +70,22 @@ export default function CommandPalette({ open, commands, onClose }: Props) {
   }, [filtered.length]);
 
   if (!open) return null;
+
+  // Render a "5 min ago" / "Yesterday" / "3 days ago" tag for recent-file
+  // commands. Other kinds skip the relative-time badge entirely.
+  const relativeForCommand = (command: CommandItem): string | null => {
+    if (command.kind !== "recent" || !command.openedAt) return null;
+    const bucket = bucketRelativeTime({ pastIso: command.openedAt, nowMs: Date.now() });
+    switch (bucket.kind) {
+      case "justNow": return t("recentJustNow");
+      case "minutes": return tf("recentMinAgo", { n: bucket.n });
+      case "hours": return tf("recentHourAgo", { n: bucket.n });
+      case "yesterday": return t("recentYesterday");
+      case "days": return tf("recentDaysAgo", { n: bucket.n });
+      case "weeks": return tf("recentWeeksAgo", { n: bucket.n });
+      case "months": return tf("recentMonthsAgo", { n: bucket.n });
+    }
+  };
 
   const execute = (command: CommandItem | undefined) => {
     if (!command || command.disabled) return;
@@ -119,16 +143,24 @@ export default function CommandPalette({ open, commands, onClose }: Props) {
           />
         </label>
         <div className="command-list" role="listbox" aria-label={t("availableCommandsAria")}>
-          {filtered.length ? filtered.map((command, index) => (
-            <button type="button" role="option" aria-selected={index === selected} key={command.id} disabled={command.disabled} className={index === selected ? "is-selected" : ""} onMouseEnter={() => setSelected(index)} onClick={() => execute(command)}>
-              <span>
-                <strong>{command.label}</strong>
-                <small>{command.detail}</small>
-              </span>
-              <em>{t(kindLabelKey(command.kind))}</em>
-              {command.shortcut && <kbd>{command.shortcut}</kbd>}
-            </button>
-          )) : <div className="command-empty">{t("noMatchingCommands")}</div>}
+          {filtered.length ? filtered.map((command, index) => {
+            const relative = relativeForCommand(command);
+            return (
+              <button type="button" role="option" aria-selected={index === selected} key={command.id} disabled={command.disabled} className={index === selected ? "is-selected" : ""} onMouseEnter={() => setSelected(index)} onClick={() => execute(command)}>
+                <span>
+                  <strong>{command.label}</strong>
+                  <small>{command.detail}</small>
+                </span>
+                {relative ? <em className="command-relative" aria-label={relative}>{relative}</em> : <em>{t(kindLabelKey(command.kind))}</em>}
+                {command.shortcut && <kbd>{command.shortcut}</kbd>}
+              </button>
+            );
+          }) : (
+            <div className="command-empty">
+              <div>{t("paletteEmptyQuery")}</div>
+              <small>{tf("paletteFuzzyHint", { example: "sve → save" })}</small>
+            </div>
+          )}
         </div>
         <footer>
           <span>{tf("paletteCount", { shown: filtered.length, total: commands.length })}</span>
