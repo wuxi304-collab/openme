@@ -5,11 +5,11 @@ ISO-8601 (YYYY-MM-DD). Versions follow [Semantic Versioning](https://semver.org/
 
 ## [Unreleased]
 
-### i18n + Chrome + Security arc (PRs #31–#45, 2025-Q4)
+### i18n + Chrome + Polish arc (PRs #31–#51, 2025-Q4)
 
-A 15-PR sequence of i18n hardening, chrome polish, and security
-hardening. All PRs merged sequentially on `main`, each ~200–500
-lines, all passing 110+ vitest tests and `tsc --noEmit`.
+A 21-PR sequence of i18n hardening, chrome polish, security hardening,
+and bundle performance. All PRs merged sequentially on `main`, each
+~150–650 lines, all passing 165 vitest tests and `tsc --noEmit`.
 
 #### i18n: complex viewers (PRs #31, #32)
 
@@ -138,16 +138,79 @@ lines, all passing 110+ vitest tests and `tsc --noEmit`.
   pin the zh values and would catch any future contributor
   reverting to English. Total suite: 131 tests.
 
+#### Chrome polish: deep dives (PRs #46, #47)
+
+- **PR #46 — chrome i18n audit** (`wuxi304-collab-i18n-chrome-leaks`):
+  Swept all `src/components/**/*.tsx` for any remaining hardcoded CJK
+  strings that bypassed `useI18n()`. Found and fixed 5 small leaks:
+  Sidebar empty-state hint, FileTypeIcon aria-label fallback, the
+  "World 1-1" chrome flair, the empty CommandPalette description, and
+  the RecentFiles remove button title. Added a `node
+  scripts/audit-i18n.mjs` script that flags any zh value byte-identical
+  to its en counterpart (excluding a small WHITELIST of brand strings
+  and language names). Audit exit 1 = broken zh translation.
+
+- **PR #47 — FileTypeIcon extension label**
+  (`wuxi304-collab-favicon-show-extension`): The "other" badge in
+  FileTypeIcon used to render a generic "?" for any extension outside
+  the catalogued set. Now shows the real extension letters (`.dat` →
+  DAT, `.tar.gz` → TAR, `.ics` → ICS). Helpful when the user opens a
+  file type the app doesn't preview — they still see what it is.
+
+#### New user surfaces (PR #48)
+
+- **PR #48 — About dialog** (`wuxi304-collab-about-dialog`): First
+  user-facing modal in the app. Click the "i" button in the titlebar to
+  open a backdrop-blurred overlay showing app version (read from
+  `electronAPI.getAppVersion()`), platform, current locale, six
+  keyboard shortcuts, and three external resource links
+  (documentation / GitHub / report-issue). Copy-version button writes
+  the diagnostic block to the clipboard. ESC, overlay-click, and the
+  close button all dismiss. Browser-dev fallback gracefully renders
+  the version as "—" when the preload bridge is absent. Added 22 zh+en
+  keys to `src/i18n.tsx` (aboutTitle through aboutCopiedAria) and 8 RTL
+  tests in `src/components/AboutDialog.test.tsx`. Bundle: +7 kB index
+  for the dialog + 243 lines of CSS using existing theme tokens.
+
+#### Type & build hygiene (PRs #49, #50)
+
+- **PR #49 — drop `(window as any)` casts** (`wuxi304-collab-cleanup-types`):
+  `src/types/electron-api.d.ts` already declares
+  `interface Window { electronAPI: ElectronAPI }`. Removed 7
+  gratuitous `(window as any).electronAPI.foo()` casts in App.tsx and
+  TitleBar.tsx, plus the 2 in main.tsx's browser-dev shim (narrowed to
+  a typed `AnyElectronShim` local). No behaviour change. 165/165 tests
+  pass.
+
+- **PR #50 — vendor chunk split** (`wuxi304-collab-bundle-split`):
+  Added a `manualChunks` rule to `vite.config.ts` that pulls `react`,
+  `react-dom`, and `scheduler` into a shared `vendor-react` chunk. The
+  index chunk dropped 376.65 → **182.19 kB raw** (gzip 105.45 → 44.81),
+  -194 kB / -61 kB gzip. Cold-start JS to parse on first paint drops
+  by ~50%. The vendor-react chunk is hash-stable across chrome-only
+  updates, so incremental releases don't re-download the React runtime.
+
+#### Micro polish (PR #51)
+
+- **PR #51 — locale display in About dialog**
+  (`wuxi304-collab-i18n-about-locale`): The locale row in AboutDialog
+  used to render `lang === "zh" ? "中文" : "English"` as a hardcoded
+  literal. Moved through the dict as `aboutLocaleNameZh` /
+  `aboutLocaleNameEn`. Audit WHITELIST extended to allow the en value
+  to literally be "English". 454 zh / 454 en keys (was 452/452).
+
 ### Notes
 
-- **No breaking changes.** All 15 PRs preserved the existing public
+- **No breaking changes.** All 21 PRs preserved the existing public
   IPC API, the file format registry schema, the command palette
   commands, and the ViewerRouter protocol.
-- **Bundle trajectory**: 359.12 kB → 368.73 kB index (gzip: 102.41 →
-  103.31 kB), +9.61 kB / +0.90 kB gzip. Most of the growth is the
-  ICU pluralization helper and four new icon modules. CAD code-split
-  (-1.4 MB initial chunk, lazy-loaded) more than offsets the chrome
-  growth on a cold start.
+- **Bundle trajectory**: 359.12 kB → **182.19 kB** index (gzip: 102.41 →
+  **44.81 kB**), -176.93 kB raw / -57.60 kB gzip. The headline win is
+  PR #50's vendor chunk split — `vendor-react` (194 kB / 60 kB gzip)
+  caches separately from chrome, so chrome-only updates don't
+  re-download React. CAD code-split (-1.4 MB initial chunk,
+  lazy-loaded) plus the vendor split together mean the index chunk on
+  first paint is now smaller than at the start of the arc.
 - **HonestSupportLevel vs SupportLevel**: a small refactor target.
   Two separate type systems (letter grades A+/A/B/C/D/E/F in
   `file-registry/types.ts`, kebab-case words in
