@@ -68,6 +68,14 @@ export const translations: Record<string, Record<string, string>> = {
     lines: "行",
     saveShortcut: "Ctrl S 保存",
     localFirst: "本地优先",
+    statusLoadingAria: "正在加载文件",
+    statusActiveFileAria: "当前活动文件",
+    statusThemeToggleAria: "切换明暗主题",
+    statusLineEndingLabel: "行尾字符",
+    statusLineEndingLF: "LF（Unix 换行）",
+    statusLineEndingCRLF: "CRLF（Windows 换行）",
+    statusLineEndingMixed: "混合",
+    statusLineEndingNone: "无内容",
     livesAria: "本地处理",
 
     // FileTabs
@@ -732,6 +740,14 @@ export const translations: Record<string, Record<string, string>> = {
     lines: "lines",
     saveShortcut: "Ctrl S to save",
     localFirst: "Local first",
+    statusLoadingAria: "Loading file",
+    statusActiveFileAria: "Active file",
+    statusThemeToggleAria: "Toggle light or dark theme",
+    statusLineEndingLabel: "Line ending",
+    statusLineEndingLF: "LF (Unix)",
+    statusLineEndingCRLF: "CRLF (Windows)",
+    statusLineEndingMixed: "Mixed",
+    statusLineEndingNone: "No content",
     livesAria: "Local processing",
 
     // FileTabs
