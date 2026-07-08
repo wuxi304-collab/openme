@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import { useI18n } from "../i18n";
-import { useSettings, type RecentLimit } from "../settings";
+import { useSettings, type LineNumbersChoice, type RecentLimit, type TabSize, type WordWrapChoice } from "../settings";
 import "./SettingsDialog.css";
 
 interface Props {
@@ -152,6 +152,80 @@ export default function SettingsDialog({ open, onClose }: Props) {
                   <span>{t(`settingsRecentLimit${limit}` as "settingsRecentLimit10" | "settingsRecentLimit25" | "settingsRecentLimit50")}</span>
                 </label>
               ))}
+            </div>
+          </section>
+
+          <section className="settings-dialog-section" aria-labelledby="settings-editor-title">
+            <h3 id="settings-editor-title" className="settings-dialog-section-title">{t("settingsEditorTitle")}</h3>
+            <p className="settings-dialog-section-desc">{t("settingsEditorDesc")}</p>
+
+            <div className="settings-subsection" aria-labelledby="settings-tab-size-title">
+              <h4 id="settings-tab-size-title" className="settings-subsection-title">{t("settingsTabSizeTitle")}</h4>
+              <p className="settings-subsection-desc">{t("settingsTabSizeDesc")}</p>
+              <div className="settings-radio-group" role="radiogroup" aria-labelledby="settings-tab-size-title">
+                {([2, 4, 8] as const).map((size) => (
+                  <label
+                    key={size}
+                    className={`settings-radio${settings.tabSize === size ? " is-selected" : ""}`}
+                  >
+                    <input
+                      type="radio"
+                      name="tabSize"
+                      value={size}
+                      checked={settings.tabSize === size}
+                      onChange={() => update("tabSize", size as TabSize)}
+                    />
+                    <span className="settings-radio-dot" aria-hidden="true" />
+                    <span>{t(`settingsTabSize${size}` as "settingsTabSize2" | "settingsTabSize4" | "settingsTabSize8")}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="settings-subsection" aria-labelledby="settings-line-numbers-title">
+              <h4 id="settings-line-numbers-title" className="settings-subsection-title">{t("settingsLineNumbersTitle")}</h4>
+              <p className="settings-subsection-desc">{t("settingsLineNumbersDesc")}</p>
+              <div className="settings-radio-group" role="radiogroup" aria-labelledby="settings-line-numbers-title">
+                {(["on", "off"] as const).map((choice) => (
+                  <label
+                    key={choice}
+                    className={`settings-radio${settings.lineNumbers === choice ? " is-selected" : ""}`}
+                  >
+                    <input
+                      type="radio"
+                      name="lineNumbers"
+                      value={choice}
+                      checked={settings.lineNumbers === choice}
+                      onChange={() => update("lineNumbers", choice as LineNumbersChoice)}
+                    />
+                    <span className="settings-radio-dot" aria-hidden="true" />
+                    <span>{t(choice === "on" ? "settingsLineNumbersOn" : "settingsLineNumbersOff")}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="settings-subsection" aria-labelledby="settings-word-wrap-title">
+              <h4 id="settings-word-wrap-title" className="settings-subsection-title">{t("settingsWordWrapTitle")}</h4>
+              <p className="settings-subsection-desc">{t("settingsWordWrapDesc")}</p>
+              <div className="settings-radio-group" role="radiogroup" aria-labelledby="settings-word-wrap-title">
+                {(["on", "off"] as const).map((choice) => (
+                  <label
+                    key={choice}
+                    className={`settings-radio${settings.wordWrap === choice ? " is-selected" : ""}`}
+                  >
+                    <input
+                      type="radio"
+                      name="wordWrap"
+                      value={choice}
+                      checked={settings.wordWrap === choice}
+                      onChange={() => update("wordWrap", choice as WordWrapChoice)}
+                    />
+                    <span className="settings-radio-dot" aria-hidden="true" />
+                    <span>{t(choice === "on" ? "settingsWordWrapOn" : "settingsWordWrapOff")}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </section>
         </div>

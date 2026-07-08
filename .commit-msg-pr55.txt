@@ -1,0 +1,54 @@
+feat(settings): editor preferences (tab size, line numbers, word wrap)
+
+Expands the Settings dialog with an "Editor" sub-section that wires
+three previously hardcoded Monaco editor options into the persisted
+settings store.
+
+New fields in `Settings`:
+- `tabSize: 2 | 4 | 8` (default 4) — Monaco's `tabSize` option,
+  controls how many spaces the Tab key inserts.
+- `lineNumbers: "on" | "off"` (default "on") — Monaco's `lineNumbers`
+  option, controls the left-gutter line numbers.
+- `wordWrap: "on" | "off"` (default "off") — Monaco's `wordWrap` plus
+  the MarkdownViewer's `<textarea wrap="...">`. The preview pane
+  always wraps (it's an iframe with `overflow-wrap:anywhere`); the
+  setting only affects the editable surfaces.
+
+UI:
+- New "Editor" section in the dialog with three radiogroups (Tab size,
+  Line numbers, Word wrap), grouped under a shared h3. Sub-groups use
+  an h4 + desc pattern with subtle top borders to keep the rhythm
+  while staying compact.
+- All new strings localised to zh + en (15 keys each, audit clean
+  468/468).
+
+Wired consumers:
+- src/components/viewers/CodeEditor.tsx — pulls settings via
+  `useSettings()`, passes `tabSize` / `lineNumbers` / `wordWrap` into
+  Monaco's `options` prop.
+- src/components/viewers/MarkdownViewer.tsx — pulls settings, maps
+  `wordWrap` to the textarea's `wrap` attribute (`"off"` → horizontal
+  scroll, `"on"` → soft wrap). Tab size / line numbers don't apply
+  to a plain textarea and are intentionally not wired (Monaco upgrade
+  for MarkdownViewer is a separate concern).
+
+Settings persistence: the `readPersisted` / `persist` pair in
+`src/settings.tsx` already round-trips arbitrary `Settings` keys via
+JSON.stringify, so no schema work was needed beyond adding the field
+defaults and per-field validation in `readPersisted`.
+
+Tests:
+- 4 new tests in SettingsDialog.test.tsx (now 179/179 passing):
+  editor section renders, three sub-radiogroups present, default
+  tab size is 4, switching tab size persists to localStorage.
+- 10 existing SettingsDialog tests still green.
+
+Bundle (vite build, raw):
+- index.js: 177.04 → 178.44 kB (+1.4 kB)
+- index.css: 69.34 kB unchanged
+- SettingsDialog.js chunk: 4.77 → 7.38 kB (new sub-section UI)
+- SettingsDialog.css chunk: 5.58 → 6.09 kB (subsection styles)
+
+Tsc clean. Audit clean. Build clean.
+
+Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>

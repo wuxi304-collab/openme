@@ -6,17 +6,26 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 
 export type ThemeChoice = "dark" | "light";
 export type RecentLimit = 10 | 25 | 50;
+export type TabSize = 2 | 4 | 8;
+export type LineNumbersChoice = "on" | "off";
+export type WordWrapChoice = "on" | "off";
 
 export interface Settings {
   theme: ThemeChoice;
   confirmTabClose: boolean;
   recentLimit: RecentLimit;
+  tabSize: TabSize;
+  lineNumbers: LineNumbersChoice;
+  wordWrap: WordWrapChoice;
 }
 
 const DEFAULTS: Settings = {
   theme: "dark",
   confirmTabClose: true,
   recentLimit: 50,
+  tabSize: 4,
+  lineNumbers: "on",
+  wordWrap: "off",
 };
 
 const STORAGE_KEY = "openme.settings.v1";
@@ -30,6 +39,9 @@ function readPersisted(): Settings {
       theme: parsed.theme === "light" ? "light" : "dark",
       confirmTabClose: typeof parsed.confirmTabClose === "boolean" ? parsed.confirmTabClose : DEFAULTS.confirmTabClose,
       recentLimit: parsed.recentLimit === 10 || parsed.recentLimit === 25 ? parsed.recentLimit : DEFAULTS.recentLimit,
+      tabSize: parsed.tabSize === 2 || parsed.tabSize === 8 ? parsed.tabSize : DEFAULTS.tabSize,
+      lineNumbers: parsed.lineNumbers === "off" ? "off" : "on",
+      wordWrap: parsed.wordWrap === "on" ? "on" : "off",
     };
   } catch {
     return DEFAULTS;

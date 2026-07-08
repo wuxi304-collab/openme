@@ -1,6 +1,7 @@
 import Editor, { OnMount } from "@monaco-editor/react";
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../../i18n";
+import { useSettings } from "../../settings";
 
 interface Props {
   content: string;
@@ -10,6 +11,7 @@ interface Props {
 
 export default function CodeEditor({ content, language, onChange }: Props) {
   const { t } = useI18n();
+  const { settings } = useSettings();
   const [value, setValue] = useState(content);
   const editorRef = useRef<any>(null);
 
@@ -88,9 +90,10 @@ export default function CodeEditor({ content, language, onChange }: Props) {
             cursorBlinking: "smooth",
             cursorSmoothCaretAnimation: "on",
             smoothScrolling: true,
-            tabSize: 2,
+            tabSize: settings.tabSize,
             insertSpaces: true,
-            wordWrap: "off",
+            wordWrap: settings.wordWrap,
+            lineNumbers: settings.lineNumbers,
             automaticLayout: true,
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,
