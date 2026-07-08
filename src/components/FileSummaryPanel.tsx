@@ -10,20 +10,20 @@ interface FileSummaryPanelProps {
   onOpenInSystem: () => void;
 }
 
-const capabilityLabels: Record<FileCapability, string> = {
-  detect: "Detect",
-  preview: "Preview",
-  edit: "Edit",
-  metadata: "Metadata",
-  thumbnail: "Thumbnail",
-  "ai-summary": "AI Summary",
-  "external-open": "External",
+const capabilityKeys: Record<FileCapability, string> = {
+  detect: "capDetect",
+  preview: "capPreview",
+  edit: "capEdit",
+  metadata: "capMetadata",
+  thumbnail: "capThumbnail",
+  "ai-summary": "capAiSummary",
+  "external-open": "capExternal",
 };
 
 const coreCapabilities: FileCapability[] = ["detect", "preview", "metadata", "ai-summary", "edit", "external-open"];
 
 export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPanelProps) {
-  const { t } = useI18n();
+  const { t, tf } = useI18n();
   const registryFormat = getFileFormatByPath(tab.path);
   const metadata = extractMetadata({
     filePath: tab.path,
@@ -38,31 +38,31 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
   return (
     <aside className="file-summary-panel" aria-label={t("fileSummaryAria")}>
       <div className="file-summary-header">
-        <span className="summary-kicker">File Brief</span>
+        <span className="summary-kicker">{t("fileBriefKicker")}</span>
         <strong title={brief.title}>{brief.title}</strong>
         <p>{brief.subtitle}</p>
       </div>
 
       {registryFormat && (
         <div className="summary-section registry-section">
-          <span className="summary-section-title">Format Registry</span>
+          <span className="summary-section-title">{t("registrySection")}</span>
           <div className="registry-card">
             <div className="registry-card-head">
               <strong>{registryFormat.name}</strong>
-              <span className={`registry-support-badge support-${brief.supportLevel.replace("+", "plus")}`}>Support {brief.supportLevel}</span>
+              <span className={`registry-support-badge support-${brief.supportLevel.replace("+", "plus")}`}>{tf("summarySupportBadge", { level: brief.supportLevel })}</span>
             </div>
             <p>{registryFormat.boundary}</p>
             <dl className="registry-strategy-list">
               <div>
-                <dt>Viewer</dt>
+                <dt>{t("summaryViewer")}</dt>
                 <dd>{brief.preferredViewer}</dd>
               </div>
               <div>
-                <dt>Strategy</dt>
+                <dt>{t("summaryStrategy")}</dt>
                 <dd>{brief.openStrategy}</dd>
               </div>
               <div>
-                <dt>Risk</dt>
+                <dt>{t("summaryRisk")}</dt>
                 <dd>{brief.riskLevel}</dd>
               </div>
             </dl>
@@ -72,7 +72,7 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
       )}
 
       <div className="summary-section">
-        <span className="summary-section-title">Signals</span>
+        <span className="summary-section-title">{t("signalsSection")}</span>
         <div className="summary-chip-list">
           {brief.signals.map((signal) => (
             <span key={signal} className="summary-chip">{signal}</span>
@@ -81,7 +81,7 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
       </div>
 
       <div className="summary-section">
-        <span className="summary-section-title">Evidence</span>
+        <span className="summary-section-title">{t("evidenceSection")}</span>
         <dl className="summary-evidence-list">
           {brief.evidence.map((item) => (
             <div key={`${item.source}-${item.label}-${item.value}`} className={`summary-evidence is-${item.severity ?? "info"}`}>
@@ -94,7 +94,7 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
 
       {brief.warnings.length > 0 && (
         <div className="summary-section">
-          <span className="summary-section-title">Boundary</span>
+          <span className="summary-section-title">{t("boundarySection")}</span>
           <div className="summary-warning-list">
             {brief.warnings.map((warning) => (
               <p key={warning}>{warning}</p>
@@ -104,7 +104,7 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
       )}
 
       <div className="summary-section">
-        <span className="summary-section-title">Next Actions</span>
+        <span className="summary-section-title">{t("nextActionsSection")}</span>
         <ul className="summary-action-list">
           {brief.actions.map((action) => (
             <li key={`${action.label}-${action.reason}`}>
@@ -132,7 +132,7 @@ function CapabilityGrid({ format }: { format: FileFormatDefinition }) {
         return (
           <div key={capability} className={`capability-cell is-${supported ? "yes" : "no"}`}>
             <span>{supported ? "✓" : "×"}</span>
-            <strong>{capabilityLabels[capability]}</strong>
+            <strong>{t(capabilityKeys[capability])}</strong>
           </div>
         );
       })}

@@ -1,5 +1,6 @@
 import Editor, { OnMount } from "@monaco-editor/react";
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "../../i18n";
 
 interface Props {
   content: string;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function CodeEditor({ content, language, onChange }: Props) {
+  const { t } = useI18n();
   const [value, setValue] = useState(content);
   const editorRef = useRef<any>(null);
 
@@ -64,7 +66,7 @@ export default function CodeEditor({ content, language, onChange }: Props) {
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.1)" }}>
       <div className="viewer-header">
-        <span className="viewer-label">&lt;/&gt; 代码编辑器</span>
+          <span className="viewer-label">{t("codeEditorLabel")}</span>
         <span className="viewer-badge">{language.toUpperCase()}</span>
       </div>
       <div className="flex-1 min-h-0">
@@ -100,7 +102,7 @@ export default function CodeEditor({ content, language, onChange }: Props) {
           }}
           loading={
             <div className="flex items-center justify-center h-full" style={{ background: "#0d1117" }}>
-              <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>加载编辑器…</span>
+              <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>{t("codeEditorLoading")}</span>
             </div>
           }
         />
