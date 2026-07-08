@@ -131,7 +131,7 @@ export default function App() {
       { id: "clear-search", label: t("cmdClearSearch"), detail: searchQuery ? tf("cmdClearSearchDetailActive", { query: searchQuery }) : t("cmdClearSearchDetailEmpty"), kind: "workspace", disabled: !searchQuery, run: () => setSearchQuery("") },
     ];
     const tabCommands = tabs.map((tab, index) => ({ id: `tab-${tab.id}`, label: tf("cmdSwitchTab", { name: tab.name }), detail: tab.path, kind: "tab" as const, shortcut: index < 9 ? `Alt ${index + 1}` : undefined, keywords: [tab.category], run: () => setActiveTabId(tab.id) }));
-    const recentCommands = recentFiles.slice(0, 8).map((file) => ({ id: `recent-${file.path}`, label: tf("cmdOpenRecent", { name: file.name }), detail: file.path, kind: "recent" as const, keywords: [file.extension, file.file_type], run: () => { void openFileInTab(file); } }));
+    const recentCommands = recentFiles.slice(0, 8).map((file) => ({ id: `recent-${file.path}`, label: tf("cmdOpenRecent", { name: file.name }), detail: file.path, kind: "recent" as const, keywords: [file.extension, file.file_type], openedAt: file.opened_at, run: () => { void openFileInTab(file); } }));
     return [...baseCommands, ...tabCommands, ...recentCommands];
   }, [handleOpenDialog, activeTab, tabs, searchQuery, handleSaveCurrent, activateRelativeTab, handleCloseTab, handleCloseAllTabs, recentFiles, openFileInTab, t, tf]);
 
