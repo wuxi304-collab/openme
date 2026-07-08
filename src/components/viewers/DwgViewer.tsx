@@ -16,6 +16,22 @@ function resourceUrl(fileName: string): string {
   return new URL(`./workers/${fileName}`, window.location.href).href;
 }
 
+// Resolve a CAD engine descriptor coming from the main process. Prefer the
+// stable i18n code so the toolbar text follows the user's language; fall
+// back to the bundled Chinese name/message for engines we don't have keys
+// for yet (e.g. an external sidecar).
+function localizeEngineField(
+  t: (key: string, params?: Record<string, string | number>) => string,
+  tf: (key: string, params?: Record<string, string | number>) => string,
+  field: { code?: string; params?: Record<string, string | number>; fallback?: string },
+): string {
+  if (field.code) {
+    const localized = t(field.code, field.params);
+    if (localized !== field.code) return field.params ? tf(field.code, field.params) : localized;
+  }
+  return field.fallback ?? "";
+}
+
 export default function DwgViewer({ filePath, fileName }: Props) {
   const { t, tf } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,27 +48,39 @@ export default function DwgViewer({ filePath, fileName }: Props) {
     let cancelled = false;
     window.electronAPI.getCadEngineStatus().then((engine: any) => {
       if (cancelled) return;
-      setEngineName(engine.name || t("dwgEngineDetecting"));
-      setFallbackEngine(!!engine.fallback);
-      if (engine.kind === "acadsharp") {
-        window.electronAPI.inspectCadDocument(filePath).then((result: any) => {
-          if (cancelled) return;
-          const info = result.document?.document;
-          if (result.success && info) {
-            setCadSummary(tf("dwgEntityLayerSummary", {
-              entities: info.entityCount ?? 0,
-              layers: info.layerCount ?? 0,
-            }));
-          }
-        }).catch(() => undefined);
-      }
-    }).catch(() => {
-      if (cancelled) return;
-      setEngineName(t("dwgEngineLibreDwg"));
-      setFallbackEngine(true);
-    });
-    return () => { cancelled = true; };
-  }, [filePath, t, tf]);
+        const resolved = localizeEngineField(t, tf, {
+          code: engine.nameCode,
+          params: engine.nameParams,
+          fallback: engine.name,
+        });
+        setEngineName(resolved || t("dwgEngineDetecting"));
+        setFallbackEngine(!!engine.fallback);
+        const engineNote = localizeEngineField(t, tf, {
+          code: engine.messageCode,
+          params: engine.messageParams,
+          fallback: engine.message,
+        });
+        if (engine.kind === "acadsharp") {
+          window.electronAPI.inspectCadDocument(filePath).then((result: any) => {
+            if (cancelled) return;
+            const info = result.document?.document;
+            if (result.success && info) {
+              const summary = tf("dwgEntityLayerSummary", {
+                entities: info.entityCount ?? 0,
+                layers: info.layerCount ?? 0,
+              });
+              setCadSummary(engineNote ? `${engineNote} · ${summary}` : summary);
+            }
+          }).catch(() => undefined);
+        } else if (engineNote) setCadSummary(engineNote);
+        else setCadSummary(null);
+      }).catch(() => {
+        if (cancelled) return;
+        setEngineName(t("dwgEngineLibreDwg"));
+        setFallbackEngine(true);
+      });
+      return () => { cancelled = true; };
+    }, [filePath, t, tf]);
 
   useEffect(() => {
     let disposed = false;
