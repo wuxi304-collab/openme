@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import type { FileTabState } from "../../types";
 import { getViewerRouteByPath } from "../../viewer-registry";
 import { detectLanguage } from "../../utils/fileTypeDetector";
@@ -30,6 +30,16 @@ interface ViewerRouterProps {
 export default function ViewerRouter({ tab, onChange }: ViewerRouterProps) {
   const { t } = useI18n();
   const route = getViewerRouteByPath(tab.path);
+
+  // Prime the browser's HTTP cache for the @mlightcad/cad-simple-viewer chunk
+  // (2.28 MB / 638 kB gzip) the moment a DWG tab becomes active. By the time
+  // DwgViewer's own useEffect runs the same dynamic import, the chunk is
+  // already (mostly) in cache and the first-open wait collapses to just the
+  // parse time. Subsequent calls are no-ops because import() is cached.
+  useEffect(() => {
+    if (tab.category !== "dwg") return;
+    void import("@mlightcad/cad-simple-viewer");
+  }, [tab.category]);
 
   if (tab.error) {
     return <OpenMeRouteCard tab={tab} route={route} title={t("routeErrorTitle")} description={tab.error} />;
