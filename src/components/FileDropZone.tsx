@@ -1,13 +1,15 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 
 interface Props {
   onFileDrop: (paths: string[]) => void;
+  onOpenDialog?: () => void;
 }
 
-export default function FileDropZone({ onFileDrop }: Props) {
+export default function FileDropZone({ onFileDrop, onOpenDialog }: Props) {
   const { t } = useI18n();
   const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -33,12 +35,35 @@ export default function FileDropZone({ onFileDrop }: Props) {
     [onFileDrop]
   );
 
+  const openWithPicker = useCallback(() => {
+    if (onOpenDialog) {
+      onOpenDialog();
+      return;
+    }
+    inputRef.current?.click();
+  }, [onOpenDialog]);
+
+  const handlePickerChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      const paths = Array.from(files)
+        .map((f) => (f as File & { path?: string }).path ?? f.name)
+        .filter(Boolean);
+      if (paths.length > 0) onFileDrop(paths);
+      e.target.value = "";
+    },
+    [onFileDrop]
+  );
+
   const accent = "var(--accent)";
   const muted = "var(--text-muted)";
   const color = dragging ? accent : muted;
 
   return (
-    <div
+    <section
+      role="region"
+      aria-label={t("dropZoneAria")}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
@@ -48,10 +73,9 @@ export default function FileDropZone({ onFileDrop }: Props) {
         background: dragging ? "var(--accent-glow)" : "transparent",
       }}
     >
-      <div
-        className="flex flex-col items-center gap-5 text-center px-8"
-      >
+      <div className="flex flex-col items-center gap-5 text-center px-8">
         <div
+          aria-hidden="true"
           className="w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300"
           style={{
             background: dragging ? "var(--accent-dim)" : "var(--bg-surface)",
@@ -67,6 +91,7 @@ export default function FileDropZone({ onFileDrop }: Props) {
             stroke={color}
             strokeWidth="1.5"
             className="transition-colors duration-200"
+            aria-hidden="true"
           >
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
             <polyline points="14 2 14 8 20 8" />
@@ -74,7 +99,6 @@ export default function FileDropZone({ onFileDrop }: Props) {
             <polyline points="9 15 12 12 15 15" />
           </svg>
         </div>
-
         <div className="space-y-1">
           <p
             className="text-[15px] font-semibold transition-colors duration-200"
@@ -86,24 +110,46 @@ export default function FileDropZone({ onFileDrop }: Props) {
             {t("dropHint")}
           </p>
         </div>
-
-        <div className="flex items-center gap-4 pt-2">
+        <button
+          type="button"
+          onClick={openWithPicker}
+          className="px-4 py-2 rounded-lg text-[12px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--accent)]"
+          style={{
+            background: "var(--accent)",
+            color: "var(--bg-app)",
+          }}
+        >
+          {t("browseFiles")}
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          className="sr-only"
+          onChange={handlePickerChange}
+          tabIndex={-1}
+          aria-hidden="true"
+        />
+        <ul
+          aria-label={t("dropZoneSupportedFormatsAria")}
+          className="flex items-center gap-4 pt-2 list-none m-0 p-0"
+        >
           {[
             { key: "PDF", color: "#f85149" },
             { key: "imageCat", color: "#a371f7" },
             { key: "textCat", color: "#3fb950" },
             { key: "codeCat", color: "#58a6ff" },
           ].map(({ key, color }) => (
-            <span
+            <li
               key={key}
               className="px-2 py-0.5 rounded text-[10px] font-medium"
               style={{ background: `${color}18`, color, border: `1px solid ${color}30` }}
             >
               {key === "PDF" ? key : t(key)}
-            </span>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
-    </div>
+    </section>
   );
 }
