@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useMemo, type CSSProperties } from "react";
 import { FileCategory } from "../utils/fileTypeDetector";
 import { useI18n } from "../i18n";
 
@@ -11,6 +11,9 @@ interface IconConfig {
   shadow: string;
 }
 
+// Static palette for every known category. The "other" entry is a fallback
+// for unknown extensions and is replaced at render time with the file's
+// actual extension when one is supplied (see resolveConfig below).
 const CONFIG: Record<string, IconConfig> = {
   pdf:      { top: "#ff6b65", bottom: "#d91f1b", ink: "#fff", label: "PDF",  mini: "P", shadow: "#831713" },
   image:    { top: "#59c9ff", bottom: "#227bcc", ink: "#fff", label: "IMG",  mini: "I", shadow: "#164c85" },
@@ -32,11 +35,44 @@ const CONFIG: Record<string, IconConfig> = {
   other:    { top: "#aebdc4", bottom: "#71858e", ink: "#fff", label: "???",  mini: "?", shadow: "#43545b" },
 };
 
+// Pure helper exported for tests: derive the human label for an unknown
+// extension. Strips the leading dot, uppercases, and trims to four letters
+// so it fits the existing icon label box (JSON / EPUB / FONT all use 4).
+// Falls back to "???" when nothing usable is supplied (matches the
+// previous visual).
+export function deriveOtherLabel(extension: string | undefined): string {
+  if (!extension) return "???";
+  const stripped = extension.replace(/^\./, "").replace(/\s+/g, "").toUpperCase();
+  // Compound extensions like ".tar.gz" get the first segment so the
+  // label reads naturally (TAR, not TAR.).
+  const firstSegment = stripped.split(/[.\-_+]/)[0] ?? stripped;
+  const trimmed = firstSegment.slice(0, 4);
+  return trimmed.length > 0 ? trimmed : "???";
+}
+
+function resolveConfig(type: FileCategory, extension: string | undefined): IconConfig {
+  const base = CONFIG[type] ?? CONFIG.other;
+  if (base !== CONFIG.other) return base;
+  const label = deriveOtherLabel(extension);
+  // Compact mini is just the first char of the label so it lines up with
+  // the existing single-letter badges (P, I, S, T, …).
+  return { ...base, label, mini: label.charAt(0) || "?" };
+}
+
 type IconStyle = CSSProperties & Record<"--icon-top" | "--icon-bottom" | "--icon-ink" | "--icon-shadow", string>;
 
-export default function FileTypeIcon({ type, size = 34 }: { type: FileCategory; size?: number }) {
+interface Props {
+  type: FileCategory;
+  size?: number;
+  /** File extension including the leading dot, e.g. ".dat". Used to label
+   *  the "other" category so users see the actual file type instead of
+   *  a generic "???" placeholder. */
+  extension?: string;
+}
+
+export default function FileTypeIcon({ type, size = 34, extension }: Props) {
   const { t } = useI18n();
-  const config = CONFIG[type] ?? CONFIG.other;
+  const config = useMemo(() => resolveConfig(type, extension), [type, extension]);
   const compact = size < 24;
   const style: IconStyle = {
     width: size,

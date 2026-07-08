@@ -66,7 +66,7 @@ export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpe
             return (
               <div className={`recent-row ${active ? "is-active" : ""}`} key={file.id}>
                 <button type="button" className="recent-file" onClick={() => onSelect(file)} title={file.path}>
-                  <FileTypeIcon type={detectCategory(file.path)} size={38} />
+                  <FileTypeIcon type={detectCategory(file.path)} size={38} extension={file.extension} />
                   <span className="recent-file-copy">
                     <strong>{file.name}</strong>
                     <small>{file.extension || t("fileTypeSuffix")}</small>

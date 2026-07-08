@@ -42,7 +42,7 @@ export default function RecentFiles({ files, selectedPath, onSelect }: Props) {
                     if (!isSelected) (e.currentTarget as HTMLElement).style.background = "transparent";
                   }}
                 >
-                  <FileTypeIcon type={detectCategory(file.path)} size={32} />
+                  <FileTypeIcon type={detectCategory(file.path)} size={32} extension={file.extension} />
                   <div className="flex-1 min-w-0">
                     <p
                       className="text-[12px] truncate font-medium leading-snug"
