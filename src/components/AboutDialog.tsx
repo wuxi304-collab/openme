@@ -73,7 +73,7 @@ export default function AboutDialog({ open, onClose }: Props) {
 
   if (!open) return null;
 
-  const localeDisplay = lang === "zh" ? "中文" : "English";
+  const localeDisplay = lang === "zh" ? t("aboutLocaleNameZh") : t("aboutLocaleNameEn");
   const platformDisplay = (typeof navigator !== "undefined" && navigator.platform) ? navigator.platform : UNKNOWN;
   const versionDisplay = version || UNKNOWN;
 

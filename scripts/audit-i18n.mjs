@@ -60,7 +60,8 @@ const en = extractDict("en");
 const WHITELIST = new Set([
   "world",              // "WORLD 1–1" — Mario reference, brand styling
   "english",            // "English" — the English language name
-  "heroEyebrow",        // "OPENME WORKSPACE" — brand eyebrow, stylised all-caps
+    "aboutLocaleNameEn",  // "English" — the English language name in the About dialog
+    "heroEyebrow",        // "OPENME WORKSPACE" — brand eyebrow, stylised all-caps
   "ready",              // "READY" — single-word status pill
   "officeExcelLabel",   // "Excel" — Microsoft product name
   "cadAssistantKicker", // "CAD COPILOT" — brand/stylistic kicker
