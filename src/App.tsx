@@ -20,7 +20,23 @@ export default function App() {
   const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [commandOpen, setCommandOpen] = useState(false);
 
-  useEffect(() => { window.electronAPI.loadRecentFiles().then((store) => setRecentFiles(store.files)).catch(console.error); }, []);
+  useEffect(() => {
+    const load = async () => {
+      try {
+        if (typeof (window as any).electronAPI?.loadRecentFiles === "function") {
+          const store = await (window as any).electronAPI.loadRecentFiles();
+          setRecentFiles(store?.files ?? []);
+        } else {
+          // Browser fallback during dev: use empty recent list
+          setRecentFiles([]);
+        }
+      } catch (err) {
+        console.error("loadRecentFiles failed:", err);
+        setRecentFiles([]);
+      }
+    };
+    void load();
+  }, []);
 
   const filteredFiles = useMemo(() => {
     if (!searchQuery.trim()) return recentFiles;
@@ -32,7 +48,15 @@ export default function App() {
   const hasDirtyTabs = tabs.some((tab) => tab.isDirty);
 
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(timer); }, [toast]);
-  useEffect(() => { window.electronAPI.setDirtyState(hasDirtyTabs).catch(() => undefined); }, [hasDirtyTabs]);
+  useEffect(() => {
+    try {
+      if (typeof (window as any).electronAPI?.setDirtyState === "function") {
+        (window as any).electronAPI.setDirtyState(hasDirtyTabs).catch(() => undefined);
+      }
+    } catch (err) {
+      // ignore in browser
+    }
+  }, [hasDirtyTabs]);
 
   const handleSaveCurrent = useCallback(async () => {
     const tab = activeTab;
