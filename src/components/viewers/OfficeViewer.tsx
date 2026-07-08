@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "../../i18n";
+import ViewerError from "../ViewerError";
+import "../ViewerError.css";
 
 interface DocxData { type: "docx"; html: string; }
 interface ExcelData { type: "excel"; sheets: { name: string; data: string[][] }[]; }
@@ -19,13 +21,10 @@ function ExcelSheet({ sheet }: { sheet: { name: string; data: string[][] } }) {
   const totalPages = Math.max(1, Math.ceil(rows.length / EXCEL_PAGE_SIZE));
   const visibleRows = rows.slice(page * EXCEL_PAGE_SIZE, (page + 1) * EXCEL_PAGE_SIZE);
   if (columnCount === 0) {
-    return (
-      <div className="viewer-error">
-        <strong>{t("officeSheetEmptyTitle")}</strong>
-        <p>{tf("officeSheetEmptyBody", { name: sheet.name })}</p>
-      </div>
-    );
-  }
+      return (
+        <ViewerError title={t("officeSheetEmptyTitle")} message={tf("officeSheetEmptyBody", { name: sheet.name })} />
+      );
+    }
   return (
     <div className="excel-sheet">
       <div className="excel-grid-wrap">
@@ -98,11 +97,8 @@ export default function OfficeViewer({ data }: Props) {
         </div>
         <div className="flex-1 overflow-hidden">
           {current ? <ExcelSheet key={current.name} sheet={current} /> : (
-            <div className="viewer-error">
-              <strong>{t("officeSheetMissingTitle")}</strong>
-              <p>{t("officeSheetMissingBody")}</p>
-            </div>
-          )}
+                      <ViewerError title={t("officeSheetMissingTitle")} message={t("officeSheetMissingBody")} />
+                    )}
         </div>
       </div>
     );

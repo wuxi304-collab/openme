@@ -1,0 +1,209 @@
+/* ViewerError — shared viewer error state.
+ *
+ * Visual language matches the elevated cards used by SettingsDialog,
+ * AboutDialog, and ConfirmDialog. Two variants:
+ *
+ *   .viewer-error           — fullpage (centered card)
+ *   .viewer-error.is-inline — compact banner (top of viewer)
+ *
+ * Tokens used: --bg-elevated, --bg-surface, --text-primary, --text-muted,
+ * --error, --border-default, --border-muted, --shadow-elevated.
+ */
+
+.viewer-error {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  color: var(--text-secondary);
+  box-sizing: border-box;
+}
+
+.viewer-error.is-inline {
+  height: auto;
+  padding: 10px 13px;
+  align-items: stretch;
+  justify-content: flex-start;
+  margin: 0 13px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #ffb1a5;
+  background: rgba(229, 37, 33, 0.09);
+  border: 1px solid rgba(229, 37, 33, 0.2);
+}
+
+.viewer-error-card {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  padding: 24px 28px;
+  border-radius: 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-muted);
+  box-shadow: var(--shadow-elevated, 0 12px 36px rgba(15, 23, 42, 0.10));
+  text-align: left;
+}
+
+.viewer-error.is-inline .viewer-error-card {
+  padding: 12px 14px;
+  border-radius: 7px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  text-align: left;
+}
+
+.viewer-error-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--dur-fast, 120ms) var(--ease-out, ease);
+}
+
+.viewer-error-close:hover {
+  background: var(--bg-hover, rgba(148, 163, 184, 0.16));
+  color: var(--text-primary);
+}
+
+.viewer-error-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.viewer-error.is-inline .viewer-error-close {
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  color: #ffd5ce;
+}
+
+.viewer-error.is-inline .viewer-error-close:hover {
+  background: rgba(255, 209, 200, 0.16);
+  color: #ffe5e0;
+}
+
+.viewer-error-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.viewer-error.is-inline .viewer-error-head {
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
+.viewer-error-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(239, 106, 88, 0.12);
+  color: var(--error, #ef6a58);
+  font-weight: 800;
+}
+
+.viewer-error.is-inline .viewer-error-icon {
+  display: none;
+}
+
+.viewer-error-badge {
+  flex-shrink: 0;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.viewer-error.is-inline .viewer-error-badge {
+  display: none;
+}
+
+.viewer-error-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.viewer-error-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.viewer-error.is-inline .viewer-error-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffaaa5;
+}
+
+.viewer-error-caption {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viewer-error-message {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+.viewer-error.is-inline .viewer-error-message {
+  margin: 0;
+  font-size: 12px;
+  color: #ffcfc7;
+}
+
+.viewer-error-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.viewer-error.is-inline .viewer-error-actions {
+  margin-top: 8px;
+}
+
+.viewer-error-actions .btn-mario {
+  min-height: 34px;
+  padding: 0 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewer-error-close {
+    transition: none;
+  }
+}

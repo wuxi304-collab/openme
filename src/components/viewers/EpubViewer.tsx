@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../../i18n";
 import { describeIpcError, isIpcFailure } from "../../core/ipcError";
+import ViewerError from "../ViewerError";
+import "../ViewerError.css";
 
 type Chapter = { title: string | null; index?: number; text: string };
 type Book = { title: string; creator?: string; language?: string; cover?: { data: string; mimeType: string } | null; chapters: Chapter[] };
@@ -40,11 +42,11 @@ export default function EpubViewer({ filePath }: Props) {
   const paragraphs = useMemo(() => book?.chapters[chapter]?.text.split(/\n+/).filter(Boolean) ?? [], [book, chapter]);
   if (error) {
     return (
-      <div className="viewer-error" role="alert">
-        <strong>{t("epubErrorTitle")}</strong>
-        <p>{error}</p>
-        <button type="button" onClick={() => window.electronAPI.openInSystem(filePath)}>{t("epubOpenInSystem")}</button>
-      </div>
+        <ViewerError
+          title={t("epubErrorTitle")}
+          message={error}
+          action={{ label: t("epubOpenInSystem"), onClick: () => window.electronAPI.openInSystem(filePath) }}
+        />
     );
   }
   if (!book) return <div className="viewer-busy" role="status"><span className="dwg-loader" />{t("epubLoading")}</div>;

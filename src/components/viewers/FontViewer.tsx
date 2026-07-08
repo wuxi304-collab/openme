@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../../i18n";
+import ViewerError from "../ViewerError";
+import "../ViewerError.css";
 
 interface Props { base64Data: string; fileName: string; }
 
@@ -24,7 +26,7 @@ export default function FontViewer({ base64Data, fileName }: Props) {
   return (
     <div className="font-viewer">
       <div className="viewer-header"><span className="viewer-label">{t("fontLabel")} <small className="viewer-meta">{fileName}</small></span><div className="viewer-tools"><label className="font-size-field">{t("fontSizeLabel")} <input type="range" min="18" max="120" value={size} onChange={(event) => setSize(Number(event.target.value))} /></label><span className="viewer-zoom">{size}px</span></div></div>
-      {status === "error" ? <div className="viewer-error" role="alert"><strong>{t("fontErrorTitle")}</strong><p>{t("fontErrorBody")}</p></div> : <div className="font-sheet"><label><span className="sr-only">{t("fontSizeAria")}</span><input value={sample} onChange={(event) => setSample(event.target.value)} placeholder={t("fontSizePlaceholder")} /></label><div className="font-hero" style={{ fontFamily: family, fontSize: size }}>{status === "ready" ? sample || t("fontEmptyState") : t("fontLoading")}</div><div className="font-specimens">{samples.slice(1).map((text, index) => <p key={text} style={{ fontFamily: family, fontSize: 20 + index * 7 }}>{text}</p>)}</div></div>}
+      {status === "error" ? <ViewerError title={t("fontErrorTitle")} message={t("fontErrorBody")} /> : <div className="font-sheet"><label><span className="sr-only">{t("fontSizeAria")}</span><input value={sample} onChange={(event) => setSample(event.target.value)} placeholder={t("fontSizePlaceholder")} /></label><div className="font-hero" style={{ fontFamily: family, fontSize: size }}>{status === "ready" ? sample || t("fontEmptyState") : t("fontLoading")}</div><div className="font-specimens">{samples.slice(1).map((text, index) => <p key={text} style={{ fontFamily: family, fontSize: 20 + index * 7 }}>{text}</p>)}</div></div>}
     </div>
   );
 }

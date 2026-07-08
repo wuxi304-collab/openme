@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Papa from "papaparse";
 import { useI18n } from "../../i18n";
+import ViewerError from "../ViewerError";
+import "../ViewerError.css";
 
 interface Props { content: string; }
 interface SortState { column: number; direction: "asc" | "desc" }
@@ -43,8 +45,8 @@ export default function CsvViewer({ content }: Props) {
         <label className="viewer-search"><span className="sr-only">{t("csvSearchAria")}</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("csvSearchPlaceholder")} autoComplete="off" /></label>
       </div>
       <div className="flex-1 overflow-auto">
-        {parsed.headers.length === 0 ? <div className="viewer-error"><strong>{t("csvEmptyTitle")}</strong><p>{t("csvEmptySub")}</p></div> : <table className="csv-table"><thead><tr><th className="csv-row-number">#</th>{parsed.headers.map((header, index) => <th key={index} aria-sort={sort.column === index ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}><button type="button" onClick={() => handleSort(index)}>{header}<span aria-hidden="true">{sort.column === index ? (sort.direction === "asc" ? "▲" : "▼") : ""}</span></button></th>)}</tr></thead><tbody>{pageRows.map((row, rowIndex) => <tr key={page * PAGE_SIZE + rowIndex}><td className="csv-row-number">{page * PAGE_SIZE + rowIndex + 1}</td>{parsed.headers.map((_, columnIndex) => <td key={columnIndex} title={row[columnIndex] ?? ""}>{row[columnIndex] ?? ""}</td>)}</tr>)}</tbody></table>}
-        {parsed.headers.length > 0 && pageRows.length === 0 && <div className="viewer-error"><strong>{t("csvNoMatchTitle")}</strong><p>{t("csvNoMatchSub")}</p></div>}
+        {parsed.headers.length === 0 ? <ViewerError title={t("csvEmptyTitle")} message={t("csvEmptySub")} /> : <table className="csv-table"><thead><tr><th className="csv-row-number">#</th>{parsed.headers.map((header, index) => <th key={index} aria-sort={sort.column === index ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}><button type="button" onClick={() => handleSort(index)}>{header}<span aria-hidden="true">{sort.column === index ? (sort.direction === "asc" ? "▲" : "▼") : ""}</span></button></th>)}</tr></thead><tbody>{pageRows.map((row, rowIndex) => <tr key={page * PAGE_SIZE + rowIndex}><td className="csv-row-number">{page * PAGE_SIZE + rowIndex + 1}</td>{parsed.headers.map((_, columnIndex) => <td key={columnIndex} title={row[columnIndex] ?? ""}>{row[columnIndex] ?? ""}</td>)}</tr>)}</tbody></table>}
+        {parsed.headers.length > 0 && pageRows.length === 0 && <ViewerError title={t("csvNoMatchTitle")} message={t("csvNoMatchSub")} />}
       </div>
       <div className="csv-pagination"><button type="button" onClick={() => setPage((value) => Math.max(0, value - 1))} disabled={page === 0}>{t("csvPrev")}</button><span>{page + 1} / {totalPages}</span><button type="button" onClick={() => setPage((value) => Math.min(totalPages - 1, value + 1))} disabled={page >= totalPages - 1}>{t("csvNext")}</button></div>
     </div>

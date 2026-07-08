@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import type { AcApDocManager } from "@mlightcad/cad-simple-viewer";
 import { useI18n } from "../../i18n";
 import { describeIpcError, isIpcFailure } from "../../core/ipcError";
+import ViewerError from "../ViewerError";
+import "../ViewerError.css";
 
 interface Props { filePath: string; fileName: string; }
 
@@ -169,7 +171,7 @@ export default function DwgViewer({ filePath, fileName }: Props) {
       <div ref={containerRef} className={`dwg-canvas-host ${viewMode === "native" ? "is-hidden" : ""}`} />
       {viewMode === "native" && nativeSvgUrl && <div className="dwg-native-canvas"><img src={nativeSvgUrl} alt={tf("dwgAcadSharpAlt", { name: fileName })} /></div>}
       {loading && viewMode === "compat" && <div className="dwg-overlay" role="status"><span className="dwg-loader" /><strong>{t("dwgParsingTitle")}</strong><small>{t("dwgParsingHint")}</small></div>}
-      {error && <div className="dwg-overlay dwg-error" role="alert"><strong>{t("dwgErrorTitle")}</strong><p>{error}</p><button type="button" onClick={() => window.electronAPI.openInSystem(filePath)}>{t("dwgOpenInSystem")}</button></div>}
+      {error && <ViewerError title={t("dwgErrorTitle")} message={error} action={{ label: t("dwgOpenInSystem"), onClick: () => window.electronAPI.openInSystem(filePath) }} />}
     </div>
   );
 }

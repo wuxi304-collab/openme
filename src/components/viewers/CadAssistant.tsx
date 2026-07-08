@@ -2,6 +2,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { useI18n } from "../../i18n";
 import { describeIpcError, isIpcFailure } from "../../core/ipcError";
 import { CogIcon } from "../icons/CogIcon";
+import ViewerError from "../ViewerError";
+import "../ViewerError.css";
 
 interface CadPlanOperation {
   id: string;
@@ -107,7 +109,15 @@ export default function CadAssistant({ filePath, fileName }: Props) {
       </form>
 
       {!configured && <p className="cad-ai-notice">{t("cadAssistantApiKeyNotice")}</p>}
-      {error && <p className="cad-ai-error" role="alert">{error}</p>}
+      {error && (
+        <ViewerError
+          variant="inline"
+          title={t("cadAssistantErrorTitle")}
+          message={error}
+          onClose={() => setError(null)}
+          closeLabel={t("viewerErrorClose")}
+        />
+      )}
       {plan && <section className="cad-plan" aria-live="polite">
         <div className="cad-plan-title"><strong>{plan.summary}</strong><span data-risk={plan.risk_level}>{t(RISK_LABEL_KEYS[plan.risk_level])}</span></div>
         {plan.needs_clarification && <p className="cad-plan-question">{plan.clarification_question}</p>}
