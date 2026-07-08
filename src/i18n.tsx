@@ -38,7 +38,7 @@ const STORAGE_KEY = "openme.lang";
 
 const I18nContext = createContext({
   lang: "zh" as Lang,
-  setLang: (l: Lang) => {},
+  setLang: (_l: Lang) => {},
   t: (key: string) => key,
 });
 
@@ -53,7 +53,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, lang); } catch { }
   }, [lang]);
-  const setLang = (l: Lang) => setLangState(l);
+  const setLang = (next: Lang) => setLangState(next);
   const t = (key: string) => {
     return (translations[lang] && translations[lang][key]) ? translations[lang][key] : key;
   };
