@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { marked } from "marked";
 import { useI18n } from "../../i18n";
+import { useSettings } from "../../settings";
 
 marked.setOptions({ breaks: true, gfm: true });
 
@@ -19,6 +20,7 @@ const MODE_LABEL_KEYS: Record<ViewMode, string> = {
 
 export default function MarkdownViewer({ content, onChange }: Props) {
   const { t } = useI18n();
+  const { settings } = useSettings();
   const [value, setValue] = useState(content);
   const [mode, setMode] = useState<ViewMode>("split");
 
@@ -76,6 +78,7 @@ export default function MarkdownViewer({ content, onChange }: Props) {
               onChange={(e) => { setValue(e.target.value); onChange?.(e.target.value); }}
               className="w-full h-full p-4 resize-none outline-none bg-transparent"
               style={{ color: "#455A64", fontFamily: "var(--font-mono)", fontSize: "13px", lineHeight: "1.7" }}
+              wrap={settings.wordWrap === "off" ? "off" : "soft"}
               spellCheck={false}
             />
           </div>

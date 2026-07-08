@@ -67,6 +67,7 @@ describe("SettingsDialog", () => {
     expect(within(dialog).getByText("Theme")).toBeTruthy();
     expect(within(dialog).getByText("Confirm before closing tabs")).toBeTruthy();
     expect(within(dialog).getByText("Recent files kept")).toBeTruthy();
+    expect(within(dialog).getByText("Editor")).toBeTruthy();
   });
 
   it("exposes three theme options and reflects the default (dark)", () => {
@@ -113,5 +114,39 @@ describe("SettingsDialog", () => {
     fireEvent.click(screen.getByText("Reset to defaults"));
     const darkRadio = within(themeSection).getAllByRole("radio")[0] as HTMLInputElement;
     expect(darkRadio.checked).toBe(true);
+  });
+
+  it("renders the editor sub-section with tab size, line numbers, and word wrap groups", () => {
+    renderDialog();
+    expect(screen.getByRole("radiogroup", { name: /Tab size/i })).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: /Line numbers/i })).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: /Word wrap/i })).toBeTruthy();
+  });
+
+  it("exposes three tab-size options with 4 spaces as the default", () => {
+    renderDialog();
+    const group = screen.getByRole("radiogroup", { name: /Tab size/i });
+    const radios = within(group).getAllByRole("radio") as HTMLInputElement[];
+    expect(radios.map((r) => r.value)).toEqual(["2", "4", "8"]);
+    expect(radios[1].checked).toBe(true);
+  });
+
+  it("switches line numbers to off when the hide option is clicked", () => {
+    renderDialog();
+    const group = screen.getByRole("radiogroup", { name: /Line numbers/i });
+    const radios = within(group).getAllByRole("radio") as HTMLInputElement[];
+    fireEvent.click(radios[1]);
+    expect(radios[1].checked).toBe(true);
+    expect(radios[0].checked).toBe(false);
+  });
+
+  it("switching tab size to 8 updates the persisted settings", () => {
+    renderDialog();
+    const group = screen.getByRole("radiogroup", { name: /Tab size/i });
+    const radios = within(group).getAllByRole("radio") as HTMLInputElement[];
+    fireEvent.click(radios[2]);
+    expect(radios[2].checked).toBe(true);
+    const stored = JSON.parse(localStorage.getItem("openme.settings.v1") ?? "{}");
+    expect(stored.tabSize).toBe(8);
   });
 });
