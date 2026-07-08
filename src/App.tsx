@@ -29,8 +29,8 @@ export default function App() {
   useEffect(() => {
     const load = async () => {
       try {
-        if (typeof (window as any).electronAPI?.loadRecentFiles === "function") {
-          const store = await (window as any).electronAPI.loadRecentFiles();
+        if (typeof window.electronAPI?.loadRecentFiles === "function") {
+          const store = await window.electronAPI.loadRecentFiles();
           setRecentFiles(store?.files ?? []);
         } else {
           // Browser fallback during dev: use empty recent list
@@ -56,8 +56,8 @@ export default function App() {
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(timer); }, [toast]);
   useEffect(() => {
     try {
-      if (typeof (window as any).electronAPI?.setDirtyState === "function") {
-        (window as any).electronAPI.setDirtyState(hasDirtyTabs).catch(() => undefined);
+      if (typeof window.electronAPI?.setDirtyState === "function") {
+        window.electronAPI.setDirtyState(hasDirtyTabs).catch(() => undefined);
       }
     } catch (err) {
       // ignore in browser
