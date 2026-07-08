@@ -227,6 +227,19 @@ electron/
 | V0.4 | Pack SDK：让行业逻辑以能力包接入。 |
 | V0.5 | Workflow：报价、合同、CAD、归档等文件任务。 |
 
+## 本地设置
+
+点击标题栏右侧齿轮按钮打开 **设置** 对话框。配置仅保存在本机 `localStorage`，切换即时生效。
+
+| 设置 | 选项 |
+| --- | --- |
+| 主题 | 暗色 / 明亮 |
+| 关闭未保存标签 | 开启 / 关闭 |
+| 最近文件数量 | 10 / 25 / 50 个 |
+| Tab 宽度 | 2 / 4 / 8 个空格 |
+| 行号 | 显示 / 隐藏 |
+| 自动换行 | 开启 / 关闭 |
+
 ---
 
 ## English
@@ -369,6 +382,19 @@ npm run support:matrix
 | V0.3 | File understanding: summaries, evidence, risk, and recommended actions. |
 | V0.4 | Pack SDK for domain-specific capabilities. |
 | V0.5 | Workflows for quotation, contract review, CAD inspection, and archival tasks. |
+
+### Local settings
+
+Click the gear button in the title bar to open the **Settings** dialog. Preferences persist to `localStorage` on this device only and apply immediately.
+
+| Preference | Options |
+| --- | --- |
+| Theme | Dark / Light |
+| Confirm before closing tabs | On / Off |
+| Recent files kept | 10 / 25 / 50 |
+| Tab size | 2 / 4 / 8 spaces |
+| Line numbers | Show / Hide |
+| Word wrap | On / Off |
 
 ### Direction
 
