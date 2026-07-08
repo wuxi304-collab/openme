@@ -590,7 +590,30 @@ export const translations: Record<string, Record<string, string>> = {
     aboutCopied: "已复制",
     aboutCopiedAria: "版本信息已复制到剪贴板",
 
-    ipcUnknownError: "未知错误",
+        // Settings dialog
+        settingsTitle: "设置",
+        settingsTagline: "调整本地偏好，配置仅保存在此设备",
+        settingsThemeTitle: "主题",
+        settingsThemeDesc: "切换暗色或明亮主题，立即生效",
+        settingsThemeDark: "暗色",
+        settingsThemeLight: "明亮",
+        settingsCloseConfirmTitle: "关闭未保存标签",
+        settingsCloseConfirmDesc: "关闭有未保存修改的标签前弹出确认对话框",
+        settingsCloseConfirmOn: "开启",
+        settingsCloseConfirmOff: "关闭",
+        settingsRecentTitle: "最近文件数量",
+        settingsRecentDesc: "保留多少个最近打开的文件，超过后旧的会被丢弃",
+        settingsRecentLimit10: "10 个",
+        settingsRecentLimit25: "25 个",
+        settingsRecentLimit50: "50 个",
+        settingsResetButton: "恢复默认",
+        settingsResetButtonAria: "恢复全部设置为默认值",
+        settingsClose: "关闭",
+        settingsCloseAria: "关闭设置",
+        settingsInfoButtonTitle: "设置",
+        settingsInfoButtonAria: "打开设置",
+
+        ipcUnknownError: "未知错误",
     },
     en: {
     // TitleBar
@@ -1176,7 +1199,30 @@ export const translations: Record<string, Record<string, string>> = {
     aboutCopied: "Copied",
     aboutCopiedAria: "Version information copied to clipboard",
 
-    ipcUnknownError: "Unknown error",
+        // Settings dialog
+        settingsTitle: "Settings",
+        settingsTagline: "Tune local preferences. Stored only on this device.",
+        settingsThemeTitle: "Theme",
+        settingsThemeDesc: "Switch between dark and light. Applies immediately.",
+        settingsThemeDark: "Dark",
+        settingsThemeLight: "Light",
+        settingsCloseConfirmTitle: "Confirm before closing tabs",
+        settingsCloseConfirmDesc: "Show a confirmation dialog before closing tabs with unsaved edits.",
+        settingsCloseConfirmOn: "On",
+        settingsCloseConfirmOff: "Off",
+        settingsRecentTitle: "Recent files kept",
+        settingsRecentDesc: "How many recently opened files to remember. Older entries are dropped.",
+        settingsRecentLimit10: "10 files",
+        settingsRecentLimit25: "25 files",
+        settingsRecentLimit50: "50 files",
+        settingsResetButton: "Reset to defaults",
+        settingsResetButtonAria: "Restore all settings to their defaults",
+        settingsClose: "Close",
+        settingsCloseAria: "Close settings",
+        settingsInfoButtonTitle: "Settings",
+        settingsInfoButtonAria: "Open settings",
+
+        ipcUnknownError: "Unknown error",
       }
     };
 

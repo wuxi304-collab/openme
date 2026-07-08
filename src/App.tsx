@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { I18nProvider, useI18n } from "./i18n";
 import { ThemeProvider } from "./theme";
+import { SettingsProvider, useSettings } from "./settings";
 import { FileInfo, FileTabState } from "./types";
 import { detectCategory } from "./utils/fileTypeDetector";
 import { loadFileTabData } from "./core/fileOpenPipeline";
@@ -15,10 +16,9 @@ import ViewerRouter from "./components/viewers/ViewerRouter";
 import { CheckIcon } from "./components/icons/CheckIcon";
 import { AlertIcon } from "./components/icons/AlertIcon";
 
-const MAX_RECENT = 50;
-
 export default function App() {
   const { t, tf } = useI18n();
+  const { settings } = useSettings();
   const [recentFiles, setRecentFiles] = useState<FileInfo[]>([]);
   const [tabs, setTabs] = useState<FileTabState[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
@@ -97,7 +97,7 @@ export default function App() {
     }
   }, [tabs, t]);
 
-  const addToRecent = useCallback(async (file: FileInfo) => { const updated = [file, ...recentFiles.filter((f) => f.path !== file.path)].slice(0, MAX_RECENT); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }).catch(() => undefined); }, [recentFiles]);
+  const addToRecent = useCallback(async (file: FileInfo) => { const updated = [file, ...recentFiles.filter((f) => f.path !== file.path)].slice(0, settings.recentLimit); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }).catch(() => undefined); }, [recentFiles, settings.recentLimit]);
     const handleFilePaths = useCallback(async (paths: string[]) => {
       for (const p of paths) {
         const fileInfo = await window.electronAPI.getFileInfo(p);
@@ -109,9 +109,9 @@ export default function App() {
     }, [addToRecent, openFileInTab, t]);
   const handleSelectFile = useCallback(async (file: FileInfo) => { await openFileInTab(file); }, [openFileInTab]);
   const handleRemoveRecent = useCallback(async (file: FileInfo) => { const updated = recentFiles.filter((item) => item.path !== file.path); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); setToast({ kind: "success", message: tf("removeFromRecentToast", { name: file.name }) }); }, [recentFiles, tf]);
-  const handleCloseTab = useCallback((tabId: string) => { const closingTab = tabs.find((tab) => tab.id === tabId); if (closingTab?.isDirty && !window.confirm(tf("unsavedCloseOne", { name: closingTab.name }))) return; setTabs((prev) => { const idx = prev.findIndex((t) => t.id === tabId); const newTabs = prev.filter((t) => t.id !== tabId); if (activeTabId === tabId) { if (newTabs.length > 0) setActiveTabId(newTabs[Math.min(idx, newTabs.length - 1)].id); else setActiveTabId(null); } return newTabs; }); }, [activeTabId, tabs, tf]);
+  const handleCloseTab = useCallback((tabId: string) => { const closingTab = tabs.find((tab) => tab.id === tabId); if (closingTab?.isDirty && settings.confirmTabClose && !window.confirm(tf("unsavedCloseOne", { name: closingTab.name }))) return; setTabs((prev) => { const idx = prev.findIndex((t) => t.id === tabId); const newTabs = prev.filter((t) => t.id !== tabId); if (activeTabId === tabId) { if (newTabs.length > 0) setActiveTabId(newTabs[Math.min(idx, newTabs.length - 1)].id); else setActiveTabId(null); } return newTabs; }); }, [activeTabId, tabs, tf, settings.confirmTabClose]);
   const handleOpenDialog = useCallback(async () => { try { const paths = await window.electronAPI.openFileDialog(); if (paths?.length) handleFilePaths(paths); } catch (error) { console.error("Dialog error:", error); } }, [handleFilePaths]);
-  const handleCloseAllTabs = useCallback(() => { if (hasDirtyTabs && !window.confirm(tf("unsavedCloseAll"))) return; setTabs([]); setActiveTabId(null); }, [hasDirtyTabs, tf]);
+    const handleCloseAllTabs = useCallback(() => { if (hasDirtyTabs && settings.confirmTabClose && !window.confirm(tf("unsavedCloseAll"))) return; setTabs([]); setActiveTabId(null); }, [hasDirtyTabs, tf, settings.confirmTabClose]);
 
   useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "o") { event.preventDefault(); handleOpenDialog(); } }; window.addEventListener("keydown", handler); return () => window.removeEventListener("keydown", handler); }, [handleOpenDialog]);
 
@@ -139,8 +139,9 @@ export default function App() {
 
   return (
     <I18nProvider>
-      <ThemeProvider>
-        <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
+        <SettingsProvider>
+        <ThemeProvider>
+          <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
           <TitleBar />
           <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} />
           <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
@@ -156,9 +157,10 @@ export default function App() {
           <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
         </div>
       </ThemeProvider>
-    </I18nProvider>
-  );
-}
+              </SettingsProvider>
+            </I18nProvider>
+          );
+        }
 
 function EmptyState({ onOpenDialog }: { onOpenDialog: () => void }) {
   const { t } = useI18n();
