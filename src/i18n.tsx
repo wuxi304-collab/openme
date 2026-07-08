@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
+// Translator: minimal i18n contract usable by non-React utility modules.
+// Both `t` and `tf` returned by useI18n satisfy this shape; utilities can
+// accept it as a parameter so they remain pure and testable.
+export type Translator = (key: string, params?: Record<string, string | number>) => string;
+
 export const translations: Record<string, Record<string, string>> = {
   zh: {
     // TitleBar
@@ -423,8 +428,85 @@ export const translations: Record<string, Record<string, string>> = {
 
     // FileTypeIcon
     fileTypeSuffix: "文件",
-  },
-  en: {
+
+    // File category labels (fileUtils.getFileTypeLabel + basicSummary)
+    categoryPdf: "PDF 文档",
+    categoryImage: "图片",
+    categorySvg: "SVG 图片",
+    categoryText: "文本",
+    categoryCode: "代码",
+    categoryMarkdown: "Markdown",
+    categoryJson: "JSON",
+    categoryCsv: "CSV",
+    categoryOffice: "Office 文档",
+    categoryDocument: "Office 文档",
+    categoryArchive: "压缩包",
+    categoryEpub: "电子书",
+    categoryAudio: "音频",
+    categoryVideo: "视频",
+    categoryFont: "字体",
+    categoryCad: "3D / 工程模型",
+    categoryDwg: "DWG / DXF 图纸",
+    categoryDesign: "设计源文件",
+    categoryPackage: "安装包 / 应用包",
+    categoryDisk: "磁盘镜像 / 虚拟机镜像",
+    categoryOther: "其他 / 未知文件",
+
+    // Support-level labels (supportLevels.getSupportLevelLabel)
+    supportFullBuiltIn: "完整内置浏览",
+    supportHighFidelity: "高保真浏览",
+    supportSafeApproximate: "安全近似预览",
+    supportSemanticInspection: "语义检查",
+    supportExternalOpen: "外部打开",
+    supportExperimental: "实验性",
+
+    // File summary signals + evidence (basicSummary.buildBasicFileSummary)
+    signalFormat: "格式：{ext}",
+    signalSize: "大小：{size}",
+    signalSupportLevel: "支持等级：{level}",
+    evidenceFileName: "文件名",
+    evidenceFileType: "文件类型",
+    evidenceSupportLevel: "支持等级",
+    evidenceFileSize: "文件大小",
+    unknownExtension: "未知扩展名",
+
+    // File summary warnings (basicSummary.getCategoryWarnings)
+    warningDwg: "DWG/DXF 预览属于语义检查或近似预览，不承诺 AutoCAD 级保真。",
+    warningCad: "3D 模型预览仍属实验性，复杂装配、材质和 STEP 语义可能不完整。",
+    warningMedia: "音视频容器识别不等于编码器可播放，失败时应使用系统程序打开。",
+    warningOffice: "Office 预览不承诺分页、浮动对象、宏、图表和复杂样式完全一致。",
+    warningSvg: "SVG 必须隔离预览，不执行脚本。",
+    warningDesign: "设计源文件先做格式识别与外部打开路由；PSD、AI、Sketch、Figma 等不承诺内置高保真预览。",
+    warningPackage: "安装包和应用包先做语义检查与外部打开路由；不执行安装器、不运行未知二进制。",
+    warningDisk: "磁盘镜像和虚拟机镜像先做识别与外部打开路由；不自动挂载、不自动解包。",
+    warningArchive: "ZIP 可内置浏览；RAR、7Z、TAR、GZ 等仍应走外部打开或后续专用解包器。",
+
+    // File open outcome messages (fileOpenPipeline.loadFileTabData)
+    openOutcomeMedia: "{name} 已进入 OpenMe 媒体打开面。",
+    openOutcomeEpub: "{name} 已进入 OpenMe EPUB 打开面。",
+    openOutcomeOffice: "{name} 已进入 OpenMe Office 打开面。",
+    openOutcomeExcel: "{name} 已进入 OpenMe Excel 打开面。",
+    openOutcomeBinary: "{name} 已进入 OpenMe 二进制预览面。",
+    openOutcomeText: "{name} 已进入 OpenMe 文本打开面。",
+    loadFailedWord: "Word conversion failed",
+    loadFailedExcel: "Excel conversion failed",
+    loadFailedRead: "Failed to read file",
+
+    // Built-in pack names + taglines (packs/builtin)
+    packEngineeringName: "工程包",
+    packEngineeringTagline: "图纸、模型与工程文件的结构化检查。",
+    packMetalMaterialsName: "金石包",
+    packMetalMaterialsTagline: "材料牌号、规格、标准与报价字段识别。",
+    packFinanceName: "账册包",
+    packFinanceTagline: "票据、对账单、金额与日期识别。",
+    packLegalName: "契约包",
+    packLegalTagline: "合同主体、义务、期限与风险清单。",
+    packResearchName: "典籍包",
+    packResearchTagline: "论文、笔记、引用与阅读摘要。",
+    packDeveloperName: "匠作包",
+    packDeveloperTagline: "代码树、依赖、脚本与配置摘要。",
+    },
+    en: {
     // TitleBar
     appName: "File Workbench",
     world: "WORLD 1–1",
@@ -846,8 +928,85 @@ export const translations: Record<string, Record<string, string>> = {
 
     // FileTypeIcon
     fileTypeSuffix: "file",
-  }
-};
+
+    // File category labels (fileUtils.getFileTypeLabel + basicSummary)
+    categoryPdf: "PDF document",
+    categoryImage: "Image",
+    categorySvg: "SVG image",
+    categoryText: "Text",
+    categoryCode: "Source",
+    categoryMarkdown: "Markdown",
+    categoryJson: "JSON",
+    categoryCsv: "CSV",
+    categoryOffice: "Office document",
+    categoryDocument: "Office document",
+    categoryArchive: "Archive",
+    categoryEpub: "E-book",
+    categoryAudio: "Audio",
+    categoryVideo: "Video",
+    categoryFont: "Font",
+    categoryCad: "3D / engineering model",
+    categoryDwg: "DWG / DXF drawing",
+    categoryDesign: "Design source",
+    categoryPackage: "Installer / app package",
+    categoryDisk: "Disk / VM image",
+    categoryOther: "Other / unknown",
+
+    // Support-level labels (supportLevels.getSupportLevelLabel)
+    supportFullBuiltIn: "Full built-in",
+    supportHighFidelity: "High fidelity",
+    supportSafeApproximate: "Safe approximate",
+    supportSemanticInspection: "Semantic inspection",
+    supportExternalOpen: "External open",
+    supportExperimental: "Experimental",
+
+    // File summary signals + evidence (basicSummary.buildBasicFileSummary)
+    signalFormat: "Format: {ext}",
+    signalSize: "Size: {size}",
+    signalSupportLevel: "Support: {level}",
+    evidenceFileName: "File name",
+    evidenceFileType: "File type",
+    evidenceSupportLevel: "Support",
+    evidenceFileSize: "File size",
+    unknownExtension: "Unknown extension",
+
+    // File summary warnings (basicSummary.getCategoryWarnings)
+    warningDwg: "DWG/DXF preview is semantic inspection or approximate rendering. Native AutoCAD fidelity is not promised.",
+    warningCad: "3D preview is still experimental. Complex assemblies, materials, and STEP semantics may be incomplete.",
+    warningMedia: "Container detection does not guarantee playback. Use the system app if a codec is missing.",
+    warningOffice: "Office preview does not promise identical pagination, floating objects, macros, charts, or complex styling.",
+    warningSvg: "SVG is rendered in isolation. Scripts are not executed.",
+    warningDesign: "Design sources are detected and routed externally. PSD, AI, Sketch, Figma, etc. do not promise high-fidelity built-in preview.",
+    warningPackage: "Installers and app packages are inspected semantically and routed externally. Installers are never executed and unknown binaries are never run.",
+    warningDisk: "Disk and VM images are detected and routed externally. They are never auto-mounted or auto-extracted.",
+    warningArchive: "ZIP is built-in browsable. RAR, 7Z, TAR, and GZ still go through external open or a dedicated unpacker.",
+
+    // File open outcome messages (fileOpenPipeline.loadFileTabData)
+    openOutcomeMedia: "{name} is loaded into OpenMe's media surface.",
+    openOutcomeEpub: "{name} is loaded into OpenMe's EPUB surface.",
+    openOutcomeOffice: "{name} is loaded into OpenMe's Office surface.",
+    openOutcomeExcel: "{name} is loaded into OpenMe's Excel surface.",
+    openOutcomeBinary: "{name} is loaded into OpenMe's binary preview surface.",
+    openOutcomeText: "{name} is loaded into OpenMe's text surface.",
+    loadFailedWord: "Word conversion failed",
+    loadFailedExcel: "Excel conversion failed",
+    loadFailedRead: "Failed to read file",
+
+    // Built-in pack names + taglines (packs/builtin)
+    packEngineeringName: "Engineering Pack",
+    packEngineeringTagline: "Structured inspection of drawings, models, and engineering files.",
+    packMetalMaterialsName: "Metal Materials Pack",
+    packMetalMaterialsTagline: "Recognize material grades, specifications, standards, and quotation fields.",
+    packFinanceName: "Finance Pack",
+    packFinanceTagline: "Identify invoices, statements, amounts, and dates.",
+    packLegalName: "Legal Pack",
+    packLegalTagline: "Extract parties, obligations, deadlines, and risk lists from contracts.",
+    packResearchName: "Research Pack",
+    packResearchTagline: "Summarize papers, notes, citations, and reading evidence.",
+    packDeveloperName: "Developer Pack",
+    packDeveloperTagline: "Inspect source trees, dependencies, scripts, and configuration.",
+      }
+    };
 
 // Simple template substitution: replaces {name} / {count} / {query} with values
 export function format(template: string, params?: Record<string, string | number>): string {

@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { FileCategory } from "../utils/fileTypeDetector";
+import { useI18n } from "../i18n";
 
 interface IconConfig {
   top: string;
@@ -34,6 +35,7 @@ const CONFIG: Record<string, IconConfig> = {
 type IconStyle = CSSProperties & Record<"--icon-top" | "--icon-bottom" | "--icon-ink" | "--icon-shadow", string>;
 
 export default function FileTypeIcon({ type, size = 34 }: { type: FileCategory; size?: number }) {
+  const { t } = useI18n();
   const config = CONFIG[type] ?? CONFIG.other;
   const compact = size < 24;
   const style: IconStyle = {
@@ -47,7 +49,7 @@ export default function FileTypeIcon({ type, size = 34 }: { type: FileCategory; 
   };
 
   return (
-    <span className={`filetype-cute ${compact ? "is-compact" : ""}`} style={style} aria-label={`${config.label} 文件`} title={config.label}>
+    <span className={`filetype-cute ${compact ? "is-compact" : ""}`} style={style} aria-label={`${config.label} ${t("fileTypeSuffix")}`} title={config.label}>
       <span className="filetype-shine" aria-hidden="true" />
       <span className="filetype-label" aria-hidden="true">{compact ? config.mini : config.label}</span>
       {!compact && <span className="filetype-feet" aria-hidden="true"><i /><i /></span>}

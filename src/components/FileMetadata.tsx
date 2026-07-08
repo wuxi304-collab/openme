@@ -11,7 +11,7 @@ export default function FileMetadata({ file, onOpenSystem }: Props) {
   const { t } = useI18n();
   const rows = [
     { label: t("metaName"), value: file.name },
-    { label: t("metaType"), value: getFileTypeLabel(file.file_type) },
+    { label: t("metaType"), value: getFileTypeLabel(file.file_type, t) },
     { label: t("metaSize"), value: formatFileSize(file.size) },
     { label: t("metaModified"), value: formatDate(file.modified_at) },
     { label: t("metaPath"), value: file.path, mono: true },

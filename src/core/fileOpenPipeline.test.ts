@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadFileTabData } from "./fileOpenPipeline";
 import type { FileInfo } from "../types";
+import type { Translator } from "../i18n";
 
 const baseFile: FileInfo = {
   id: "file-1",
@@ -20,6 +21,8 @@ const electronAPI = {
   readFileContent: vi.fn(),
 };
 
+const noopT: Translator = (key) => key;
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal("window", { electronAPI });
@@ -29,7 +32,7 @@ describe("loadFileTabData", () => {
   it("loads text-like categories through readFileContent", async () => {
     electronAPI.readFileContent.mockResolvedValue({ type: "text", data: "hello" });
 
-    const result = await loadFileTabData(baseFile, "code");
+    const result = await loadFileTabData(baseFile, "code", noopT);
 
     expect(electronAPI.readFileContent).toHaveBeenCalledWith(baseFile.path);
     expect(result.content).toBe("hello");
@@ -38,7 +41,7 @@ describe("loadFileTabData", () => {
   it("loads binary preview categories through readBinary", async () => {
     electronAPI.readBinary.mockResolvedValue({ success: true, data: "base64" });
 
-    const result = await loadFileTabData({ ...baseFile, extension: ".pdf", path: "C:/demo/file.pdf" }, "pdf");
+    const result = await loadFileTabData({ ...baseFile, extension: ".pdf", path: "C:/demo/file.pdf" }, "pdf", noopT);
 
     expect(electronAPI.readBinary).toHaveBeenCalledWith("C:/demo/file.pdf", 100 * 1024 * 1024);
     expect(result.binaryData).toBe("base64");
@@ -48,14 +51,14 @@ describe("loadFileTabData", () => {
   it("converts docx through the Office path", async () => {
     electronAPI.convertDocx.mockResolvedValue({ success: true, html: "<p>ok</p>" });
 
-    const result = await loadFileTabData({ ...baseFile, extension: ".docx", path: "C:/demo/file.docx" }, "office");
+    const result = await loadFileTabData({ ...baseFile, extension: ".docx", path: "C:/demo/file.docx" }, "office", noopT);
 
     expect(electronAPI.convertDocx).toHaveBeenCalledWith("C:/demo/file.docx");
     expect(result.officeData).toEqual({ type: "docx", html: "<p>ok</p>" });
   });
 
   it("does not eagerly read route-only unsafe categories", async () => {
-    const result = await loadFileTabData({ ...baseFile, extension: ".exe", path: "C:/demo/setup.exe" }, "package");
+    const result = await loadFileTabData({ ...baseFile, extension: ".exe", path: "C:/demo/setup.exe" }, "package", noopT);
 
     expect(result).toEqual({});
     expect(electronAPI.readBinary).not.toHaveBeenCalled();

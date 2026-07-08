@@ -1,4 +1,5 @@
 import { FileCategory } from "./fileTypeDetector";
+import type { Translator } from "../i18n";
 
 export type { FileCategory };
 
@@ -34,23 +35,23 @@ export function formatDate(isoString: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function getFileTypeLabel(type: FileCategory | string): string {
-  const labels: Record<string, string> = {
-    pdf: "PDF 文档",
-    image: "图片",
-    svg: "SVG 图片",
-    text: "文本",
-    code: "代码",
-    markdown: "Markdown",
-    json: "JSON",
-    csv: "CSV",
-    office: "Office 文档",
-    document: "Office 文档",
-    archive: "压缩包",
-    epub: "电子书",
-    other: "其他",
+export function getFileTypeLabel(type: FileCategory | string, t: Translator): string {
+  const keys: Record<string, string> = {
+    pdf: "categoryPdf",
+    image: "categoryImage",
+    svg: "categorySvg",
+    text: "categoryText",
+    code: "categoryCode",
+    markdown: "categoryMarkdown",
+    json: "categoryJson",
+    csv: "categoryCsv",
+    office: "categoryOffice",
+    document: "categoryDocument",
+    archive: "categoryArchive",
+    epub: "categoryEpub",
+    other: "categoryOther",
   };
-  return labels[type] ?? "其他";
+  return t(keys[type] ?? "categoryOther");
 }
 
 export function isPreviewable(type: FileCategory | string): boolean {
