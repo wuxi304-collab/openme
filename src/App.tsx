@@ -15,6 +15,7 @@ import FileSummaryPanel from "./components/FileSummaryPanel";
 import ViewerRouter from "./components/viewers/ViewerRouter";
 import { CheckIcon } from "./components/icons/CheckIcon";
 import { AlertIcon } from "./components/icons/AlertIcon";
+import { ConfirmProvider, useCloseAllConfirm, useCloseTabConfirm } from "./components/useConfirm";
 
 export default function App() {
   const { t, tf } = useI18n();
@@ -25,6 +26,8 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [commandOpen, setCommandOpen] = useState(false);
+  const confirmCloseTab = useCloseTabConfirm();
+  const confirmCloseAll = useCloseAllConfirm();
 
   useEffect(() => {
     const load = async () => {
@@ -109,9 +112,9 @@ export default function App() {
     }, [addToRecent, openFileInTab, t]);
   const handleSelectFile = useCallback(async (file: FileInfo) => { await openFileInTab(file); }, [openFileInTab]);
   const handleRemoveRecent = useCallback(async (file: FileInfo) => { const updated = recentFiles.filter((item) => item.path !== file.path); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); setToast({ kind: "success", message: tf("removeFromRecentToast", { name: file.name }) }); }, [recentFiles, tf]);
-  const handleCloseTab = useCallback((tabId: string) => { const closingTab = tabs.find((tab) => tab.id === tabId); if (closingTab?.isDirty && settings.confirmTabClose && !window.confirm(tf("unsavedCloseOne", { name: closingTab.name }))) return; setTabs((prev) => { const idx = prev.findIndex((t) => t.id === tabId); const newTabs = prev.filter((t) => t.id !== tabId); if (activeTabId === tabId) { if (newTabs.length > 0) setActiveTabId(newTabs[Math.min(idx, newTabs.length - 1)].id); else setActiveTabId(null); } return newTabs; }); }, [activeTabId, tabs, tf, settings.confirmTabClose]);
+  const handleCloseTab = useCallback(async (tabId: string) => { const closingTab = tabs.find((tab) => tab.id === tabId); if (closingTab?.isDirty && settings.confirmTabClose && !(await confirmCloseTab(closingTab.name))) return; setTabs((prev) => { const idx = prev.findIndex((t) => t.id === tabId); const newTabs = prev.filter((t) => t.id !== tabId); if (activeTabId === tabId) { if (newTabs.length > 0) setActiveTabId(newTabs[Math.min(idx, newTabs.length - 1)].id); else setActiveTabId(null); } return newTabs; }); }, [activeTabId, tabs, confirmCloseTab, settings.confirmTabClose]);
   const handleOpenDialog = useCallback(async () => { try { const paths = await window.electronAPI.openFileDialog(); if (paths?.length) handleFilePaths(paths); } catch (error) { console.error("Dialog error:", error); } }, [handleFilePaths]);
-    const handleCloseAllTabs = useCallback(() => { if (hasDirtyTabs && settings.confirmTabClose && !window.confirm(tf("unsavedCloseAll"))) return; setTabs([]); setActiveTabId(null); }, [hasDirtyTabs, tf, settings.confirmTabClose]);
+    const handleCloseAllTabs = useCallback(async () => { if (hasDirtyTabs && settings.confirmTabClose && !(await confirmCloseAll(tabs.filter((tab) => tab.isDirty).length))) return; setTabs([]); setActiveTabId(null); }, [hasDirtyTabs, tabs, confirmCloseAll, settings.confirmTabClose]);
 
   useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "o") { event.preventDefault(); handleOpenDialog(); } }; window.addEventListener("keydown", handler); return () => window.removeEventListener("keydown", handler); }, [handleOpenDialog]);
 
@@ -140,28 +143,30 @@ export default function App() {
   return (
     <I18nProvider>
         <SettingsProvider>
-        <ThemeProvider>
-          <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
-                    <a href="#main-content" className="skip-link">{t("skipToContent")}</a>
-                    <TitleBar />
-          <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} />
-          <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
-        <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} />
-        <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
-          {tabs.length === 0 ? <EmptyState onOpenDialog={handleOpenDialog} /> : activeTab ? (
-            <div className="workspace-viewer-grid"><div className="workspace-viewer-main">{activeTab.isLoading ? <LoadingState /> : <ViewerRouter tab={activeTab} onChange={handleContentChange} />}</div><FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} /></div>
-          ) : null}
-        </main>
+          <ConfirmProvider>
+          <ThemeProvider>
+            <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
+                      <a href="#main-content" className="skip-link">{t("skipToContent")}</a>
+                      <TitleBar />
+            <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} />
+            <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
+          <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} />
+          <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
+            {tabs.length === 0 ? <EmptyState onOpenDialog={handleOpenDialog} /> : activeTab ? (
+              <div className="workspace-viewer-grid"><div className="workspace-viewer-main">{activeTab.isLoading ? <LoadingState /> : <ViewerRouter tab={activeTab} onChange={handleContentChange} />}</div><FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} /></div>
+            ) : null}
+          </main>
+            </div>
+            <StatusBar activeTab={activeTab ? { name: activeTab.name, path: activeTab.path, size: activeTab.sourceFile?.size, content: activeTab.content ?? undefined, isDirty: activeTab.isDirty } : null} />
+            {toast && <div className={`app-toast is-${toast.kind}`} role="status" aria-live="polite"><i aria-hidden="true">{toast.kind === "success" ? <CheckIcon size={12} strokeWidth={2.25} /> : <AlertIcon size={13} strokeWidth={1.75} />}</i>{toast.message}</div>}
+            <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
           </div>
-          <StatusBar activeTab={activeTab ? { name: activeTab.name, path: activeTab.path, size: activeTab.sourceFile?.size, content: activeTab.content ?? undefined, isDirty: activeTab.isDirty } : null} />
-          {toast && <div className={`app-toast is-${toast.kind}`} role="status" aria-live="polite"><i aria-hidden="true">{toast.kind === "success" ? <CheckIcon size={12} strokeWidth={2.25} /> : <AlertIcon size={13} strokeWidth={1.75} />}</i>{toast.message}</div>}
-          <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
-        </div>
-      </ThemeProvider>
-              </SettingsProvider>
-            </I18nProvider>
-          );
-        }
+        </ThemeProvider>
+          </ConfirmProvider>
+                </SettingsProvider>
+              </I18nProvider>
+            );
+          }
 
 function EmptyState({ onOpenDialog }: { onOpenDialog: () => void }) {
   const { t } = useI18n();
