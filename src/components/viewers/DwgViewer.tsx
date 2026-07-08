@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { AcApDocManager, AcEdOpenMode } from "@mlightcad/cad-simple-viewer";
+// Type-only import: the runtime values AcApDocManager / AcEdOpenMode are pulled
+// in via a dynamic import() inside the open-drawing effect so the ~2 MB
+// @mlightcad/cad-simple-viewer bundle (and its lodash-es dependency) is loaded
+// lazily the first time a user actually opens a DWG. Cold-start of the main
+// bundle no longer pays the cost.
+import type { AcApDocManager } from "@mlightcad/cad-simple-viewer";
 import { useI18n } from "../../i18n";
 import { describeIpcError, isIpcFailure } from "../../core/ipcError";
 
@@ -102,6 +107,10 @@ export default function DwgViewer({ filePath, fileName }: Props) {
       if (!containerRef.current) return;
       setLoading(true); setError(null);
       try {
+        // Load @mlightcad on demand so the heavy CAD runtime (~2 MB) is not in
+        // the cold-start bundle. Vite emits this as its own chunk.
+        const mlightcad = await import("@mlightcad/cad-simple-viewer");
+        const { AcApDocManager, AcEdOpenMode } = mlightcad;
         currentManager = AcApDocManager.createInstance({
           container: containerRef.current,
           autoResize: true,
