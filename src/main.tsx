@@ -6,11 +6,14 @@ import "./file-summary.css";
 
 // Browser fallback shim for window.electronAPI so the app can render in a normal browser during dev.
 // Provides no-op async functions to avoid runtime errors when Electron preload isn't present.
-if (!(window as any).electronAPI) {
-  const noopAsync = async (..._args: any[]) => null;
-  (window as any).electronAPI = new Proxy({}, {
-    get: () => noopAsync,
-  });
+// We keep this as a one-off typed cast: preload.js installs the real bridge
+// in production, but during vite dev / unit tests the value is missing and we
+// want a one-line placeholder without re-declaring the global Window shape.
+type AnyElectronShim = Record<string, (...args: unknown[]) => Promise<unknown>>;
+const win = window as unknown as { electronAPI?: AnyElectronShim };
+if (!win.electronAPI) {
+  const noopAsync = async (..._args: unknown[]) => null;
+  win.electronAPI = new Proxy({}, { get: () => noopAsync });
 }
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
