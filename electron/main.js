@@ -368,7 +368,7 @@ ipcMain.handle("read-text-file", async (_, filePath, maxSize = 1024 * 500) => {
   try {
     const stats = fs.statSync(filePath);
     if (stats.size > maxSize) {
-      return `[文件太大 (${stats.size} bytes)，已限制预览大小]`;
+      return ipcError("TEXT_FILE_TOO_LARGE", { sizeBytes: stats.size });
     }
     return fs.readFileSync(filePath, "utf-8");
   } catch (e) {

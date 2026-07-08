@@ -226,6 +226,7 @@ export const translations: Record<string, Record<string, string>> = {
     epubPrev: "上一章",
     epubNext: "下一章",
     epubTocAria: "章节目录",
+        epubChapterFallback: "第 {index} 章",
 
     // MediaViewer
     mediaLoadFailed: "媒体无法打开",
@@ -779,6 +780,7 @@ export const translations: Record<string, Record<string, string>> = {
     epubPrev: "Previous chapter",
     epubNext: "Next chapter",
     epubTocAria: "Chapter list",
+        epubChapterFallback: "Chapter {index}",
 
     // MediaViewer
     mediaLoadFailed: "Cannot open media",

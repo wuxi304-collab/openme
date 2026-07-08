@@ -49,7 +49,11 @@ async function readEpub(filePath) {
     totalText += text.length;
     if (totalText > 10_000_000) break;
     const heading = Array.from(document.getElementsByTagName("*")).find((node) => ["title", "h1", "h2"].includes(node.localName))?.textContent?.trim();
-    chapters.push({ title: heading || `第 ${chapters.length + 1} 章`, text });
+    // Chapter titles are localized in the renderer so language-switching takes
+    // effect without re-reading the file. When the EPUB does not provide a
+    // heading we leave the title null and the renderer substitutes a localized
+    // fallback (e.g. "Chapter 3" / "第 3 章").
+    chapters.push({ title: heading || null, index: chapters.length + 1, text });
   }
   const coverItem = Array.from(manifest.values()).find((item) => item.properties.includes("cover-image"));
   let cover = null;
