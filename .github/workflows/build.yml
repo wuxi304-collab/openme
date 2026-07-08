@@ -30,6 +30,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Audit i18n dictionary
+        run: npm run audit:i18n
+
       - name: Generate support matrix
         run: npm run support:matrix
 

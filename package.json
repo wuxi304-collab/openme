@@ -14,6 +14,7 @@
     "dist": "npm run build && electron-builder",
     "test": "vitest run",
     "test:watch": "vitest",
+    "audit:i18n": "node scripts/audit-i18n.mjs",
     "support:matrix": "node scripts/generate-support-matrix.mjs"
   },
   "dependencies": {

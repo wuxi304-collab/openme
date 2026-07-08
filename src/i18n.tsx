@@ -79,6 +79,12 @@ export const translations: Record<string, Record<string, string>> = {
     paletteEnterHint: "Enter 执行",
     paletteEscHint: "Esc 关闭",
     paletteCount: "{shown} / {total} 项",
+    paletteKindFile: "文件",
+    paletteKindTab: "标签页",
+    paletteKindWorkspace: "工作台",
+    paletteKindSystem: "系统",
+    paletteKindRecent: "最近",
+    paletteKindCommand: "命令",
 
     // FileDropZone
     dropHere: "将文件拖入此处",
@@ -260,7 +266,7 @@ export const translations: Record<string, Record<string, string>> = {
     officeExcelCol: "第 {n} 列",
     officeExcelPrev: "上一页",
     officeExcelNext: "下一页",
-    officeExcelPage: "{current} / {total}",
+    officeExcelPage: "第 {current} / {total} 页",
 
     // ZipViewer
     zipLoadError: "无法读取压缩包",
@@ -346,16 +352,16 @@ export const translations: Record<string, Record<string, string>> = {
     cadAssistantApplyHint: "安装 CAD 引擎后启用",
 
     // OpenMeRouteCard
-    routeDirectOpen: "OpenMe Direct Open",
-    routeSurface: "Surface",
-    routeMode: "Mode",
-    routePreview: "Preview",
-    routePreviewAvailable: "available",
-    routePreviewCard: "card",
-    routeLoader: "Loader",
-    routeStatus: "Status",
-    routeOpenMeActions: "OpenMe Actions",
-    routeAria: "OpenMe route",
+    routeDirectOpen: "OpenMe 直开",
+    routeSurface: "渲染层",
+    routeMode: "打开方式",
+    routePreview: "预览",
+    routePreviewAvailable: "可预览",
+    routePreviewCard: "仅卡片",
+    routeLoader: "加载器",
+    routeStatus: "状态",
+    routeOpenMeActions: "OpenMe 操作",
+    routeAria: "OpenMe 打开信息",
     routeSystemFallback: "用系统程序兜底打开",
 
     // ViewerRouter
@@ -389,7 +395,7 @@ export const translations: Record<string, Record<string, string>> = {
     dropHintRecent: "拖拽文件到右侧区域开始",
 
     // ErrorBoundary
-    viewerErrorKicker: "Viewer Boundary",
+    viewerErrorKicker: "预览器异常",
     viewerErrorTitle: "预览器出现错误",
     viewerErrorBody: "当前 Viewer 已被隔离，OpenMe 主工作台仍可继续使用。",
     viewerErrorRetry: "重试当前预览",
@@ -495,9 +501,9 @@ export const translations: Record<string, Record<string, string>> = {
     openOutcomeExcel: "{name} 已进入 OpenMe Excel 打开面。",
     openOutcomeBinary: "{name} 已进入 OpenMe 二进制预览面。",
     openOutcomeText: "{name} 已进入 OpenMe 文本打开面。",
-    loadFailedWord: "Word conversion failed",
-    loadFailedExcel: "Excel conversion failed",
-    loadFailedRead: "Failed to read file",
+    loadFailedWord: "Word 转换失败",
+    loadFailedExcel: "Excel 转换失败",
+    loadFailedRead: "读取文件失败",
 
     // Built-in pack names + taglines (packs/builtin)
     packEngineeringName: "工程包",
@@ -633,6 +639,12 @@ export const translations: Record<string, Record<string, string>> = {
     paletteEnterHint: "Enter to run",
     paletteEscHint: "Esc to close",
     paletteCount: "{shown} / {total} items",
+    paletteKindFile: "File",
+    paletteKindTab: "Tab",
+    paletteKindWorkspace: "Workspace",
+    paletteKindSystem: "System",
+    paletteKindRecent: "Recent",
+    paletteKindCommand: "Command",
 
     // FileDropZone
     dropHere: "Drop files here",
