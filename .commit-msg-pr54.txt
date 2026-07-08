@@ -1,0 +1,30 @@
+perf(build): lazy-load AboutDialog + SettingsDialog for CSS chunk split
+
+Both modal dialogs are render-gated (parent only mounts them when the
+gear/info button is clicked), so paying for their JS + CSS in the
+initial bundle was wasted bandwidth. Vite's `React.lazy()` extracts
+both into dedicated chunks along with their CSS automatically.
+
+Changes:
+- src/components/layout/TitleBar.tsx: switches the two static
+  imports to `lazy(() => import(...))`, wraps the conditional mounts
+  in a single `<Suspense fallback={null}>` boundary. `fallback={null}`
+  is intentional: the dialogs are invisible until opened, so any
+  in-flight frame just shows nothing instead of a loading shimmer
+  that would distract the user mid-click.
+
+Bundle deltas (vite build):
+- index.js: 185.96 → 177.04 kB raw (-8.92 kB)
+- index.css: 80.63 → 69.34 kB raw (-11.29 kB)
+- AboutDialog chunk: 4.77 kB JS + 5.58 kB CSS
+- SettingsDialog chunk: 4.76 kB JS + 5.71 kB CSS
+
+The dialogs now load only when the user clicks the gear or info
+button, so a session that never opens them saves the full ~20 kB.
+The cache-dedup story is also clean: each dialog's chunk is content-
+hashed and served from the regular long-term cache, so repeat opens
+are zero-cost.
+
+All 175 tests pass. Tsc clean. i18n audit clean (453/453).
+
+Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>
