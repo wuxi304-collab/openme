@@ -142,11 +142,12 @@ export default function App() {
         <SettingsProvider>
         <ThemeProvider>
           <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
-          <TitleBar />
+                    <a href="#main-content" className="skip-link">{t("skipToContent")}</a>
+                    <TitleBar />
           <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} />
           <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
         <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} />
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
+        <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
           {tabs.length === 0 ? <EmptyState onOpenDialog={handleOpenDialog} /> : activeTab ? (
             <div className="workspace-viewer-grid"><div className="workspace-viewer-main">{activeTab.isLoading ? <LoadingState /> : <ViewerRouter tab={activeTab} onChange={handleContentChange} />}</div><FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} /></div>
           ) : null}

@@ -13,23 +13,30 @@ export default function PreviewPane({ file, textContent, loading }: Props) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center flex-1 rounded-xl border" style={{ borderColor: "var(--border-default)", background: "var(--bg-surface)" }}>
         <div
-          className="w-8 h-8 rounded-full border-2 flex-shrink-0"
-          style={{ borderColor: "var(--accent)", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }}
-        />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <p className="mt-3 text-[12px]" style={{ color: "var(--text-muted)" }}>{t("previewLoading")}</p>
-      </div>
-    );
-  }
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="flex flex-col items-center justify-center flex-1 rounded-xl border"
+          style={{ borderColor: "var(--border-default)", background: "var(--bg-surface)" }}
+        >
+          <div
+            aria-hidden="true"
+            className="w-8 h-8 rounded-full border-2 flex-shrink-0"
+            style={{ borderColor: "var(--accent)", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }}
+          />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <p className="mt-3 text-[12px]" style={{ color: "var(--text-muted)" }}>{t("previewLoading")}</p>
+        </div>
+      );
+    }
 
   if (textContent !== null) {
     const lineCount = textContent.split("\n").length;
     return (
       <div className="flex flex-col flex-1 min-h-0 rounded-xl border overflow-hidden" style={{ borderColor: "var(--border-default)", background: "var(--bg-surface)" }}>
         <div className="px-4 py-2.5 border-b flex items-center gap-2" style={{ borderColor: "var(--border-muted)" }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.8">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.8" aria-hidden="true">
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <line x1="3" y1="9" x2="21" y2="9" />
             <line x1="9" y1="21" x2="9" y2="9" />

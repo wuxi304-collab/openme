@@ -39,6 +39,10 @@
   outline: none;
   animation: settings-card-in var(--dur-press, 200ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
+  .settings-dialog-card:focus-visible {
+    outline: 2px solid var(--mario-yellow, #efc14f);
+    outline-offset: 2px;
+  }
 
 @keyframes settings-card-in {
   from { opacity: 0; transform: translateY(6px) scale(0.985); }

@@ -67,7 +67,10 @@ const WHITELIST = new Set([
   "cadAssistantKicker", // "CAD COPILOT" — brand/stylistic kicker
   "categoryMarkdown",   // "Markdown" — file type name
   "categoryJson",       // "JSON" — file type name
-]);
+    "dwgEngineRealDwg",   // "RealDWG Sidecar" — Autodesk product name
+    "dwgEngineOda",       // "ODA File Converter" — ODA product name
+    "dwgEngineAutocad",   // "AutoCAD Core Console" — Autodesk product name
+  ]);
 
 const untranslated = [];
 const onlyInZh = [];
