@@ -1,0 +1,150 @@
+﻿/* ConfirmDialog — themed replacement for native window.confirm().
+ *
+ * Visual language mirrors SettingsDialog + AboutDialog: same overlay, same
+ * backdrop blur, same card shape, same motion timings. Only difference is the
+ * simplified body (title + message + two-button footer) and a danger variant
+ * for destructive actions.
+ *
+ * Reduced motion is honored by the global prefers-reduced-motion override at
+ * the end of the file.
+ */
+
+.confirm-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg-overlay, rgba(8, 10, 14, 0.55));
+  backdrop-filter: blur(8px) saturate(1.05);
+  -webkit-backdrop-filter: blur(8px) saturate(1.05);
+  animation: confirm-overlay-in var(--dur-fast, 140ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+@keyframes confirm-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.confirm-dialog-card {
+  width: min(440px, 100%);
+  background: var(--bg-elevated, #161a22);
+  color: var(--text-primary, #e8ecf3);
+  border: 1px solid var(--border-default, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  outline: none;
+  animation: confirm-card-in var(--dur-press, 200ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+@keyframes confirm-card-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+.confirm-dialog-header {
+  padding: 20px 22px 6px 22px;
+}
+
+.confirm-dialog-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--text-primary);
+}
+
+.confirm-dialog-body {
+  padding: 4px 22px 18px 22px;
+}
+
+.confirm-dialog-message {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary, #b6bccb);
+  word-break: break-word;
+}
+
+.confirm-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border-muted, rgba(255, 255, 255, 0.05));
+}
+
+.confirm-dialog-cancel,
+.confirm-dialog-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 84px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--dur-fast, 140ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              border-color var(--dur-fast, 140ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              color var(--dur-fast, 140ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.confirm-dialog-cancel {
+  background: transparent;
+  border: 1px solid var(--border-muted, rgba(255, 255, 255, 0.08));
+  color: var(--text-secondary, #b6bccb);
+}
+
+.confirm-dialog-cancel:hover {
+  background: var(--bg-surface, rgba(255, 255, 255, 0.04));
+  border-color: var(--border-default, rgba(255, 255, 255, 0.12));
+  color: var(--text-primary);
+}
+
+.confirm-dialog-cancel:focus-visible {
+  outline: 2px solid var(--accent, #6cd1ff);
+  outline-offset: 2px;
+}
+
+.confirm-dialog-confirm {
+  background: var(--accent, #6cd1ff);
+  border: 1px solid var(--accent, #6cd1ff);
+  color: var(--bg-base, #0a0d12);
+  font-weight: 600;
+}
+
+.confirm-dialog-confirm:hover {
+  background: color-mix(in srgb, var(--accent, #6cd1ff) 88%, white);
+  border-color: color-mix(in srgb, var(--accent, #6cd1ff) 88%, white);
+}
+
+.confirm-dialog-confirm:focus-visible {
+  outline: 2px solid var(--accent, #6cd1ff);
+  outline-offset: 2px;
+}
+
+/* Danger variant: red primary for destructive confirmations like
+ * "discard unsaved changes". */
+.confirm-dialog-confirm.is-danger {
+  background: var(--color-danger, #ef6a58);
+  border-color: var(--color-danger, #ef6a58);
+  color: #2a100d;
+}
+
+.confirm-dialog-confirm.is-danger:hover {
+  background: color-mix(in srgb, var(--color-danger, #ef6a58) 88%, white);
+  border-color: color-mix(in srgb, var(--color-danger, #ef6a58) 88%, white);
+}
+
+.confirm-dialog-confirm.is-danger:focus-visible {
+  outline-color: var(--color-danger, #ef6a58);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm-dialog-overlay { animation: none; }
+  .confirm-dialog-card    { animation: none; }
+}

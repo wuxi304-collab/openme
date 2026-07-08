@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+﻿import React, { createContext, useContext, useEffect, useState } from "react";
 
 // Translator: minimal i18n contract usable by non-React utility modules.
 // Both `t` and `tf` returned by useI18n satisfy this shape; utilities can
@@ -422,9 +422,19 @@ export const translations: Record<string, Record<string, string>> = {
     readFailed: "读取失败",
     removeFromRecentToast: "已从最近文件移除 {name}",
 
-    // Close confirm
+    // Close confirm (legacy window.confirm prompts)
     unsavedCloseOne: "“{name}”有未保存修改，仍要关闭吗？",
     unsavedCloseAll: "存在未保存修改，仍要关闭全部标签吗？",
+
+    // ConfirmDialog (themed modal)
+    confirmDialogAria: "确认操作",
+    confirmCancel: "取消",
+    confirmOk: "确认",
+    confirmDiscard: "放弃更改",
+    confirmCloseTabTitle: "关闭未保存的标签",
+    confirmCloseAllTitle: "关闭全部标签",
+    confirmCloseTabMessage: "“{name}”有未保存修改，确定要关闭吗？关闭后这些改动将无法恢复。",
+    confirmCloseAllMessage: "当前有 {count, plural, one {# 个标签} other {# 个标签}}存在未保存修改，确定要关闭全部吗？关闭后这些改动将无法恢复。",
 
     // Command palette items
     cmdOpenFile: "打开文件",
@@ -1051,9 +1061,19 @@ export const translations: Record<string, Record<string, string>> = {
     readFailed: "Read failed",
     removeFromRecentToast: "Removed {name} from recent",
 
-    // Close confirm
+    // Close confirm (legacy window.confirm prompts)
     unsavedCloseOne: "“{name}” has unsaved changes. Close anyway?",
     unsavedCloseAll: "There are unsaved changes. Close all tabs anyway?",
+
+    // ConfirmDialog (themed modal)
+    confirmDialogAria: "Confirm action",
+    confirmCancel: "Cancel",
+    confirmOk: "Confirm",
+    confirmDiscard: "Discard changes",
+    confirmCloseTabTitle: "Close unsaved tab",
+    confirmCloseAllTitle: "Close all tabs",
+    confirmCloseTabMessage: "“{name}” has unsaved changes. Close it? These changes will be lost.",
+    confirmCloseAllMessage: "{count, plural, one {# tab} other {# tabs}} have unsaved changes. Close all of them? These changes will be lost.",
 
     // Command palette items
     cmdOpenFile: "Open file",
@@ -1425,3 +1445,5 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useI18n() { return useContext(I18nContext); }
+
+
