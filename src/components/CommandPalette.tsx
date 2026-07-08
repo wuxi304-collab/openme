@@ -12,6 +12,20 @@ export type CommandItem = {
   run: () => void;
 };
 
+// Maps a CommandItem.kind to its i18n key. Returns the key for the
+// generic "Command" label when no kind is set, so the kind tag in the
+// palette row is always rendered through the i18n dict.
+function kindLabelKey(kind: CommandItem["kind"]): string {
+  switch (kind) {
+    case "file": return "paletteKindFile";
+    case "tab": return "paletteKindTab";
+    case "workspace": return "paletteKindWorkspace";
+    case "system": return "paletteKindSystem";
+    case "recent": return "paletteKindRecent";
+    default: return "paletteKindCommand";
+  }
+}
+
 interface Props {
   open: boolean;
   commands: CommandItem[];
@@ -111,7 +125,7 @@ export default function CommandPalette({ open, commands, onClose }: Props) {
                 <strong>{command.label}</strong>
                 <small>{command.detail}</small>
               </span>
-              <em>{command.kind ?? "command"}</em>
+              <em>{t(kindLabelKey(command.kind))}</em>
               {command.shortcut && <kbd>{command.shortcut}</kbd>}
             </button>
           )) : <div className="command-empty">{t("noMatchingCommands")}</div>}
