@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { buildFileBrief } from "../../brief";
 import { extractMetadata } from "../../metadata";
 import type { FileTabState } from "../../types";
@@ -12,6 +13,15 @@ interface OpenMeRouteCardProps {
   route: ViewerRoute;
   title: string;
   description: string;
+  /**
+   * Optional retry callback. When provided the card surfaces a Retry
+   * button so the user can re-attempt a failed or not-yet-rendered
+   * open. The card flips into a "Retrying..." busy state while the
+   * callback is in flight so the user sees feedback that work is
+   * happening. Pass `undefined` to hide the button (e.g. when there
+   * is no source file to retry against).
+   */
+  onRetry?: () => void;
 }
 
 const CATEGORY_I18N_KEYS: Record<FileCategory, string> = {
@@ -138,8 +148,27 @@ function strategyToOpen(strategy: FileOpenStrategy): ViewerRoute["mode"] {
   }
 }
 
-export default function OpenMeRouteCard({ tab, route, title, description }: OpenMeRouteCardProps) {
+export default function OpenMeRouteCard({ tab, route, title, description, onRetry }: OpenMeRouteCardProps) {
   const { t, tf } = useI18n();
+  // Track retry busy state independently from the parent's `tab.isLoading`
+  // because the parent drives `isLoading` only at the very start of a
+  // retry round. We keep a local flag so the button stays visibly busy
+  // (label flips to "Retrying...", aria-busy true) until the user sees
+  // the next state — successful render or refreshed error card.
+  const [isRetrying, setIsRetrying] = useState(false);
+  const handleRetry = () => {
+    if (!onRetry || isRetrying) return;
+    setIsRetrying(true);
+    try {
+      onRetry();
+    } finally {
+      // Release the busy state after a short delay so the user sees the
+      // transition even when the parent re-renders the route card in the
+      // same React batch. Without this the button flips back instantly
+      // and the "Retrying..." copy never has time to register.
+      window.setTimeout(() => setIsRetrying(false), 600);
+    }
+  };
   const outcome = tab.openOutcome;
   const metadata = extractMetadata({
     filePath: tab.path,
@@ -301,16 +330,40 @@ export default function OpenMeRouteCard({ tab, route, title, description }: Open
         )}
 
         <div className="openme-route-card-actions">
-          {route.hasExternalFallback && (
+                  {onRetry && (
             <button
               type="button"
-              className="openme-route-card-action primary"
-              onClick={() => window.electronAPI.openInSystem(tab.path)}
-            >
-              {t("routeSystemFallback")}
-            </button>
-          )}
-        </div>
+                      className={`openme-route-card-action${route.hasExternalFallback ? "" : " primary"}`}
+                      onClick={handleRetry}
+                      disabled={isRetrying}
+                      aria-busy={isRetrying}
+                      aria-label={isRetrying ? t("routeRetrying") : t("routeRetry")}
+                    >
+                      {isRetrying ? (
+                        <span className="openme-route-card-retry-busy" aria-hidden="true">
+                          <span className="openme-route-card-retry-dot" />
+                          <span className="openme-route-card-retry-dot" />
+                          <span className="openme-route-card-retry-dot" />
+                        </span>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <polyline points="23 4 23 10 17 10" />
+                          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                        </svg>
+                      )}
+                      <span>{isRetrying ? t("routeRetrying") : t("routeRetry")}</span>
+                    </button>
+                  )}
+                  {route.hasExternalFallback && (
+                    <button
+                      type="button"
+                      className="openme-route-card-action primary"
+                      onClick={() => window.electronAPI.openInSystem(tab.path)}
+                    >
+                      {t("routeSystemFallback")}
+                    </button>
+                  )}
+                </div>
       </div>
     </div>
   );
