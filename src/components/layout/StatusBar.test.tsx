@@ -119,4 +119,67 @@ describe("StatusBar", () => {
     spy(); // silence unused
     expect(screen.getByText("n.bin")).toBeTruthy();
   });
-});
+
+    it("shows the idle hint when no tab is active", () => {
+      renderInProviders(<StatusBar activeTab={null} />);
+      expect(screen.getByText("按 Ctrl+O 打开文件，或拖入任意文件")).toBeTruthy();
+    });
+
+    it("shows the tab position pill only when there is more than one tab", () => {
+      const { rerender } = renderInProviders(
+        <StatusBar activeTab={{ name: "a.txt" }} activePosition={1} totalTabs={1} />
+      );
+      expect(document.querySelector(".status-tab-position")).toBeNull();
+      rerender(
+        <I18nProvider>
+          <SettingsProvider>
+            <StatusBar activeTab={{ name: "a.txt" }} activePosition={2} totalTabs={4} />
+          </SettingsProvider>
+        </I18nProvider>
+      );
+      expect(screen.getByText("第 2 个，共 4 个")).toBeTruthy();
+    });
+
+    it("shows the high-risk chip when riskLevel is high", () => {
+      renderInProviders(
+        <StatusBar
+          activeTab={{ name: "danger.exe", riskLevel: "high" }}
+        />
+      );
+      expect(screen.getByText("风险·高风险")).toBeTruthy();
+    });
+
+    it("shows the external strategy chip for external files", () => {
+      renderInProviders(
+        <StatusBar
+          activeTab={{ name: "foo.psd", openStrategy: "external" }}
+        />
+      );
+      expect(screen.getByText("打开方式：外部程序打开")).toBeTruthy();
+    });
+
+    it("shows the restricted strategy chip for restricted files", () => {
+      renderInProviders(
+        <StatusBar
+          activeTab={{ name: "bar", openStrategy: "restricted" }}
+        />
+      );
+      expect(screen.getByText("打开方式：OpenMe 限制卡片")).toBeTruthy();
+    });
+
+    it("hides risk/strategy chips for builtin / low-risk files", () => {
+      renderInProviders(
+        <StatusBar
+          activeTab={{ name: "safe.txt", openStrategy: "builtin", riskLevel: "low" }}
+        />
+      );
+      expect(document.querySelector(".status-risk-chip")).toBeNull();
+      expect(document.querySelector(".status-strategy-chip")).toBeNull();
+    });
+
+    it("renders English idle hint copy under en locale", () => {
+      try { window.localStorage.setItem("openme.lang", "en"); } catch {}
+      renderInProviders(<StatusBar activeTab={null} />);
+      expect(screen.getByText("Press Ctrl+O to open a file, or drop one anywhere")).toBeTruthy();
+    });
+  });
