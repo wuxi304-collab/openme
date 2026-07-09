@@ -13,9 +13,13 @@ interface Props {
   searchValue?: string;
   onSearchChange?: (value: string) => void;
   packSuggestions?: PackSuggestion[];
+  // Total recent-file count before the search filter is applied. When
+  // this differs from `files.length` we surface a "X / Y" chip next to
+  // the search input so users see how many entries were filtered out.
+  totalCount?: number;
 }
 
-export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpenDialog, searchValue, onSearchChange, packSuggestions = [] }: Props) {
+export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpenDialog, searchValue, onSearchChange, packSuggestions = [], totalCount }: Props) {
   const { t, tf } = useI18n();
   const selectedFile = files.find((file) => file.path === selectedPath) ?? null;
   const inferredSuggestions = selectedFile
@@ -46,8 +50,18 @@ export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpe
             placeholder={t("searchRecentPlaceholder")}
             autoComplete="off"
           />
-        </label>
-      </div>
+                    {searchValue && totalCount !== undefined && totalCount > 0 && (
+                      <span
+                        className="file-search-count"
+                        role="status"
+                        aria-live="polite"
+                        title={tf("sidebarSearchCountTitle", { count: files.length, total: totalCount })}
+                      >
+                        {tf("sidebarSearchCount", { count: files.length, total: totalCount })}
+                      </span>
+                    )}
+                  </label>
+                </div>
 
       <div className="sidebar-section-heading">
         <span>{t("recentOpened")}</span>

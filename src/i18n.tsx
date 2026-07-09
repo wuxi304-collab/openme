@@ -27,6 +27,9 @@ export const translations: Record<string, Record<string, string>> = {
     openFile: "打开文件",
     searchRecent: "搜索最近文件",
     searchRecentPlaceholder: "搜索最近文件…",
+    // PR #81 - Sidebar search count
+    sidebarSearchCount: "{count} / {total} 条结果",
+    sidebarSearchCountTitle: "显示 {count} 条，总共 {total} 条",
     recentOpened: "最近打开",
     noFilesYet: "还没有文件",
     openFileHint: "打开一个文件，它会留在这里",
@@ -945,6 +948,9 @@ export const translations: Record<string, Record<string, string>> = {
     openFile: "Open file",
     searchRecent: "Search recent files",
     searchRecentPlaceholder: "Search recent files…",
+    // PR #81 - Sidebar search count
+    sidebarSearchCount: "{count} of {total}",
+    sidebarSearchCountTitle: "Showing {count} of {total} recent files",
     recentOpened: "Recent",
     noFilesYet: "No files yet",
     openFileHint: "Open a file and it will stay here",

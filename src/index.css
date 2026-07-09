@@ -635,6 +635,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
 .file-search svg { stroke:currentColor; stroke-width:2; flex:none; }
 .file-search input { width:100%; min-width:0; border:0; outline:0; background:transparent; color:var(--shell-text); font-size:12px; }
 .file-search input::placeholder { color:#6f6a63; }
+.file-search-count { flex:none; padding:2px 7px; border:1px solid #ffffff14; border-radius:999px; color:#d9aa35; background:#ffffff0a; font:600 10px/1.4 var(--font-mono); animation:file-search-count-in var(--dur-fast) var(--ease-out); }
+@keyframes file-search-count-in { from { opacity:0; transform:translateX(4px); } }
+@media (prefers-reduced-motion:reduce) { .file-search-count { animation:none; } }
 .sidebar-section-heading { height:36px; padding:0 13px; display:flex; align-items:center; justify-content:space-between; color:#777168; font-size:10px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; }
 .coin-count { display:flex; align-items:center; gap:5px; color:#a49e95; font:600 10px/1 var(--font-mono); }
 .coin-count i { width:9px; height:9px; border-radius:50%; background:var(--mario-yellow); box-shadow:inset -2px 0 rgba(147,94,0,.35); }
