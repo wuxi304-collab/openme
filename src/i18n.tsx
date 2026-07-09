@@ -522,6 +522,9 @@ export const translations: Record<string, Record<string, string>> = {
     routeDiskDesc: "OpenMe 已直接打开该镜像为限制卡片，显示身份、边界、风险和下一步。",
     routeGenericTitle: "文件已进入 OpenMe",
     routeGenericDesc: "OpenMe 已直接打开该文件为本地安全卡片。",
+    // PR #84 — ViewerError retry capability
+    routeRetry: "重新加载",
+    routeRetrying: "正在重新加载...",
     viewerRouterLoading: "正在加载文件...",
 
     // ErrorBoundary
@@ -1457,6 +1460,9 @@ export const translations: Record<string, Record<string, string>> = {
     routeDiskDesc: "OpenMe opened the disk image as a restricted card showing identity, boundary, risk, and next steps.",
     routeGenericTitle: "File is now in OpenMe",
     routeGenericDesc: "OpenMe opened this file as a local safety card.",
+    // PR #84 — ViewerError retry capability
+    routeRetry: "Retry",
+    routeRetrying: "Retrying...",
     viewerRouterLoading: "Loading file...",
 
     // ErrorBoundary

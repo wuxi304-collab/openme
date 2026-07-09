@@ -109,13 +109,32 @@ export default function App() {
     const newTab: FileTabState = { id, path: fileInfo.path, name: fileInfo.name, category, content: null, isDirty: false, isLoading: true, sourceFile: fileInfo };
     setTabs((prev) => [...prev, newTab]);
     setActiveTabId(id);
-    try {
-      const loaded = await loadFileTabData(fileInfo, category, t);
-      setTabs((prev) => prev.map((t) => t.id === id ? { ...t, ...loaded, isLoading: false } : t));
-    } catch (error) {
-      setTabs((prev) => prev.map((t) => t.id === id ? { ...t, isLoading: false, error: error instanceof Error ? error.message : tf("readFailed") } : t));
-    }
-  }, [tabs, t]);
+      await loadAndApply(id, fileInfo, category);
+    }, [tabs]);
+
+    // Reload an existing tab from disk. Used by the OpenMeRouteCard Retry button
+    // when the user wants to re-attempt a failed open. We clear the previous
+    // error and sourceFile so the freshly-resolved metadata flows back through.
+    const retryTab = useCallback(async (tabId: string) => {
+      const tab = tabs.find((t) => t.id === tabId);
+      if (!tab || !tab.sourceFile) return;
+      const category = detectCategory(tab.path);
+      await loadAndApply(tabId, tab.sourceFile, category);
+    }, [tabs]);
+
+    // Single loading path shared by openFileInTab + retryTab. Sets isLoading,
+    // awaits loadFileTabData, then either merges loaded data back into the tab
+    // or surfaces the error message. Refactoring openFileInTab onto this helper
+    // is what lets retry be a one-liner that doesn't drift from the original.
+    const loadAndApply = useCallback(async (tabId: string, fileInfo: FileInfo, category: ReturnType<typeof detectCategory>) => {
+      setTabs((prev) => prev.map((t) => t.id === tabId ? { ...t, isLoading: true, error: undefined } : t));
+      try {
+        const loaded = await loadFileTabData(fileInfo, category, t);
+        setTabs((prev) => prev.map((tab) => tab.id === tabId ? { ...tab, ...loaded, isLoading: false } : tab));
+      } catch (error) {
+        setTabs((prev) => prev.map((tab) => tab.id === tabId ? { ...tab, isLoading: false, error: error instanceof Error ? error.message : tf("readFailed") } : tab));
+      }
+    }, [t, tf]);
 
   const addToRecent = useCallback(async (file: FileInfo) => { const updated = [file, ...recentFiles.filter((f) => f.path !== file.path)].slice(0, settings.recentLimit); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }).catch(() => undefined); }, [recentFiles, settings.recentLimit]);
 
@@ -218,7 +237,7 @@ export default function App() {
           <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} totalCount={recentFiles.length} />
           <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
             {tabs.length === 0 ? <EmptyState onOpenDialog={handleOpenDialog} recentFiles={recentFiles} onOpenRecent={(file) => { void openFileInTab(file); }} /> : activeTab ? (
-              <div className="workspace-viewer-grid"><div className="workspace-viewer-main">{activeTab.isLoading ? <LoadingState /> : <ViewerRouter tab={activeTab} onChange={handleContentChange} />}</div><FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} /></div>
+              <div className="workspace-viewer-grid"><div className="workspace-viewer-main">{activeTab.isLoading ? <LoadingState /> : <ViewerRouter tab={activeTab} onChange={handleContentChange} onRetry={activeTab.sourceFile ? () => { void retryTab(activeTab.id); } : undefined} />}</div><FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} /></div>
             ) : null}
           </main>
             </div>
