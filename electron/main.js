@@ -7,6 +7,7 @@ const { execFile } = require("child_process");
 const { pathToFileURL } = require("url");
 const { readEpub } = require("./epub");
 const { ipcError } = require("./ipcErrors");
+const mm = require("music-metadata");
 
 // Allow managed environments to place Chromium state in an explicitly writable directory.
 if (process.env.OPENME_USER_DATA_DIR) {
@@ -672,6 +673,138 @@ ipcMain.handle("get-media-url", async (_, filePath) => {
   const resolved = path.resolve(filePath);
   if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) return ipcError("MEDIA_NOT_FOUND");
   return `openme-media://local/?path=${encodeURIComponent(resolved)}`;
+});
+
+// Read tag + technical metadata for a single audio file. Returns a plain
+// JSON object the renderer can hand to the lossless player; cover art is
+// inlined as a data: URL so we never need a second IPC round trip.
+// music-metadata is pure-JS and supports FLAC, WAV (RIFF INFO), AIFF,
+// Vorbis comments, ID3v2, DSF (DSDIFF) and more.
+ipcMain.handle("get-audio-metadata", async (_, filePath) => {
+  try {
+    const resolved = path.resolve(filePath);
+    if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {
+      return ipcError("MEDIA_NOT_FOUND");
+    }
+    const meta = await mm.parseFile(resolved, { duration: true, skipCovers: false });
+    const { common = {}, format = {} } = meta;
+    const cover = (common.picture && common.picture[0]) || null;
+    return {
+      ok: true,
+      path: resolved,
+      tag: {
+        title: common.title || null,
+        artist: common.artist || null,
+        album: common.album || null,
+        albumArtist: common.albumartist || null,
+        year: typeof common.year === "number" ? common.year : null,
+        genre: Array.isArray(common.genre) ? common.genre[0] || null : (common.genre || null),
+        track: typeof common.track?.no === "number" ? common.track.no : null,
+        trackTotal: typeof common.track?.of === "number" ? common.track.of : null,
+        disc: typeof common.disk?.no === "number" ? common.disk.no : null,
+        discTotal: typeof common.disk?.of === "number" ? common.disk.of : null,
+        composer: common.composer || null,
+        comment: Array.isArray(common.comment) ? common.comment[0] || null : (common.comment || null),
+      },
+      format: {
+        container: format.container || null,
+        codec: format.codec || format.codecProfile || null,
+        lossless: typeof format.lossless === "boolean" ? format.lossless : null,
+        sampleRate: typeof format.sampleRate === "number" ? format.sampleRate : null,
+        bitsPerSample: typeof format.bitsPerSample === "number" ? format.bitsPerSample : null,
+        channels: typeof format.numberOfChannels === "number" ? format.numberOfChannels : null,
+        channelLayout: format.numberOfChannels === 1 ? "mono" : format.numberOfChannels === 2 ? "stereo" : (format.numberOfChannels > 2 ? "surround" : null),
+        bitrate: typeof format.bitrate === "number" ? Math.round(format.bitrate) : null,
+        durationSec: typeof format.duration === "number" ? format.duration : null,
+        encoder: format.encoder || null,
+      },
+      cover: cover
+        ? { format: cover.format || "image/jpeg", mime: cover.format || "image/jpeg", data: `data:${cover.format || "image/jpeg"};base64,${Buffer.from(cover.data).toString("base64")}` }
+        : null,
+    };
+  } catch (e) {
+    log.error("get-audio-metadata failed", e);
+    return ipcError("AUDIO_METADATA_FAILED", { message: e && e.message ? e.message : String(e) });
+  }
+});
+
+// Quick probe that returns just the technical format block (no tags, no
+// cover). Cheaper than get-audio-metadata when the UI only needs the
+// sample-rate / bit-depth / bitrate for the badge (e.g. when scrolling a
+// long list of tracks).
+ipcMain.handle("get-audio-format", async (_, filePath) => {
+  try {
+    const resolved = path.resolve(filePath);
+    if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {
+      return ipcError("MEDIA_NOT_FOUND");
+    }
+    const meta = await mm.parseFile(resolved, { duration: true, skipCovers: true });
+    const f = meta.format || {};
+    return {
+      ok: true,
+      path: resolved,
+      container: f.container || null,
+      codec: f.codec || null,
+      lossless: typeof f.lossless === "boolean" ? f.lossless : null,
+      sampleRate: typeof f.sampleRate === "number" ? f.sampleRate : null,
+      bitsPerSample: typeof f.bitsPerSample === "number" ? f.bitsPerSample : null,
+      channels: typeof f.numberOfChannels === "number" ? f.numberOfChannels : null,
+      bitrate: typeof f.bitrate === "number" ? Math.round(f.bitrate) : null,
+      durationSec: typeof f.duration === "number" ? f.duration : null,
+    };
+  } catch (e) {
+    log.error("get-audio-format failed", e);
+    return ipcError("AUDIO_METADATA_FAILED", { message: e && e.message ? e.message : String(e) });
+  }
+});
+
+// Audio extensions the queue builder recognises. Mirrors the lossless +
+// lossy set in src/file-registry/formats.ts. We list them here too so the
+// main process can filter a folder scan without round-tripping to the
+// renderer for every file.
+const AUDIO_EXTENSIONS = new Set([
+  ".flac", ".wav", ".aif", ".aiff", ".dsf", ".dff",
+  ".mp3", ".aac", ".ogg", ".opus", ".m4a", ".wma",
+  ".ape", ".mp2", ".mka", ".ac3",
+]);
+
+ipcMain.handle("list-audio-in-folder", async (_, folderPath, options) => {
+  try {
+    const resolved = path.resolve(folderPath);
+    if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
+      return ipcError("FOLDER_NOT_FOUND");
+    }
+    const recursive = options && typeof options.recursive === "boolean" ? options.recursive : true;
+    const limit = options && typeof options.limit === "number" && options.limit > 0 ? options.limit : 500;
+    const out = [];
+    const walk = (dir) => {
+      let entries;
+      try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
+      catch (e) { log.warn("readdir failed", dir, e.message); return; }
+      for (const entry of entries) {
+        if (out.length >= limit) return;
+        const child = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (!recursive) continue;
+          if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+          walk(child);
+        } else if (entry.isFile()) {
+          const ext = path.extname(entry.name).toLowerCase();
+          if (AUDIO_EXTENSIONS.has(ext)) {
+            let size = 0;
+            try { size = fs.statSync(child).size; } catch (e) { /* ignore */ }
+            out.push({ path: child, name: entry.name, size });
+          }
+        }
+      }
+    };
+    walk(resolved);
+    out.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+    return { ok: true, folder: resolved, files: out.slice(0, limit) };
+  } catch (e) {
+    log.error("list-audio-in-folder failed", e);
+    return ipcError("FOLDER_READ_FAILED", { message: e && e.message ? e.message : String(e) });
+  }
 });
 
 ipcMain.handle("read-epub", async (_, filePath) => {

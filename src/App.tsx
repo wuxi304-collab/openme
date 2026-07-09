@@ -125,6 +125,27 @@ export default function App() {
   }, [tabs, t]);
 
   const addToRecent = useCallback(async (file: FileInfo) => { const updated = [file, ...recentFiles.filter((f) => f.path !== file.path)].slice(0, settings.recentLimit); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }).catch(() => undefined); }, [recentFiles, settings.recentLimit]);
+
+  // Audio queue bridge: when the lossless player wants to open a sibling
+  // track, it dispatches a CustomEvent on `window` carrying the next
+  // path. We resolve it to a FileInfo, push it to recents, and let the
+  // normal tab-opening pipeline take over so the new track gets its
+  // own tab (with all the standard dirty-state / focus / metadata
+  // behavior). The event listener lives in App because the player
+  // shouldn't reach into openFileInTab directly via props.
+  useEffect(() => {
+    const onQueueOpen = async (event: Event) => {
+      const detail = (event as CustomEvent<{ path: string }>).detail;
+      if (!detail || typeof detail.path !== "string") return;
+      const info = await window.electronAPI.getFileInfo(detail.path);
+      if (isIpcFailure(info)) return;
+      info.file_type = detectCategory(info.path);
+      await addToRecent(info);
+      await openFileInTab(info);
+    };
+    window.addEventListener("openme:audio-queue-open", onQueueOpen);
+    return () => window.removeEventListener("openme:audio-queue-open", onQueueOpen);
+  }, [addToRecent, openFileInTab]);
     const handleFilePaths = useCallback(async (paths: string[]) => {
       for (const p of paths) {
         const fileInfo = await window.electronAPI.getFileInfo(p);
