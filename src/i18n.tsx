@@ -169,6 +169,10 @@ export const translations: Record<string, Record<string, string>> = {
     evidenceSection: "证据",
     boundarySection: "边界",
     nextActionsSection: "下一步操作",
+    // PR #82 - Summary panel suggested external apps
+    summarySuggestedAppsSection: "推荐外部应用",
+    summarySuggestedAppHint: "文件类型未在 OpenMe 内部渲查看，仅在下列应用中打开效果最佳。",
+    summarySuggestedAppFallbackAria: "用系统默认应用打开文件",
     summaryViewer: "查看器",
     summaryStrategy: "策略",
     summaryRisk: "风险",
@@ -1090,6 +1094,10 @@ export const translations: Record<string, Record<string, string>> = {
     evidenceSection: "Evidence",
     boundarySection: "Boundary",
     nextActionsSection: "Next Actions",
+    // PR #82 - Summary panel suggested external apps
+    summarySuggestedAppsSection: "Suggested external apps",
+    summarySuggestedAppHint: "OpenMe does not render this format in-app; opening it in one of the apps below usually gives the best result.",
+    summarySuggestedAppFallbackAria: "Open the file with the system default app",
     summaryViewer: "Viewer",
     summaryStrategy: "Strategy",
     summaryRisk: "Risk",

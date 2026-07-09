@@ -189,4 +189,44 @@ describe("FileSummaryPanel metadata section (en)", () => {
     await act(async () => { fireEvent.click(revealBtn); });
     expect(reveal).toHaveBeenCalledWith("C:\\Users\\demo\\projects\\manifest.json");
   });
+
+  it("renders a Suggested external apps section when brief.suggestedApps is populated", async () => {
+      installApi();
+      const psdTab = makeTab({
+        path: "C:\\Users\\demo\\design\\hero.psd",
+        name: "hero.psd",
+        sourceFile: { extension: ".psd", size: 4096, modified_at: new Date().toISOString() },
+      });
+      render(<Providers><FileSummaryPanel tab={psdTab} onOpenInSystem={() => undefined} /></Providers>);
+      await waitFor(() => screen.getByText(SAMPLE_HASH.shortHash!));
+      const ul = document.querySelector(".summary-suggested-apps");
+      expect(ul).toBeTruthy();
+      const btns = document.querySelectorAll(".summary-suggested-app-button");
+      expect(btns.length).toBeGreaterThanOrEqual(1);
+      expect(btns[0].textContent ?? "").toMatch(/Open with /);
+    });
+
+    it("Suggested app buttons forward to the onOpenInSystem callback", async () => {
+      installApi();
+      const openSystem = vi.fn();
+      const psdTab = makeTab({
+        path: "C:\\Users\\demo\\design\\cover.psd",
+        name: "cover.psd",
+        sourceFile: { extension: ".psd", size: 4096, modified_at: new Date().toISOString() },
+      });
+      render(<Providers><FileSummaryPanel tab={psdTab} onOpenInSystem={openSystem} /></Providers>);
+      await waitFor(() => screen.getByText(SAMPLE_HASH.shortHash!));
+      const firstAppBtn = document.querySelector(".summary-suggested-app-button") as HTMLButtonElement | null;
+      expect(firstAppBtn).toBeTruthy();
+      await act(async () => { fireEvent.click(firstAppBtn!); });
+    expect(openSystem).toHaveBeenCalled();
+  });
+
+  it("falls back to system-default copy for fully supported formats", async () => {
+    installApi();
+    render(<Providers><FileSummaryPanel tab={makeTab()} onOpenInSystem={() => undefined} /></Providers>);
+    await waitFor(() => screen.getByText(SAMPLE_HASH.shortHash!));
+    // No .summary-suggested-apps section should render for json (which is fully supported)
+    expect(document.querySelector(".summary-suggested-apps")).toBeNull();
+  });
 });
