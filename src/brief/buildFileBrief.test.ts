@@ -11,6 +11,7 @@ describe("file brief layer", () => {
     expect(brief.openStrategy).toBe("builtin");
     expect(brief.actions[0].label).toBe("Open preview");
     expect(brief.signals).toContain("viewer:pdf-viewer");
+    expect(Array.isArray(brief.suggestedApps)).toBe(true);
   });
 
   it("keeps restricted files explicit", () => {
@@ -37,5 +38,18 @@ describe("file brief layer", () => {
     expect(brief.openStrategy).toBe("external");
     expect(brief.actions[0].label).toBe("Open externally");
     expect(brief.warnings.some((warning) => warning.includes("no registered support"))).toBe(true);
+  });
+
+  it("attaches suggested external apps to D-level design sources", () => {
+    const brief = buildFileBrief(extractMetadata({ filePath: "C:/design/hero.psd", fileName: "hero.psd" }));
+    expect(brief.supportLevel).toBe("D");
+    const keys = brief.suggestedApps.map((h) => h.key);
+    expect(keys).toContain("photoshop");
+    expect(keys).toContain("photopea");
+  });
+
+  it("does not attach suggested apps to fully-supported formats", () => {
+    const brief = buildFileBrief(extractMetadata({ filePath: "C:/work/spec.pdf", fileName: "spec.pdf" }));
+    expect(brief.suggestedApps).toEqual([]);
   });
 });

@@ -1,10 +1,17 @@
 import type { MetadataResult } from "../metadata";
 import type { FileBrief, FileBriefAction } from "./types";
+import { getExternalAppHints } from "../viewer-registry/externalApps";
 
 export function buildFileBrief(metadata: MetadataResult): FileBrief {
   const signals = buildSignals(metadata);
   const warnings = buildWarnings(metadata);
   const actions = buildActions(metadata);
+  const suggestedApps = getExternalAppHints(
+    metadata.extension,
+    metadata.category,
+    metadata.openStrategy,
+    metadata.supportLevel,
+  );
 
   return {
     title: metadata.fileName,
@@ -18,6 +25,7 @@ export function buildFileBrief(metadata: MetadataResult): FileBrief {
     warnings,
     actions,
     evidence: metadata.evidence,
+    suggestedApps,
   };
 }
 
