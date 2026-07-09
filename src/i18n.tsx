@@ -82,7 +82,11 @@ export const translations: Record<string, Record<string, string>> = {
     statusLineEndingCRLF: "CRLF（Windows 换行）",
     statusLineEndingMixed: "混合",
     statusLineEndingNone: "无内容",
-    livesAria: "本地处理",
+        // PR #85 — StatusBar filename click-to-copy
+    statusFilenameCopy: "复制文件路径",
+    statusFilenameCopied: "路径已复制",
+    statusFilenameCopyHint: "点击复制文件路径到剪贴板",
+        livesAria: "本地处理",
     // PR #79 — Toast hover-pause hint
     toastHoverHint: "悬停以暂停自动关闭",
     // PR #77 — StatusBar polish v2
@@ -1020,7 +1024,11 @@ export const translations: Record<string, Record<string, string>> = {
     statusLineEndingCRLF: "CRLF (Windows)",
     statusLineEndingMixed: "Mixed",
     statusLineEndingNone: "No content",
-    livesAria: "Local processing",
+        // PR #85 — StatusBar filename click-to-copy
+    statusFilenameCopy: "Copy file path",
+    statusFilenameCopied: "Path copied",
+    statusFilenameCopyHint: "Click to copy file path to clipboard",
+        livesAria: "Local processing",
     // PR #79 — Toast hover-pause hint
     toastHoverHint: "Hover to pause auto-dismiss",
     // PR #77 — StatusBar polish v2
@@ -2043,5 +2051,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useI18n() { return useContext(I18nContext); }
+
 
 

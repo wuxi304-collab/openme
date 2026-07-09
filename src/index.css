@@ -1149,6 +1149,41 @@ main:focus { outline: none; }
 @keyframes status-progress-slide { from { background-position:200% 0; } to { background-position:-200% 0; } }
 @media (prefers-reduced-motion:reduce) { .status-progress { animation:none; opacity:.85; } }
 .status-file { cursor:help; }
+.status-filename-button {
+  appearance:none;
+  font:inherit;
+  color:inherit;
+  background:transparent;
+  border:1px solid transparent;
+  border-radius:6px;
+  padding:2px 8px;
+  margin:0 -8px;
+  cursor:pointer;
+  transition:background-color var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out);
+}
+.status-filename-button:hover:not(:disabled) {
+  background:rgba(255,255,255,0.05);
+  border-color:#ffffff1f;
+  color:#e8dfd1;
+}
+.status-filename-button:active:not(:disabled) { transform:scale(0.97); }
+.status-filename-button:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+.status-filename-button:disabled { cursor:default; opacity:0.7; }
+.status-filename-button.is-copied {
+  color:#9be7a8;
+  border-color:rgba(81,207,102,0.42);
+  background:rgba(81,207,102,0.12);
+  animation:status-filename-copied-flash 1.6s var(--ease-out);
+}
+@keyframes status-filename-copied-flash {
+  0% { background:rgba(81,207,102,0.34); border-color:rgba(81,207,102,0.7); }
+  60% { background:rgba(81,207,102,0.18); border-color:rgba(81,207,102,0.5); }
+  100% { background:rgba(81,207,102,0.12); border-color:rgba(81,207,102,0.42); }
+}
+@media (prefers-reduced-motion:reduce) {
+  .status-filename-button.is-copied { animation:none; }
+  .status-filename-button:active:not(:disabled) { transform:none; }
+}
 .status-meta-text { display:inline-flex; align-items:center; gap:5px; color:#aaa39a; }
 .status-meta-subdued { color:#69635c; }
 .status-line-ending { font-family:var(--font-mono); font-size:9px; }
