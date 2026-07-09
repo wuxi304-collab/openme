@@ -691,6 +691,28 @@ ipcMain.handle("get-runtime-info", () => ({
   totalMemGb: os.totalmem ? Math.round((os.totalmem() / (1024 ** 3)) * 10) / 10 : 0,
 }));
 
+ipcMain.handle("save-error-log", async (_, payload, defaultName) => {
+  // Persist the captured renderer error as a JSON document. The renderer
+  // hands us a fully-formed PersistedErrorLog (built in src/utils/errorLog.ts);
+  // we sanitize the filename and write under os.tmpdir() so the user can
+  // re-find the file later via the file manager.
+  if (!payload || typeof payload !== "object") {
+    return ipcError("SAVE_ERROR_LOG_FAILED", { reason: "payload is not an object" });
+  }
+  try {
+    let filename = (typeof defaultName === "string" && defaultName.trim()) || `openme-error-${Date.now()}.json`;
+    filename = filename.replace(/[^a-zA-Z0-9._\-]/g, "_");
+    const dest = path.join(os.tmpdir(), filename);
+      const serialized = JSON.stringify(payload, null, 2);
+      await fs.promises.writeFile(dest, serialized, "utf8");
+      log.warn("renderer error log saved", { dest, payloadVersion: payload?.capturedAt ?? null });
+      return { ok: true, path: dest, bytes: Buffer.byteLength(serialized, "utf8") };
+  } catch (err) {
+    log.error("save-error-log failed", err);
+    return ipcError("SAVE_ERROR_LOG_FAILED", { message: err?.message || String(err) });
+  }
+});
+
 ipcMain.handle("set-dirty-state", (_, dirty) => { hasUnsavedChanges = Boolean(dirty); });
 ipcMain.handle("window-minimize", () => mainWindow?.minimize());
 ipcMain.handle("window-maximize", () => {

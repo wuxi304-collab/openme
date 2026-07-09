@@ -16,6 +16,8 @@ import ViewerRouter from "./components/viewers/ViewerRouter";
 import { ConfirmProvider, useCloseAllConfirm, useCloseTabConfirm } from "./components/useConfirm";
 import { ToastProvider } from "./components/useToast";
 import { ToastStack, nextToastId, type ToastEntry, type ToastKind } from "./components/Toast";
+import AppErrorBoundary from "./components/AppErrorBoundary";
+import { installErrorCapture } from "./utils/errorLog";
 
 // Electron's preload extends the standard `File` with a `path` field —
 // declare the augmentation locally so we don't need `(file: any)` in
@@ -25,6 +27,9 @@ type FileWithPath = File & { path?: string };
 export default function App() {
   const { t, tf } = useI18n();
   const { settings } = useSettings();
+  // Install the global capture hooks before anything else runs so we never
+  // miss the first window.onerror / unhandledrejection of the session.
+  useEffect(() => { installErrorCapture(); }, []);
   const [recentFiles, setRecentFiles] = useState<FileInfo[]>([]);
   const [tabs, setTabs] = useState<FileTabState[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
@@ -182,6 +187,7 @@ export default function App() {
           <ConfirmProvider>
           <ThemeProvider>
             <ToastProvider value={{ pushToast }}>
+            <AppErrorBoundary>
             <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
                       <a href="#main-content" className="skip-link">{t("skipToContent")}</a>
                       <TitleBar />
@@ -198,6 +204,7 @@ export default function App() {
             <ToastStack toasts={toasts} onDismiss={dismissToast} />
             <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
           </div>
+            </AppErrorBoundary>
             </ToastProvider>
         </ThemeProvider>
           </ConfirmProvider>

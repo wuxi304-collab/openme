@@ -13,6 +13,12 @@ declare global {
 export type IpcSuccess<T> = T & { success?: true };
 export type IpcFailureResult = IpcFailure;
 
+export interface SaveErrorLogResult {
+  ok: true;
+  path: string;
+  bytes: number;
+}
+
 export interface ElectronAPI {
   getFileInfo: (path: string) => Promise<FileInfo | IpcFailureResult>;
   setUiStrings: (strings: Partial<UiStrings>) => Promise<void>;
@@ -46,6 +52,7 @@ export interface ElectronAPI {
   getAiConfig: () => Promise<{ configured: boolean; model: string; baseUrl: string }>;
   saveAiConfig: (config: { apiKey: string; model: string; baseUrl: string }) => Promise<{ success: boolean; message?: string }>;
   planCadChange: (input: { filePath: string; fileName: string; request: string }) => Promise<{ success: boolean; plan?: unknown; message?: string }>;
+  saveErrorLog: (payload: unknown, defaultName?: string) => Promise<SaveErrorLogResult | IpcFailureResult>;
   exportSettingsToFile: (payload: unknown, defaultName?: string) => Promise<{ ok: true; path: string } | { ok: false; canceled: true } | IpcFailureResult>;
   importSettingsFromFile: () => Promise<{ ok: true; path: string; data: unknown } | { ok: false; canceled: true } | IpcFailureResult>;
 }

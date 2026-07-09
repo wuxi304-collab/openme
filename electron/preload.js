@@ -49,6 +49,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getAiConfig: () => ipcRenderer.invoke("get-ai-config"),
   saveAiConfig: (config) => ipcRenderer.invoke("save-ai-config", config),
   planCadChange: (input) => ipcRenderer.invoke("plan-cad-change", input),
+  saveErrorLog: (payload, defaultName) => ipcRenderer.invoke("save-error-log", payload, defaultName),
 });
 
 
