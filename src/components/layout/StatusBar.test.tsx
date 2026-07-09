@@ -182,4 +182,75 @@ describe("StatusBar", () => {
       renderInProviders(<StatusBar activeTab={null} />);
       expect(screen.getByText("Press Ctrl+O to open a file, or drop one anywhere")).toBeTruthy();
     });
-  });
+
+        it("opens and closes the format popover when the support badge is clicked", () => {
+          renderInProviders(
+            <StatusBar
+              activeTab={{ name: "hero.psd", path: String.raw`C:\demo\hero.psd`, riskLevel: "medium", openStrategy: "semantic" }}
+            />
+          );
+          const badge = document.querySelector(".status-support-badge") as HTMLButtonElement | null;
+          expect(badge).toBeTruthy();
+          expect(document.querySelector(".status-format-popover")).toBeNull();
+          fireEvent.click(badge!);
+          expect(document.querySelector(".status-format-popover")).toBeTruthy();
+          fireEvent.click(badge!);
+          expect(document.querySelector(".status-format-popover")).toBeNull();
+        });
+
+        it("renders a Suggested apps section inside the popover for .psd (D-support)", () => {
+          renderInProviders(
+            <StatusBar
+              activeTab={{ name: "hero.psd", path: String.raw`C:\demo\hero.psd`, riskLevel: "medium", openStrategy: "semantic" }}
+            />
+          );
+          const badge = document.querySelector(".status-support-badge") as HTMLButtonElement | null;
+          fireEvent.click(badge!);
+          const apps = document.querySelectorAll(".status-format-popover-app-button");
+          expect(apps.length).toBeGreaterThanOrEqual(1);
+          expect(apps[0].textContent ?? "").toMatch(/Open with |打开/);
+        });
+
+        it("shows an empty-hint paragraph when no external app is suggested", () => {
+          renderInProviders(
+            <StatusBar
+              activeTab={{ name: "data.json", path: String.raw`C:\demo\data.json` }}
+            />
+          );
+          const badge = document.querySelector(".status-support-badge") as HTMLButtonElement | null;
+          fireEvent.click(badge!);
+          expect(document.querySelector(".status-format-popover-empty")).toBeTruthy();
+          expect(document.querySelectorAll(".status-format-popover-app").length).toBe(0);
+        });
+
+        it("closes the popover on Escape and restores focus to the trigger", () => {
+          renderInProviders(
+            <StatusBar
+              activeTab={{ name: "hero.psd", path: String.raw`C:\demo\hero.psd`, openStrategy: "semantic" }}
+            />
+          );
+          const badge = document.querySelector(".status-support-badge") as HTMLButtonElement | null;
+          badge?.focus();
+          fireEvent.click(badge!);
+          expect(document.querySelector(".status-format-popover")).toBeTruthy();
+          fireEvent.keyDown(document, { key: "Escape" });
+          expect(document.querySelector(".status-format-popover")).toBeNull();
+          expect(document.activeElement).toBe(badge);
+        });
+
+        it("forwards onOpenInSystem from the popover's primary action", () => {
+          const openSystem = vi.fn();
+          renderInProviders(
+            <StatusBar
+              activeTab={{ name: "hero.psd", path: String.raw`C:\demo\hero.psd`, openStrategy: "semantic" }}
+              onOpenInSystem={openSystem}
+            />
+          );
+          const badge = document.querySelector(".status-support-badge") as HTMLButtonElement | null;
+          fireEvent.click(badge!);
+          const primary = document.querySelector(".status-format-popover-action-primary") as HTMLButtonElement | null;
+          expect(primary).toBeTruthy();
+          fireEvent.click(primary!);
+          expect(openSystem).toHaveBeenCalled();
+        });
+      });

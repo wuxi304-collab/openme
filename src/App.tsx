@@ -242,7 +242,8 @@ export default function App() {
                           }
                           activePosition={activeTab ? tabs.findIndex((tab) => tab.id === activeTab.id) + 1 : undefined}
                           totalTabs={tabs.length}
-                        />
+                                                    onOpenInSystem={activeTab?.path ? () => window.electronAPI.openInSystem(activeTab.path) : undefined}
+                                                  />
             <ToastStack toasts={toasts} onDismiss={dismissToast} />
             <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
                         <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
