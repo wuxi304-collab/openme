@@ -12,6 +12,7 @@ import TitleBar from "./components/layout/TitleBar";
 import StatusBar from "./components/layout/StatusBar";
 import FileTabs from "./components/layout/FileTabs";
 import CommandPalette, { type CommandItem } from "./components/CommandPalette";
+import { ShortcutsOverlay } from "./components/ShortcutsOverlay";
 import FileSummaryPanel from "./components/FileSummaryPanel";
 import ViewerRouter from "./components/viewers/ViewerRouter";
 import { ConfirmProvider, useCloseAllConfirm, useCloseTabConfirm } from "./components/useConfirm";
@@ -46,7 +47,8 @@ export default function App() {
     setToasts((prev) => prev.filter((entry) => entry.id !== id));
   }, []);
   const [commandOpen, setCommandOpen] = useState(false);
-  const confirmCloseTab = useCloseTabConfirm();
+    const [shortcutsOpen, setShortcutsOpen] = useState(false);
+    const confirmCloseTab = useCloseTabConfirm();
   const confirmCloseAll = useCloseAllConfirm();
 
   useEffect(() => {
@@ -181,7 +183,15 @@ export default function App() {
       if (mod && event.key.toLowerCase() === "s") { event.preventDefault(); void handleSaveCurrent(); return; }
       if (mod && event.key.toLowerCase() === "o") { event.preventDefault(); void handleOpenDialog(); return; }
       if (mod && event.key.toLowerCase() === "k") { event.preventDefault(); setCommandOpen((value) => !value); return; }
-      if (commandOpen) return;
+            // `?` (Shift+/) toggles the global shortcuts overlay. We accept
+            // the literal `?` event.key so layout-independent, but also fall
+            // back to shift+slash for completeness.
+            if (event.key === "?" || (event.shiftKey && event.key === "/")) {
+              event.preventDefault();
+              setShortcutsOpen((value) => !value);
+              return;
+            }
+            if (commandOpen || shortcutsOpen) return;
       if (mod && event.key.toLowerCase() === "w") { event.preventDefault(); if (activeTab) void handleCloseTab(activeTab.id); return; }
       if (mod && event.key === "Tab") { event.preventDefault(); activateRelativeTab(event.shiftKey ? -1 : 1); return; }
       if (event.altKey && /^[1-9]$/.test(event.key)) {
@@ -191,7 +201,7 @@ export default function App() {
     };
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
-  }, [handleSaveCurrent, handleOpenDialog, commandOpen, activeTab, handleCloseTab, activateRelativeTab, tabs]);
+  }, [handleSaveCurrent, handleOpenDialog, commandOpen, shortcutsOpen, activeTab, handleCloseTab, activateRelativeTab, tabs]);
 
   return (
     <I18nProvider>
@@ -235,6 +245,7 @@ export default function App() {
                         />
             <ToastStack toasts={toasts} onDismiss={dismissToast} />
             <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
+                        <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
           </div>
             </AppErrorBoundary>
             </ToastProvider>
