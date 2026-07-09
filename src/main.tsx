@@ -20,7 +20,9 @@ if (!win.electronAPI) {
   win.electronAPI = new Proxy({}, { get: () => noopAsync });
 }
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+const rootEl = document.getElementById("root");
+if (!rootEl) throw new Error("#root element not found");
+ReactDOM.createRoot(rootEl).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
