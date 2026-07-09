@@ -1166,5 +1166,26 @@ main:focus { outline: none; }
 }
 @keyframes command-fade { from { opacity:0; } }@keyframes command-in { from { opacity:0; transform:translateY(-10px) scale(.97); } }
 @media (prefers-reduced-motion:reduce) { .command-palette { animation:command-fade var(--dur-fast) var(--ease-out); }.command-backdrop { animation:command-fade var(--dur-fast) var(--ease-out); } }
+
+.shortcuts-overlay-backdrop { position:fixed; inset:0; z-index:520; display:grid; place-items:center; padding:24px; background:#0505058c; backdrop-filter:blur(6px); animation:shortcuts-fade var(--dur-fast) var(--ease-out); }
+.shortcuts-overlay { width:min(640px,calc(100vw - 48px)); max-height:min(78vh,640px); display:flex; flex-direction:column; overflow:hidden; border:1px solid #ffffff1f; border-radius:14px; background:#1b1916f5; box-shadow:0 28px 90px #000b; animation:shortcuts-in var(--dur-modal) var(--ease-out); }
+.shortcuts-overlay-header { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 18px; border-bottom:1px solid #ffffff12; }
+.shortcuts-overlay-title { margin:0; color:#f5f1ea; font:600 15px/1.2 var(--font-ui); letter-spacing:.02em; }
+.shortcuts-overlay-close { width:28px; height:28px; display:grid; place-items:center; border:0; border-radius:7px; color:#a9a39a; background:transparent; font-size:16px; line-height:1; cursor:pointer; transition:color var(--dur-fast) var(--ease-out),background-color var(--dur-fast) var(--ease-out); }
+.shortcuts-overlay-close:hover { color:#fff; background:#ffffff14; }
+.shortcuts-overlay-close:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+.shortcuts-overlay-body { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; padding:18px; overflow:auto; }
+.shortcuts-group { display:flex; flex-direction:column; gap:8px; }
+.shortcuts-group-title { margin:0 0 2px; color:#d9aa35; font:600 11px/1 var(--font-ui); letter-spacing:.06em; text-transform:uppercase; }
+.shortcuts-group-table { width:100%; border-collapse:collapse; }
+.shortcuts-group-table tr { border-bottom:1px solid #ffffff0d; }
+.shortcuts-group-table tr:last-child { border-bottom:0; }
+.shortcuts-group-table th { padding:8px 12px 8px 0; text-align:left; vertical-align:middle; }
+.shortcuts-group-table th kbd { display:inline-block; padding:3px 7px; border:1px solid #4a463e; border-bottom-width:2px; border-radius:5px; color:#e5b83f; background:#211f1b; font:700 10px/1 var(--font-mono); }
+.shortcuts-group-table td { padding:8px 0; color:#d5cfc4; font-size:12px; }
+.shortcuts-overlay-footer { padding:11px 18px; border-top:1px solid #ffffff12; color:#79736a; font-size:11px; text-align:center; }
+@media (prefers-reduced-motion:reduce) { .shortcuts-overlay-backdrop { animation:none; } .shortcuts-overlay { animation:none; } }
+@keyframes shortcuts-fade { from { opacity:0; } }
+@keyframes shortcuts-in { from { opacity:0; transform:translateY(-8px) scale(.97); } }
 .recent-row { position:relative; display:flex; align-items:center; margin:2px 6px; border:1px solid transparent; border-radius:9px; }.recent-row.is-active { border-color:#d9aa35; background:#332f25; box-shadow:inset 3px 0 #e9b73d; }.recent-row .recent-file { flex:1; min-width:0; margin:0; background:transparent; box-shadow:none; }.recent-row.is-active .recent-file { border-color:transparent; background:transparent; box-shadow:none; }.recent-remove { width:25px; height:25px; flex:none; margin-right:5px; border:0; border-radius:6px; color:#6f6960; background:transparent; opacity:0; transition:opacity var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out),background-color var(--dur-fast) var(--ease-out); }.recent-remove:focus-visible { opacity:1; outline:2px solid var(--accent); }.recent-remove:active { transform:scale(.97); }@media (hover:hover) and (pointer:fine) { .recent-row:hover .recent-remove { opacity:1; }.recent-remove:hover { color:#fff; background:#a9362a; } }
 .archive-action-error { min-height:34px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:5px 10px; color:#ffb1a5; background:#5b211b; font-size:11px; }.archive-action-error button { width:24px; height:24px; border:0; border-radius:5px; color:#ffd5ce; background:transparent; }
