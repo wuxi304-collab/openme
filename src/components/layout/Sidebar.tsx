@@ -1,8 +1,10 @@
+import { useCallback, useState } from "react";
 import { FileInfo, type FileCategory } from "../../types";
 import { useI18n } from "../../i18n";
 import { detectCategory } from "../../utils/fileTypeDetector";
 import { getDomainPack, suggestDomainPacks, type PackSuggestion, type SupportedFileCategory } from "../../packs";
 import FileTypeIcon from "../FileTypeIcon";
+import RecentFileContextMenu from "./RecentFileContextMenu";
 
 interface Props {
   files: FileInfo[];
@@ -17,9 +19,11 @@ interface Props {
   // this differs from `files.length` we surface a "X / Y" chip next to
   // the search input so users see how many entries were filtered out.
   totalCount?: number;
+  onReveal?: (file: FileInfo) => void;
+  onOpenInSystem?: (file: FileInfo) => void;
 }
 
-export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpenDialog, searchValue, onSearchChange, packSuggestions = [], totalCount }: Props) {
+export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpenDialog, searchValue, onSearchChange, packSuggestions = [], totalCount, onReveal, onOpenInSystem }: Props) {
   const { t, tf } = useI18n();
   const selectedFile = files.find((file) => file.path === selectedPath) ?? null;
   const inferredSuggestions = selectedFile
@@ -29,6 +33,24 @@ export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpe
       })
     : [];
   const visibleSuggestions = packSuggestions.length > 0 ? packSuggestions : inferredSuggestions;
+  const [menuState, setMenuState] = useState<{ file: FileInfo; x: number; y: number } | null>(null);
+
+  const handleContextMenu = useCallback((event: React.MouseEvent<HTMLDivElement>, file: FileInfo) => {
+    event.preventDefault();
+    setMenuState({ file, x: event.clientX, y: event.clientY });
+  }, []);
+
+  const closeMenu = useCallback(() => setMenuState(null), []);
+
+  const handleCopyPath = useCallback(async (file: FileInfo): Promise<boolean> => {
+    if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) return false;
+    try {
+      await navigator.clipboard.writeText(file.path);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
 
   return (
     <aside className="workspace-sidebar">
@@ -90,35 +112,51 @@ export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpe
           files.map((file) => {
             const active = selectedPath === file.path;
             return (
-              <div className={`recent-row ${active ? "is-active" : ""}`} key={file.id}>
-                <button
-                  type="button"
-                  className="recent-file"
-                  onClick={() => onSelect(file)}
-                  title={file.path}
-                  aria-current={active ? "true" : undefined}
-                >
-                  <FileTypeIcon type={detectCategory(file.path)} size={38} extension={file.extension} />
-                  <span className="recent-file-copy">
-                    <strong>{file.name}</strong>
-                    <small>{file.extension || t("fileTypeSuffix")}</small>
-                  </span>
-                  {active && <span className="active-flag" aria-label={t("currentFileFlag")}>●</span>}
-                </button>
-                <button
-                  type="button"
-                  className="recent-remove"
-                  aria-label={tf("removeFromRecent", { name: file.name })}
-                  title={t("removeFromListTitle")}
-                  onClick={() => onRemove(file)}
-                >
-                  ×
-                </button>
-              </div>
-            );
-          })
-        )}
-      </div>
+                        <div
+                          className={`recent-row ${active ? "is-active" : ""}`}
+                          key={file.id}
+                          onContextMenu={(event) => handleContextMenu(event, file)}
+                        >
+                          <button
+                            type="button"
+                            className="recent-file"
+                            onClick={() => onSelect(file)}
+                            title={file.path}
+                            aria-current={active ? "true" : undefined}
+                          >
+                            <FileTypeIcon type={detectCategory(file.path)} size={38} extension={file.extension} />
+                            <span className="recent-file-copy">
+                              <strong>{file.name}</strong>
+                              <small>{file.extension || t("fileTypeSuffix")}</small>
+                            </span>
+                            {active && <span className="active-flag" aria-label={t("currentFileFlag")}>●</span>}
+                          </button>
+                          <button
+                            type="button"
+                            className="recent-remove"
+                            aria-label={tf("removeFromRecent", { name: file.name })}
+                            title={t("removeFromListTitle")}
+                            onClick={() => onRemove(file)}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <RecentFileContextMenu
+                  open={menuState !== null}
+                  position={menuState ? { x: menuState.x, y: menuState.y } : null}
+                  file={menuState?.file ?? null}
+                  onClose={closeMenu}
+                  onOpen={onSelect}
+                  onReveal={onReveal ?? ((file) => { void file; })}
+                  onCopyPath={handleCopyPath}
+                  onOpenInSystem={onOpenInSystem ?? ((file) => { void file; })}
+                  onRemove={onRemove}
+                />
 
       <PackSuggestionPanel suggestions={visibleSuggestions} />
 
