@@ -4,6 +4,7 @@ import { ThemeProvider } from "./theme";
 import { SettingsProvider, useSettings } from "./settings";
 import { FileInfo, FileTabState } from "./types";
 import { detectCategory } from "./utils/fileTypeDetector";
+import { getFileFormatByPath } from "./file-registry";
 import { loadFileTabData } from "./core/fileOpenPipeline";
 import { describeIpcError, isIpcFailure } from "./core/ipcError";
 import Sidebar from "./components/layout/Sidebar";
@@ -221,7 +222,27 @@ export default function App() {
             ) : null}
           </main>
             </div>
-            <StatusBar activeTab={activeTab ? { name: activeTab.name, path: activeTab.path, size: activeTab.sourceFile?.size, content: activeTab.content ?? undefined, isDirty: activeTab.isDirty, isLoading: activeTab.isLoading } : null} />
+            <StatusBar
+                          activeTab={
+                            activeTab
+                              ? (() => {
+                                  const fmt = activeTab.path ? getFileFormatByPath(activeTab.path) : undefined;
+                                  return {
+                                    name: activeTab.name,
+                                    path: activeTab.path,
+                                    size: activeTab.sourceFile?.size,
+                                    content: activeTab.content ?? undefined,
+                                    isDirty: activeTab.isDirty,
+                                    isLoading: activeTab.isLoading,
+                                    openStrategy: fmt?.openStrategy,
+                                    riskLevel: fmt?.riskLevel,
+                                  };
+                                })()
+                              : null
+                          }
+                          activePosition={activeTab ? tabs.findIndex((tab) => tab.id === activeTab.id) + 1 : undefined}
+                          totalTabs={tabs.length}
+                        />
             <ToastStack toasts={toasts} onDismiss={dismissToast} />
             <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
           </div>

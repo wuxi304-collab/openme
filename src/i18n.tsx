@@ -80,6 +80,20 @@ export const translations: Record<string, Record<string, string>> = {
     statusLineEndingMixed: "混合",
     statusLineEndingNone: "无内容",
     livesAria: "本地处理",
+    // PR #77 — StatusBar polish v2
+    statusIdleHint: "按 Ctrl+O 打开文件，或拖入任意文件",
+    statusIdleHintAria: "空闲提示：按 Ctrl O 打开文件，或拖入任意文件",
+    statusTabPosition: "第 {position} 个，共 {total} 个",
+    statusFormatLabel: "格式：{name}",
+    statusBinaryLabel: "二进制",
+    statusRiskChip: "风险·{level}",
+    statusRiskHigh: "高风险",
+    statusRiskMedium: "中风险",
+    statusRiskLow: "低风险",
+    statusStrategyChip: "打开方式：{strategy}",
+    statusRiskAria: "文件风险等级 {level}",
+    statusStrategyAria: "文件打开策略 {strategy}",
+    statusFormatAria: "文件格式 {name}",
 
     // FileTabs
     fileTabsAria: "打开的文件",
@@ -970,6 +984,20 @@ export const translations: Record<string, Record<string, string>> = {
     statusLineEndingMixed: "Mixed",
     statusLineEndingNone: "No content",
     livesAria: "Local processing",
+    // PR #77 — StatusBar polish v2
+    statusIdleHint: "Press Ctrl+O to open a file, or drop one anywhere",
+    statusIdleHintAria: "Idle hint: press Ctrl O to open a file, or drop one anywhere",
+    statusTabPosition: "Tab {position} of {total}",
+    statusFormatLabel: "Format: {name}",
+    statusBinaryLabel: "Binary",
+    statusRiskChip: "Risk · {level}",
+    statusRiskHigh: "High",
+    statusRiskMedium: "Medium",
+    statusRiskLow: "Low",
+    statusStrategyChip: "Opens via: {strategy}",
+    statusRiskAria: "File risk level {level}",
+    statusStrategyAria: "File open strategy {strategy}",
+    statusFormatAria: "File format {name}",
 
     // FileTabs
     fileTabsAria: "Open files",

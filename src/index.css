@@ -718,6 +718,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
 .status-file { max-width:280px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:#aaa39a; }
 .status-meta { color:#69635c; }
 .status-lives { color:#e8dfd1; }
+.status-idle-hint { color:#69635c; font-style:italic; letter-spacing:.02em; }
+.status-format-chip, .status-binary-chip, .status-risk-chip, .status-strategy-chip, .status-tab-position { display:inline-flex; align-items:center; gap:4px; padding:1px 7px; border-radius:999px; font:700 8.5px/1.4 var(--font-mono); letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; }
+.status-format-chip { color:#cbc4b9; background:#ffffff08; border:1px solid #ffffff18; }
+.status-binary-chip { color:#d9aa35; background:rgba(217,170,53,.10); border:1px solid rgba(217,170,53,.32); }
+.status-risk-chip { color:#C91F37; background:rgba(201,31,55,.10); border:1px solid rgba(201,31,55,.36); }
+.status-strategy-chip { color:#6da3d4; background:rgba(109,163,212,.10); border:1px solid rgba(109,163,212,.32); }
+.status-tab-position { color:#aaa39a; background:#ffffff08; border:1px solid #ffffff18; font-weight:600; }
 
 @keyframes panel-enter { from { opacity:0; transform:translateY(8px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
 @keyframes coin-float-quiet { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }

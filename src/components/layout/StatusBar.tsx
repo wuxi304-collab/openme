@@ -1,4 +1,4 @@
-import type { HonestSupportLevel } from "../../file-registry";
+import type { HonestSupportLevel, FileOpenStrategy, FileRiskLevel } from "../../file-registry";
 import { getFileFormatByPath } from "../../file-registry";
 import { useI18n } from "../../i18n";
 import { useSettings } from "../../settings";
@@ -12,7 +12,13 @@ interface Props {
     content?: string;
     isDirty?: boolean;
     isLoading?: boolean;
+    riskLevel?: FileRiskLevel;
+    openStrategy?: FileOpenStrategy;
   } | null;
+  /** Position of the active tab in the tab list (1-based). Used for the "n / total" pill. */
+  activePosition?: number;
+  /** Total number of open tabs. */
+  totalTabs?: number;
 }
 
 // Line-ending detection runs over up to this many bytes so giant files
@@ -55,17 +61,37 @@ function statusLineEndingKey(kind: "lf" | "crlf" | "mixed" | "none"): string {
   }
 }
 
-export default function StatusBar({ activeTab }: Props) {
+export default function StatusBar({ activeTab, activePosition, totalTabs }: Props) {
   const { t, tf } = useI18n();
   const { settings, update } = useSettings();
   const lines = activeTab?.content !== undefined ? activeTab.content.split("\n").length : 0;
   const sizeLabel = typeof activeTab?.size === "number" ? formatBytes(activeTab.size, t("unknownSize")) : null;
   const format = activeTab?.path ? getFileFormatByPath(activeTab.path) : undefined;
   const lineEnding = detectLineEnding(activeTab?.content);
+  const isBinary = activeTab?.content === null;
+  const showTabPosition = typeof activePosition === "number" && typeof totalTabs === "number" && totalTabs > 1;
+  const showRiskChip = activeTab?.riskLevel === "high";
+  const showStrategyChip = activeTab?.openStrategy === "external" || activeTab?.openStrategy === "restricted";
+
+  const strategyLabel = (strategy: FileOpenStrategy): string => {
+    if (strategy === "external") return t("openStrategyExternal");
+    if (strategy === "restricted") return t("openStrategyRestricted");
+    if (strategy === "semantic") return t("openStrategySemantic");
+    if (strategy === "text") return t("openStrategyText");
+    return t("openStrategyBuiltin");
+  };
+
+    const riskLabel = activeTab?.riskLevel === "high"
+      ? t("statusRiskHigh")
+      : activeTab?.riskLevel === "medium"
+        ? t("statusRiskMedium")
+        : t("statusRiskLow");
 
   const cycleTheme = () => {
     update("theme", settings.theme === "dark" ? "light" : "dark");
   };
+
+  const strategyName = showStrategyChip && activeTab?.openStrategy ? strategyLabel(activeTab.openStrategy) : "";
 
   return (
     <footer className="status-bar">
@@ -84,11 +110,50 @@ export default function StatusBar({ activeTab }: Props) {
         >
           {activeTab?.name ?? t("waitingForFile")}
         </span>
+        {!activeTab && (
+          <span className="status-idle-hint" aria-label={t("statusIdleHintAria")}>
+            {t("statusIdleHint")}
+          </span>
+        )}
         {format && <SupportBadge level={format.supportLevel} label={format.name} tf={tf} />}
+        {format && (
+          <span
+            className="status-format-chip"
+            title={tf("statusFormatAria", { name: format.name })}
+            aria-label={tf("statusFormatAria", { name: format.name })}
+          >
+            {tf("statusFormatLabel", { name: format.name })}
+          </span>
+        )}
+        {isBinary && <span className="status-binary-chip">{t("statusBinaryLabel")}</span>}
+        {showRiskChip && (
+          <span
+            className="status-risk-chip is-high"
+                    aria-label={tf("statusRiskAria", { level: riskLabel })}
+          >
+                    {tf("statusRiskChip", { level: riskLabel })}
+          </span>
+        )}
+        {showStrategyChip && activeTab?.openStrategy && (
+          <span
+            className="status-strategy-chip"
+            aria-label={tf("statusStrategyAria", { strategy: strategyName })}
+          >
+            {tf("statusStrategyChip", { strategy: strategyName })}
+          </span>
+        )}
         {sizeLabel && <span className="status-meta">{sizeLabel}</span>}
         {lines > 0 && <span className="status-meta">{`${lines.toLocaleString()} ${t("lines")}`}</span>}
       </div>
       <div className="status-right">
+        {showTabPosition && (
+          <span
+            className="status-pill status-tab-position"
+            aria-label={tf("statusTabPosition", { position: activePosition!, total: totalTabs! })}
+          >
+            {tf("statusTabPosition", { position: activePosition!, total: totalTabs! })}
+          </span>
+        )}
         {activeTab?.isDirty && <span className="status-pill">{t("saveShortcut")}</span>}
         <span className="status-meta-text">{t("localFirst")}</span>
         <span className="status-meta-text status-line-ending">
