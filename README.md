@@ -240,6 +240,8 @@ electron/
 | 行号 | 显示 / 隐藏 |
 | 自动换行 | 开启 / 关闭 |
 
+设置还支持**跨设备同步**：通过设置对话框底部的 **导出 / 导入** 按钮，把当前偏好保存为 `openme-settings.v1` JSON 文件，再到另一台机器上导入即可生效。导入时会校验文件类型与版本号，不匹配会显示明确错误。
+
 ---
 
 ## English
@@ -395,6 +397,8 @@ Click the gear button in the title bar to open the **Settings** dialog. Preferen
 | Tab size | 2 / 4 / 8 spaces |
 | Line numbers | Show / Hide |
 | Word wrap | On / Off |
+
+Settings also support **cross-device sync**: the **Export / Import** buttons in the Settings footer save the current preferences to an `openme-settings.v1` JSON file. Import that file on another machine to apply the same preferences. Imports validate the file type and version, and surface a typed error on mismatch.
 
 ### Direction
 
