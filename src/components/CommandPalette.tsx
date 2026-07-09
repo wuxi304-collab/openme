@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useI18n } from "../i18n";
 import { bucketRelativeTime, rankByFuzzy } from "../core/commandPaletteSearch";
 
@@ -32,6 +32,42 @@ function kindLabelKey(kind: CommandItem["kind"]): string {
     case "recent": return "paletteKindRecent";
     default: return "paletteKindCommand";
   }
+}
+
+// Split a piece of copy into plain runs + matched runs so the palette can
+// highlight which characters matched the user's query. We do a single
+// case-insensitive search per token (the same haystack `rankByFuzzy`
+// already uses) and re-emit the original string with the matched range
+// wrapped in <mark>. Falls back to a single plain-text node when the
+// query is empty or no token hits.
+function splitMatches(text: string, query: string): ReactNode {
+  const trimmed = query.trim();
+  if (!trimmed) return text;
+  // Use only the first token for highlighting so the <mark> wrap stays
+  // legible when the user types "sav tab" — we still rank across both
+  // tokens, but only highlight where the most identifying one landed.
+  const token = trimmed.split(/\s+/)[0] ?? "";
+  if (!token) return text;
+  const lowerText = text.toLocaleLowerCase();
+  const lowerToken = token.toLocaleLowerCase();
+  if (lowerToken.length === 0) return text;
+  const segments: ReactNode[] = [];
+  let cursor = 0;
+  while (cursor < text.length) {
+    const hit = lowerText.indexOf(lowerToken, cursor);
+    if (hit === -1) {
+      segments.push(text.slice(cursor));
+      break;
+    }
+    if (hit > cursor) segments.push(text.slice(cursor, hit));
+    segments.push(
+      <mark key={`m-${hit}-${segments.length}`} className="command-palette-mark">
+        {text.slice(hit, hit + lowerToken.length)}
+      </mark>
+    );
+    cursor = hit + lowerToken.length;
+  }
+  return segments;
 }
 
 interface Props {
@@ -148,8 +184,8 @@ export default function CommandPalette({ open, commands, onClose }: Props) {
             return (
               <button type="button" role="option" aria-selected={index === selected} key={command.id} disabled={command.disabled} className={index === selected ? "is-selected" : ""} onMouseEnter={() => setSelected(index)} onClick={() => execute(command)}>
                 <span>
-                  <strong>{command.label}</strong>
-                  <small>{command.detail}</small>
+                                <strong>{splitMatches(command.label, query)}</strong>
+                                <small>{splitMatches(command.detail, query)}</small>
                 </span>
                 {relative ? <em className="command-relative" aria-label={relative}>{relative}</em> : <em>{t(kindLabelKey(command.kind))}</em>}
                 {command.shortcut && <kbd>{command.shortcut}</kbd>}
@@ -164,10 +200,13 @@ export default function CommandPalette({ open, commands, onClose }: Props) {
         </div>
         <footer>
           <span>{tf("paletteCount", { shown: filtered.length, total: commands.length })}</span>
-          <span>{t("paletteNavHint")}</span>
-          <span>{t("paletteEnterHint")}</span>
-          <span>{t("paletteEscHint")}</span>
-        </footer>
+                  {query.trim().length > 0 && (
+                    <span className="command-palette-query-meta">{tf("paletteQueryLength", { count: query.trim().length })}</span>
+                  )}
+                  <span>{t("paletteNavHint")}</span>
+                  <span>{t("paletteEnterHint")}</span>
+                  <span>{t("paletteEscHint")}</span>
+                </footer>
       </section>
     </div>
   );
