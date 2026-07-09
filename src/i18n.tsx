@@ -41,6 +41,9 @@ export const translations: Record<string, Record<string, string>> = {
     removeFromListTitle: "从列表移除",
     removeFromRecent: "从最近文件移除",
     extensionOrFile: "文件",
+    sidebarRecentA11y: "最近打开的文件列表",
+    sidebarEmptyBrowse: "选择文件",
+    sidebarEmptyDropShort: "或者直接把文件拖到这里",
 
     // Hero / EmptyState
     heroEyebrow: "OPENME WORKSPACE",
@@ -441,10 +444,6 @@ export const translations: Record<string, Record<string, string>> = {
     routeGenericDesc: "OpenMe 已直接打开该文件为本地安全卡片。",
     viewerRouterLoading: "正在加载文件...",
 
-    // RecentFiles (legacy empty state, kept for compatibility)
-    noRecentFiles: "暂无最近文件",
-    dropHintRecent: "拖拽文件到右侧区域开始",
-
     // ErrorBoundary
     viewerErrorKicker: "预览器异常",
     viewerErrorTitle: "预览器出现错误",
@@ -786,6 +785,9 @@ export const translations: Record<string, Record<string, string>> = {
     removeFromListTitle: "Remove from list",
     removeFromRecent: "Remove {name} from recent",
     extensionOrFile: "file",
+    sidebarRecentA11y: "Recently opened files",
+    sidebarEmptyBrowse: "Pick files",
+    sidebarEmptyDropShort: "Or drop a file here",
 
     // Hero / EmptyState
     heroEyebrow: "OPENME WORKSPACE",
@@ -1185,10 +1187,6 @@ export const translations: Record<string, Record<string, string>> = {
     routeGenericTitle: "File is now in OpenMe",
     routeGenericDesc: "OpenMe opened this file as a local safety card.",
     viewerRouterLoading: "Loading file...",
-
-    // RecentFiles
-    noRecentFiles: "No recent files",
-    dropHintRecent: "Drop files on the right area to start",
 
     // ErrorBoundary
     viewerErrorKicker: "Viewer Boundary",

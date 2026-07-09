@@ -4,7 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { I18nProvider } from "../i18n";
 import FileDropZone from "./FileDropZone";
 import FileMetadata from "./FileMetadata";
-import RecentFiles from "./RecentFiles";
+import Sidebar from "./layout/Sidebar";
 import PreviewPane from "./PreviewPane";
 import type { FileInfo } from "../types";
 
@@ -77,16 +77,16 @@ describe("FileDropZone a11y", () => {
     expect(label && label.length).toBeGreaterThan(0);
   });
 });
-describe("RecentFiles a11y", () => {
+describe("Sidebar a11y recent list", () => {
   const files: FileInfo[] = [
     fakeFile,
     { ...fakeFile, id: "2", path: "/tmp/bar.txt", name: "bar.txt", extension: ".txt", file_type: "text", category: "text" },
   ];
 
-  it("marks the selected file with aria-current", () => {
+  it("marks the selected recent file with aria-current", () => {
     render(
       <Providers>
-        <RecentFiles files={files} selectedPath="/tmp/foo.pdf" onSelect={() => undefined} />
+        <Sidebar files={files} selectedPath="/tmp/foo.pdf" onSelect={() => undefined} onRemove={() => undefined} onOpenDialog={() => undefined} />
       </Providers>,
     );
     const buttons = screen.getAllByRole("button");
@@ -95,16 +95,27 @@ describe("RecentFiles a11y", () => {
     expect(selected && selected.getAttribute("aria-current")).toBe("true");
   });
 
-  it("does not mark unselected files with aria-current", () => {
+  it("does not mark unselected recent files with aria-current", () => {
     render(
       <Providers>
-        <RecentFiles files={files} selectedPath="/tmp/foo.pdf" onSelect={() => undefined} />
+        <Sidebar files={files} selectedPath="/tmp/foo.pdf" onSelect={() => undefined} onRemove={() => undefined} onOpenDialog={() => undefined} />
       </Providers>,
     );
     const buttons = screen.getAllByRole("button");
     const other = buttons.find((b) => b.textContent && b.textContent.includes("bar"));
     expect(other).toBeTruthy();
     expect(other && other.getAttribute("aria-current")).toBeFalsy();
+  });
+
+  it("marks the recent list as role=list with a localized aria-label", () => {
+    const { container } = render(
+      <Providers>
+        <Sidebar files={files} selectedPath={null} onSelect={() => undefined} onRemove={() => undefined} onOpenDialog={() => undefined} />
+      </Providers>,
+    );
+    const list = container.querySelector('[role="list"]');
+    expect(list).not.toBeNull();
+    expect(list && list.getAttribute("aria-label")).toBeTruthy();
   });
 });
 describe("FileMetadata a11y", () => {

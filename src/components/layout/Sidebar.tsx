@@ -53,19 +53,37 @@ export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpe
         <span>{t("recentOpened")}</span>
         <span className="coin-count"><i aria-hidden="true" />{files.length}</span>
       </div>
-      <div className="recent-list">
+      <div className="recent-list" role="list" aria-label={t("sidebarRecentA11y")}>
         {files.length === 0 ? (
           <div className="sidebar-empty">
             <span className="mini-question-block" aria-hidden="true">?</span>
             <strong>{t("noFilesYet")}</strong>
             <span>{t("openFileHint")}</span>
+            {onOpenDialog && (
+              <>
+                <button
+                  type="button"
+                  className="sidebar-empty-browse"
+                  onClick={onOpenDialog}
+                >
+                  {t("sidebarEmptyBrowse")}
+                </button>
+                <span className="sidebar-empty-drop-hint">{t("sidebarEmptyDropShort")}</span>
+              </>
+            )}
           </div>
         ) : (
           files.map((file) => {
             const active = selectedPath === file.path;
             return (
               <div className={`recent-row ${active ? "is-active" : ""}`} key={file.id}>
-                <button type="button" className="recent-file" onClick={() => onSelect(file)} title={file.path}>
+                <button
+                  type="button"
+                  className="recent-file"
+                  onClick={() => onSelect(file)}
+                  title={file.path}
+                  aria-current={active ? "true" : undefined}
+                >
                   <FileTypeIcon type={detectCategory(file.path)} size={38} extension={file.extension} />
                   <span className="recent-file-copy">
                     <strong>{file.name}</strong>
