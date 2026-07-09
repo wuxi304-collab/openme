@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   openFileDialog: () => ipcRenderer.invoke("open-file-dialog"),
   openInSystem: (path) => ipcRenderer.invoke("open-in-system", path),
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
+  getRuntimeInfo: () => ipcRenderer.invoke("get-runtime-info"),
   getMediaUrl: (path) => ipcRenderer.invoke("get-media-url", path),
   readEpub: (path) => ipcRenderer.invoke("read-epub", path),
   getCadEngineStatus: () => ipcRenderer.invoke("get-cad-engine-status"),

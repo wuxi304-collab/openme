@@ -276,6 +276,110 @@
   border-top: 1px solid var(--border-muted);
 }
 
+/* Transient feedback when the copy button successfully writes to the
+ * clipboard. The class flip is timed by JS, no manual aria changes. */
+.about-dialog-copy.is-copied {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-elevated));
+}
+
+.about-dialog-copy-row {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.about-dialog-copy-button {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 7px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 120ms ease-out, background-color 120ms ease-out, border-color 120ms ease-out, transform 120ms ease-out;
+}
+
+.about-dialog-copy-button:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.about-dialog-copy-button:active {
+  transform: scale(0.97);
+}
+
+.about-dialog-copy-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.about-dialog-copy-button.is-copied {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-surface));
+}
+
+.about-dialog-hostname {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.about-dialog-section-desc {
+  margin: -2px 0 10px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.about-dialog-ack-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  border: 1px solid var(--border-muted);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--border-muted);
+}
+
+.about-dialog-ack-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 12px;
+  background: var(--bg-surface);
+  font-size: 11.5px;
+}
+
+.about-dialog-ack-name {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+.about-dialog-ack-purpose {
+  color: var(--text-secondary);
+  text-align: right;
+  font-size: 11px;
+}
+
+.about-dialog-license-text {
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
 .about-dialog-primary {
   height: 34px;
   min-width: 92px;
