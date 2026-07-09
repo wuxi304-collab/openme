@@ -542,6 +542,18 @@ ipcMain.handle("reveal-in-folder", async (_, filePath) => {
   }
 });
 
+// Report the user-data directory where local settings, recent-files list
+// and the error-log directory live. Used by the Settings dialog to render
+// a "Settings file: <path>" disclosure with a Reveal-in-folder action.
+ipcMain.handle("get-settings-storage-path", async () => {
+  try {
+    return { ok: true, path: app.getPath("userData") };
+  } catch (e) {
+    log.error("get-settings-storage-path failed", e);
+    return ipcError("GET_SETTINGS_STORAGE_PATH_FAILED", { message: e.message });
+  }
+});
+
 // Stream-hash a file with SHA-256 and return the first 64 hex chars plus
 // the byte size so the panel can show "fingerprint" + "bytes". Uses a
 // 1 MiB chunk size to stay responsive on multi-GB inputs.

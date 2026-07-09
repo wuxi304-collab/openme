@@ -19,6 +19,11 @@ export interface SaveErrorLogResult {
   bytes: number;
 }
 
+export interface GetSettingsStoragePathResult {
+  ok: true;
+  path: string;
+}
+
 export interface ElectronAPI {
   getFileInfo: (path: string) => Promise<FileInfo | IpcFailureResult>;
   setUiStrings: (strings: Partial<UiStrings>) => Promise<void>;
@@ -55,7 +60,8 @@ export interface ElectronAPI {
   saveErrorLog: (payload: unknown, defaultName?: string) => Promise<SaveErrorLogResult | IpcFailureResult>;
   exportSettingsToFile: (payload: unknown, defaultName?: string) => Promise<{ ok: true; path: string } | { ok: false; canceled: true } | IpcFailureResult>;
   importSettingsFromFile: () => Promise<{ ok: true; path: string; data: unknown } | { ok: false; canceled: true } | IpcFailureResult>;
-}
+    getSettingsStoragePath: () => Promise<GetSettingsStoragePathResult | IpcFailureResult>;
+  }
 
   export interface UiStrings {
     dialogSelectFile: string;

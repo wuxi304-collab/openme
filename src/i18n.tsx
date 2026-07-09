@@ -748,6 +748,20 @@ export const translations: Record<string, Record<string, string>> = {
     settingsSyncImportConfirm: "导入并应用",
     settingsSyncImportCancel: "取消",
 
+    // Settings dialog — storage path disclosure + reset confirm (PR #72)
+    settingsStoragePathLabel: "设置存储位置",
+    settingsStoragePathHint: "OpenMe 在这里保存主题、最近文件、Tab 宽度等设置",
+    settingsStoragePathUnknown: "（未取得存储路径，可能在浏览器模式下运行）",
+    settingsStoragePathCopy: "复制路径",
+    settingsStoragePathCopied: "已复制",
+    settingsStoragePathReveal: "在文件管理器中打开",
+    settingsStoragePathRevealAria: "在文件管理器中打开设置存储目录",
+    settingsStoragePathCopyAria: "复制存储路径到剪贴板",
+    settingsResetConfirmTitle: "恢复默认设置？",
+    settingsResetConfirmMessage: "主题、最近文件限制、Tab 宽度等所有选项都将回到出厂状态。此操作不会影响你已经打开的文件。",
+    settingsResetConfirmConfirm: "恢复默认",
+    settingsResetConfirmCancel: "取消",
+
     ipcUnknownError: "未知错误",
     },
     en: {
@@ -1491,6 +1505,20 @@ export const translations: Record<string, Record<string, string>> = {
     settingsSyncImportWrongShape: "This file is not an OpenMe settings file (missing version or type)",
     settingsSyncImportConfirm: "Import and apply",
     settingsSyncImportCancel: "Cancel",
+
+    // Settings dialog — storage path disclosure + reset confirm (PR #72)
+    settingsStoragePathLabel: "Settings storage location",
+    settingsStoragePathHint: "OpenMe stores theme, recent files, tab width, and other preferences here",
+    settingsStoragePathUnknown: "(Storage path unavailable — likely running in browser mode)",
+    settingsStoragePathCopy: "Copy path",
+    settingsStoragePathCopied: "Copied",
+    settingsStoragePathReveal: "Reveal in folder",
+    settingsStoragePathRevealAria: "Open the settings storage folder in your file manager",
+    settingsStoragePathCopyAria: "Copy the storage path to the clipboard",
+    settingsResetConfirmTitle: "Reset to defaults?",
+    settingsResetConfirmMessage: "Theme, recent files limit, tab width, and every other option will return to factory state. Files you already have open are not affected.",
+    settingsResetConfirmConfirm: "Reset",
+    settingsResetConfirmCancel: "Cancel",
 
     ipcUnknownError: "Unknown error",
       }

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { I18nProvider } from "../i18n";
 import { SettingsProvider } from "../settings";
 import { ToastProvider } from "./useToast";
@@ -111,16 +111,27 @@ describe("SettingsDialog", () => {
     expect(within(dialog).getByText("Close")).toBeTruthy();
   });
 
-  it("clicking the reset button restores dark theme", () => {
-    renderDialog();
-    const themeSection = screen.getByRole("radiogroup", { name: /Theme/i });
-    const lightRadio = within(themeSection).getAllByRole("radio")[1] as HTMLInputElement;
-    fireEvent.click(lightRadio);
-    expect(lightRadio.checked).toBe(true);
-    fireEvent.click(screen.getByText("Reset to defaults"));
-    const darkRadio = within(themeSection).getAllByRole("radio")[0] as HTMLInputElement;
-    expect(darkRadio.checked).toBe(true);
-  });
+  it("clicking the reset button opens a confirm dialog; confirming restores dark theme", async () => {
+      renderDialog();
+      const themeSection = screen.getByRole("radiogroup", { name: /Theme/i });
+      const lightRadio = within(themeSection).getAllByRole("radio")[1] as HTMLInputElement;
+      fireEvent.click(lightRadio);
+      expect(lightRadio.checked).toBe(true);
+      fireEvent.click(screen.getByText("Reset to defaults"));
+      // The confirm dialog title is `settingsResetConfirmTitle` = "Reset to defaults?"
+      // (note the question mark) — disambiguate from the settings footer button.
+      const confirmTitle = await screen.findByText("Reset to defaults?");
+      const confirmDialog = confirmTitle.closest('[role="dialog"]') as HTMLElement;
+      expect(confirmDialog).toBeTruthy();
+      const confirmButton = within(confirmDialog).getByRole("button", { name: "Reset" });
+      fireEvent.click(confirmButton);
+      // handleReset is async (awaits confirm promise); wait for the theme to
+      // actually flip back to dark.
+      await waitFor(() => {
+        const darkRadio = within(themeSection).getAllByRole("radio")[0] as HTMLInputElement;
+        expect(darkRadio.checked).toBe(true);
+      });
+    });
 
   it("renders the editor sub-section with tab size, line numbers, and word wrap groups", () => {
     renderDialog();
@@ -155,4 +166,100 @@ describe("SettingsDialog", () => {
     const stored = JSON.parse(localStorage.getItem("openme.settings.v1") ?? "{}");
     expect(stored.tabSize).toBe(8);
   });
-});
+
+    it("renders the storage-path disclosure block with a copy + reveal button", async () => {
+      const fakePath = "C:\\Users\\test\\AppData\\Roaming\\openme";
+      const getSettingsStoragePath = vi.fn().mockResolvedValue({ ok: true, path: fakePath });
+      (window as unknown as { electronAPI: unknown }).electronAPI = {
+        getSettingsStoragePath,
+        revealInFolder: vi.fn().mockResolvedValue({ ok: true }),
+      };
+      renderDialog();
+      await screen.findByText(fakePath);
+      const copyBtn = screen.getByRole("button", { name: /Copy the storage path/i });
+      const revealBtn = screen.getByRole("button", { name: /Open the settings storage folder/i });
+      expect(copyBtn).toBeTruthy();
+      expect(revealBtn).toBeTruthy();
+      fireEvent.click(revealBtn);
+      expect((window as unknown as { electronAPI: { revealInFolder: ReturnType<typeof vi.fn> } }).electronAPI.revealInFolder).toHaveBeenCalledWith(fakePath);
+    });
+
+    it("renders the storage-path unavailable message when the IPC is missing", async () => {
+      // No electronAPI on window → storage path should render the "unavailable" copy.
+      (window as unknown as { electronAPI?: unknown }).electronAPI = undefined;
+      renderDialog();
+      // The Copy / Reveal buttons must be disabled.
+      const copyBtn = await screen.findByRole("button", { name: /Copy the storage path/i });
+      const revealBtn = screen.getByRole("button", { name: /Open the settings storage folder/i });
+      expect((copyBtn as HTMLButtonElement).disabled).toBe(true);
+      expect((revealBtn as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.getByText(/Storage path unavailable/i)).toBeTruthy();
+    });
+
+    it("traps focus inside the dialog when Tab is pressed on the last focusable", () => {
+      renderDialog();
+      const dialog = screen.getByRole("dialog");
+      const card = dialog.querySelector(".settings-dialog-card") as HTMLElement;
+      // The trap considers buttons, inputs, anchors, etc. — mirror its selector.
+      const focusable = Array.from(card.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      ));
+      // Sanity: focusable should include buttons AND inputs.
+      const buttons = focusable.filter((el) => el.tagName === "BUTTON");
+      const inputs = focusable.filter((el) => el.tagName === "INPUT");
+      expect(buttons.length).toBeGreaterThan(0);
+      expect(inputs.length).toBeGreaterThan(0);
+      const lastEl = focusable[focusable.length - 1]!;
+      lastEl.focus();
+      // After focusing, activeElement must actually be lastEl — otherwise the
+      // trap below has nothing to wrap.
+      expect(document.activeElement).toBe(lastEl);
+      fireEvent.keyDown(window, { key: "Tab" });
+      expect(document.activeElement).toBe(focusable[0]);
+    });
+
+    it("Shift+Tab from the first focusable wraps to the last", () => {
+      renderDialog();
+      const dialog = screen.getByRole("dialog");
+      const card = dialog.querySelector(".settings-dialog-card") as HTMLElement;
+      const focusable = Array.from(card.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      ));
+      const firstEl = focusable[0]!;
+      firstEl.focus();
+      expect(document.activeElement).toBe(firstEl);
+      fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+      expect(document.activeElement).toBe(focusable[focusable.length - 1]);
+    });
+
+    it("clicking reset and then Cancel leaves settings untouched", async () => {
+      renderDialog();
+      const themeSection = screen.getByRole("radiogroup", { name: /Theme/i });
+      const lightRadio = within(themeSection).getAllByRole("radio")[1] as HTMLInputElement;
+      fireEvent.click(lightRadio);
+      expect(lightRadio.checked).toBe(true);
+      fireEvent.click(screen.getByText("Reset to defaults"));
+      const confirmTitle = await screen.findByText("Reset to defaults?");
+      const confirmDialog = confirmTitle.closest('[role="dialog"]') as HTMLElement;
+      expect(confirmDialog).toBeTruthy();
+      fireEvent.click(within(confirmDialog).getByRole("button", { name: "Cancel" }));
+      // Theme is still light because reset was cancelled.
+      expect(lightRadio.checked).toBe(true);
+    });
+
+    it("links each radio group to its section description via aria-describedby", () => {
+      renderDialog();
+      const theme = screen.getByRole("radiogroup", { name: /Theme/i });
+      expect(theme.getAttribute("aria-describedby")).toBe("settings-theme-desc");
+      const close = screen.getByRole("radiogroup", { name: /Confirm before closing tabs/i });
+      expect(close.getAttribute("aria-describedby")).toBe("settings-close-confirm-desc");
+      const recent = screen.getByRole("radiogroup", { name: /Recent files kept/i });
+      expect(recent.getAttribute("aria-describedby")).toBe("settings-recent-desc");
+      const tab = screen.getByRole("radiogroup", { name: /Tab size/i });
+      expect(tab.getAttribute("aria-describedby")).toBe("settings-tab-size-desc");
+      const lines = screen.getByRole("radiogroup", { name: /Line numbers/i });
+      expect(lines.getAttribute("aria-describedby")).toBe("settings-line-numbers-desc");
+      const wrap = screen.getByRole("radiogroup", { name: /Word wrap/i });
+      expect(wrap.getAttribute("aria-describedby")).toBe("settings-word-wrap-desc");
+    });
+  });

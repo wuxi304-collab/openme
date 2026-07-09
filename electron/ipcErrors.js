@@ -20,6 +20,7 @@ const IPC_ERROR_CODES = {
   OPEN_IN_SYSTEM_FAILED: { defaultMessage: "无法打开" },
     REVEAL_IN_FOLDER_FAILED: { defaultMessage: "无法在文件管理器中显示" },
     FILE_HASH_FAILED: { defaultMessage: "无法计算文件指纹" },
+    GET_SETTINGS_STORAGE_PATH_FAILED: { defaultMessage: "无法获取设置存储路径" },
     MEDIA_NOT_FOUND: { defaultMessage: "媒体文件不存在" },
   // ZIP
   ZIP_TOO_MANY_FILES: { defaultMessage: "压缩包文件过多（超过 100,000 项）" },
