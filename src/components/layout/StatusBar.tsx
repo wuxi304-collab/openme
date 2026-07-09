@@ -1,8 +1,10 @@
+import { useRef, useState } from "react";
 import type { HonestSupportLevel, FileOpenStrategy, FileRiskLevel } from "../../file-registry";
 import { getFileFormatByPath } from "../../file-registry";
 import { useI18n } from "../../i18n";
 import { useSettings } from "../../settings";
 import { SunIcon, MoonIcon } from "../icons/TitleBarIcons";
+import StatusBarFormatPopover from "./StatusBarFormatPopover";
 
 interface Props {
   activeTab: {
@@ -19,6 +21,8 @@ interface Props {
   activePosition?: number;
   /** Total number of open tabs. */
   totalTabs?: number;
+  /** Called when the user clicks "Open in system" from the format popover. */
+  onOpenInSystem?: () => void;
 }
 
 // Line-ending detection runs over up to this many bytes so giant files
@@ -61,7 +65,7 @@ function statusLineEndingKey(kind: "lf" | "crlf" | "mixed" | "none"): string {
   }
 }
 
-export default function StatusBar({ activeTab, activePosition, totalTabs }: Props) {
+export default function StatusBar({ activeTab, activePosition, totalTabs, onOpenInSystem }: Props) {
   const { t, tf } = useI18n();
   const { settings, update } = useSettings();
   const lines = activeTab?.content !== undefined ? activeTab.content.split("\n").length : 0;
@@ -72,6 +76,15 @@ export default function StatusBar({ activeTab, activePosition, totalTabs }: Prop
   const showTabPosition = typeof activePosition === "number" && typeof totalTabs === "number" && totalTabs > 1;
   const showRiskChip = activeTab?.riskLevel === "high";
   const showStrategyChip = activeTab?.openStrategy === "external" || activeTab?.openStrategy === "restricted";
+  const [formatPopoverOpen, setFormatPopoverOpen] = useState(false);
+  const supportBadgeRef = useRef<HTMLButtonElement | null>(null);
+  const extensionFromPath = (() => {
+    if (!activeTab?.path) return "";
+    const lastDot = activeTab.path.lastIndexOf(".");
+    const lastSlash = Math.max(activeTab.path.lastIndexOf("/"), activeTab.path.lastIndexOf("\\"));
+    if (lastDot < 0 || lastDot < lastSlash) return "";
+    return `.${activeTab.path.slice(lastDot + 1).toLowerCase()}`;
+  })();
 
   const strategyLabel = (strategy: FileOpenStrategy): string => {
     if (strategy === "external") return t("openStrategyExternal");
@@ -115,7 +128,31 @@ export default function StatusBar({ activeTab, activePosition, totalTabs }: Prop
             {t("statusIdleHint")}
           </span>
         )}
-        {format && <SupportBadge level={format.supportLevel} label={format.name} tf={tf} />}
+        {format && (
+          <SupportBadge
+            level={format.supportLevel}
+            label={format.name}
+            tf={tf}
+            buttonRef={supportBadgeRef}
+            onClick={() => setFormatPopoverOpen((value) => !value)}
+            isActive={formatPopoverOpen}
+            activeLabel={t("statusPopoverClose")}
+            idleLabel={t("statusFormatAria")}
+          />
+        )}
+        {formatPopoverOpen && format && activeTab?.path && (
+          <StatusBarFormatPopover
+            anchor={supportBadgeRef.current}
+            format={format}
+            filePath={activeTab.path}
+            extension={extensionFromPath}
+            openStrategy={activeTab.openStrategy}
+            riskLevel={activeTab.riskLevel}
+            category={format.category}
+            onClose={() => setFormatPopoverOpen(false)}
+            onOpenInSystem={onOpenInSystem}
+          />
+        )}
         {format && (
           <span
             className="status-format-chip"
@@ -179,15 +216,34 @@ function SupportBadge({
   level,
   label,
   tf,
+  buttonRef,
+  onClick,
+  isActive,
+  activeLabel,
+  idleLabel,
 }: {
   level: HonestSupportLevel;
   label: string;
   tf: (key: string, params?: Record<string, string | number>) => string;
+  buttonRef?: React.RefObject<HTMLButtonElement | null>;
+  onClick?: () => void;
+  isActive?: boolean;
+  activeLabel?: string;
+  idleLabel?: string;
 }) {
   return (
-    <span className={`status-support-badge support-${level.replace("+", "plus")}`} title={label}>
+    <button
+      ref={buttonRef}
+      type="button"
+      className={`status-support-badge support-${level.replace("+", "plus")} is-button`}
+      title={label}
+      aria-label={isActive ? activeLabel : idleLabel}
+      aria-expanded={isActive}
+      aria-haspopup="dialog"
+      onClick={onClick}
+    >
       {tf("summarySupportBadge", { level })}
-    </span>
+    </button>
   );
 }
 

@@ -100,7 +100,17 @@ export const translations: Record<string, Record<string, string>> = {
     statusStrategyAria: "文件打开策略 {strategy}",
     statusFormatAria: "文件格式 {name}",
 
-    // FileTabs
+    // PR #83 — StatusBar format popover
+    statusPopoverTitle: "格式详情",
+    statusPopoverAppsTitle: "用原生应用打开",
+    statusPopoverNoApps: "暂未推荐原生应用",
+    statusPopoverCopyPath: "复制文件路径",
+    statusPopoverReveal: "在文件管理器中显示",
+    statusPopoverCopied: "路径已复制",
+    statusPopoverClose: "关闭",
+    statusPopoverStrategyLabel: "打开方式",
+
+        // FileTabs
     fileTabsAria: "打开的文件",
     workspaceSet: "工作集",
     unsaved: "未保存",
@@ -1025,7 +1035,17 @@ export const translations: Record<string, Record<string, string>> = {
     statusStrategyAria: "File open strategy {strategy}",
     statusFormatAria: "File format {name}",
 
-    // FileTabs
+    // PR #83 — StatusBar format popover
+    statusPopoverTitle: "Format details",
+    statusPopoverAppsTitle: "Open with native app",
+    statusPopoverNoApps: "No native app suggested",
+    statusPopoverCopyPath: "Copy file path",
+    statusPopoverReveal: "Show in file manager",
+    statusPopoverCopied: "Path copied",
+    statusPopoverClose: "Close",
+    statusPopoverStrategyLabel: "Open strategy",
+
+        // FileTabs
     fileTabsAria: "Open files",
     workspaceSet: "Workspace",
     unsaved: "Unsaved",
