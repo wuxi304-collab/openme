@@ -116,4 +116,31 @@ describe("CommandPalette rendering", () => {
     const list = screen.getByRole("listbox");
     expect(within(list).queryByText(/分钟前|小时前|天前|周前|个月前/)).toBeNull();
   });
-});
+
+    it("highlights matched substrings inside the active label and detail", () => {
+      const { container } = renderPalette();
+      const input = screen.getByRole("textbox", { hidden: true });
+      act(() => { fireEvent.change(input, { target: { value: "save" } }); });
+      // Lowercase query matches "Save current" case-insensitively. The
+      // matched range should render as a <mark class="command-palette-mark">.
+      const marks = container.querySelectorAll(".command-palette-mark");
+      expect(marks.length).toBeGreaterThan(0);
+      expect(marks[0]?.textContent?.toLowerCase()).toBe("save");
+    });
+
+    it("renders the query-length hint only when the user has typed something", () => {
+      const { container } = renderPalette();
+      expect(container.querySelector(".command-palette-query-meta")).toBeNull();
+      const input = screen.getByRole("textbox", { hidden: true });
+      act(() => { fireEvent.change(input, { target: { value: "op" } }); });
+      expect(screen.getByText("已输入 2 个字符")).toBeTruthy();
+    });
+
+    it("uses English query-length copy under en locale", () => {
+      try { window.localStorage.setItem("openme.lang", "en"); } catch {}
+      renderPalette();
+      const input = screen.getByRole("textbox", { hidden: true });
+      act(() => { fireEvent.change(input, { target: { value: "op" } }); });
+      expect(screen.getByText("2 characters typed")).toBeTruthy();
+    });
+  });

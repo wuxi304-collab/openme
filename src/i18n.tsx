@@ -120,6 +120,7 @@ export const translations: Record<string, Record<string, string>> = {
     paletteKindCommand: "命令",
     paletteEmptyQuery: "没有匹配的命令",
     paletteFuzzyHint: "支持模糊匹配，例如 {example}",
+    paletteQueryLength: "已输入 {count, plural, one {# 个字符} other {# 个字符}}",
     // Relative time for recent file entries
     recentJustNow: "刚刚",
     recentMinAgo: "{n, plural, one {# 分钟前} other {# 分钟前}}",
@@ -1024,6 +1025,7 @@ export const translations: Record<string, Record<string, string>> = {
     paletteKindCommand: "Command",
     paletteEmptyQuery: "No matching commands",
     paletteFuzzyHint: "Fuzzy match supported, e.g. {example}",
+    paletteQueryLength: "{count, plural, one {# character typed} other {# characters typed}}",
     // Relative time for recent file entries
     recentJustNow: "Just now",
     recentMinAgo: "{n, plural, one {# min ago} other {# min ago}}",
