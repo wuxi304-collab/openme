@@ -70,6 +70,17 @@ const WHITELIST = new Set([
     "dwgEngineRealDwg",   // "RealDWG Sidecar" — Autodesk product name
     "dwgEngineOda",       // "ODA File Converter" — ODA product name
     "dwgEngineAutocad",   // "AutoCAD Core Console" — Autodesk product name
+  // PR #76 — vendor / product names that are intentionally kept verbatim
+  // in zh because the Chinese market uses the English name for these tools.
+  "appPhotoshop", "appIllustrator", "appIndesign", "appXd", "appFigma",
+  "appSketch", "appCoreldraw", "appAffinityDesigner", "appInkscape",
+  "appAutocad", "appLibrecad", "appFusion360", "appKicad",
+  "appMicrosoftWord", "appMicrosoftExcel", "appMicrosoftPowerpoint",
+  "appWpsOffice", "appLibreOffice", "appPages", "appNumbers", "appKeynote",
+  "appVlc", "appIina", "appFoobar2000", "appAudacity", "appDspeaker",
+  "appCalibre", "appKindle", "appSystemViewer", "appFontManager",
+  "appFontForge", "appPeazip", "appKeka", "appTheUnarchiver",
+  "appBandizip", "appDjvulibre", "appGis",
   ]);
 
 const untranslated = [];

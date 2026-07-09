@@ -1,5 +1,7 @@
 import type { FileCategory } from "../utils/fileTypeDetector";
 
+export type { FileCategory };
+
 export type FileCapability = "detect" | "preview" | "edit" | "metadata" | "thumbnail" | "ai-summary" | "external-open";
 
 export type HonestSupportLevel = "A+" | "A" | "B" | "C" | "D" | "E" | "F";
