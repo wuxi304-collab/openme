@@ -62,6 +62,8 @@ let uiStrings = {
   closePromptDetail: "未保存的文本、代码或 Markdown 修改将丢失。",
   closePromptKeepEditing: "继续编辑",
   closePromptDiscard: "放弃并关闭",
+  settingsExportDialogTitle: "导出设置",
+  settingsImportDialogTitle: "导入设置",
 };
 
 const isDev = !app.isPackaged && process.env.OPENME_USE_DIST !== "1";
@@ -377,6 +379,45 @@ ipcMain.handle("save-recent-files", async (_, store) => {
   } catch (e) {
     log.error("save-recent-files failed", e);
     return ipcError("SAVE_RECENT_FAILED", { message: e.message });
+  }
+});
+
+ipcMain.handle("export-settings-to-file", async (_, payload, defaultName) => {
+  try {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: uiStrings.settingsExportDialogTitle,
+      defaultPath: defaultName || "openme-settings.json",
+      filters: [{ name: "JSON", extensions: ["json"] }],
+    });
+    if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+    fs.writeFileSync(result.filePath, JSON.stringify(payload, null, 2), "utf-8");
+    return { ok: true, path: result.filePath };
+  } catch (e) {
+    log.error("export-settings-to-file failed", e);
+    return ipcError("SETTINGS_EXPORT_FAILED", { message: e.message });
+  }
+});
+
+ipcMain.handle("import-settings-from-file", async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: uiStrings.settingsImportDialogTitle,
+      properties: ["openFile"],
+      filters: [{ name: "JSON", extensions: ["json"] }, { name: "All", extensions: ["*"] }],
+    });
+    if (result.canceled || result.filePaths.length === 0) return { ok: false, canceled: true };
+    const filePath = result.filePaths[0];
+    const raw = fs.readFileSync(filePath, "utf-8");
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (parseError) {
+      return ipcError("SETTINGS_IMPORT_INVALID_JSON", { message: parseError.message });
+    }
+    return { ok: true, path: filePath, data: parsed };
+  } catch (e) {
+    log.error("import-settings-from-file failed", e);
+    return ipcError("SETTINGS_IMPORT_FAILED", { message: e.message });
   }
 });
 

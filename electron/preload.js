@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   setUiStrings: (strings) => ipcRenderer.invoke("set-ui-strings", strings),
   loadRecentFiles: () => ipcRenderer.invoke("load-recent-files"),
   saveRecentFiles: (store) => ipcRenderer.invoke("save-recent-files", store),
+  exportSettingsToFile: (payload, defaultName) => ipcRenderer.invoke("export-settings-to-file", payload, defaultName),
+  importSettingsFromFile: () => ipcRenderer.invoke("import-settings-from-file"),
   saveRecentFiles: (store) => ipcRenderer.invoke("save-recent-files", store),
   readTextFile: (path, maxSize) => ipcRenderer.invoke("read-text-file", path, maxSize),
   openFileDialog: () => ipcRenderer.invoke("open-file-dialog"),

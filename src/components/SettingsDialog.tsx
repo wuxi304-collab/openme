@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import { useI18n } from "../i18n";
-import { useSettings, type LineNumbersChoice, type RecentLimit, type TabSize, type WordWrapChoice } from "../settings";
+import { useSettings, type LineNumbersChoice, type RecentLimit, type TabSize, type WordWrapChoice, parseSettingsFile, serializeSettings } from "../settings";
+import { useToast } from "./useToast";
+import { useConfirm } from "./useConfirm";
+import { isIpcFailure, describeIpcError } from "../core/ipcError";
 import "./SettingsDialog.css";
 
 interface Props {
@@ -9,10 +12,62 @@ interface Props {
 }
 
 export default function SettingsDialog({ open, onClose }: Props) {
-  const { t } = useI18n();
-  const { settings, update, reset } = useSettings();
+  const { t, tf } = useI18n();
+  const { settings, update, reset, replaceAll } = useSettings();
+  const { pushToast } = useToast();
+  const confirm = useConfirm();
   const overlayRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleExport = useCallback(async () => {
+    if (!window.electronAPI?.exportSettingsToFile) {
+      pushToast("error", t("ipcUnknownError"));
+      return;
+    }
+    const payload = serializeSettings(settings, { name: "OpenMe Qiwu", version: "1.0.0" });
+    const result = await window.electronAPI.exportSettingsToFile(payload, "openme-settings.json");
+    if ("canceled" in result && result.canceled) return;
+    if (isIpcFailure(result)) {
+      pushToast("error", describeIpcError(t, result));
+      return;
+    }
+    if (result.ok) pushToast("success", tf("settingsSyncExportSuccess", { path: result.path }));
+  }, [settings, pushToast, t, tf]);
+
+  const handleImport = useCallback(async () => {
+    if (!window.electronAPI?.importSettingsFromFile) {
+      pushToast("error", t("ipcUnknownError"));
+      return;
+    }
+    const result = await window.electronAPI.importSettingsFromFile();
+    if ("canceled" in result && result.canceled) return;
+    if (isIpcFailure(result)) {
+      const code = (result as { code?: string }).code;
+      if (code === "SETTINGS_IMPORT_INVALID_JSON") {
+        pushToast("error", t("settingsSyncImportInvalidJson"));
+      } else {
+        pushToast("error", describeIpcError(t, result));
+      }
+      return;
+    }
+    if (!result.ok) return;
+    const parsed = parseSettingsFile(result.data);
+    if (!parsed.ok) {
+      const key = parsed.reason === "invalid-json" ? "settingsSyncImportInvalidJson" : "settingsSyncImportWrongShape";
+      pushToast("error", t(key));
+      return;
+    }
+    const ok = await confirm({
+      title: t("settingsSyncImportConfirmTitle"),
+      message: t("settingsSyncImportConfirmMessage"),
+      confirmLabel: t("settingsSyncImportConfirm"),
+      cancelLabel: t("settingsSyncImportCancel"),
+      variant: "default",
+    });
+    if (!ok) return;
+    replaceAll(parsed.settings);
+    pushToast("success", t("settingsSyncImportSuccess"));
+  }, [confirm, pushToast, replaceAll, t]);
 
   // ESC dismisses.
   useEffect(() => {
@@ -226,6 +281,29 @@ export default function SettingsDialog({ open, onClose }: Props) {
                   </label>
                 ))}
               </div>
+            </div>
+          </section>
+
+          <section className="settings-dialog-section" aria-labelledby="settings-sync-title">
+            <h3 id="settings-sync-title" className="settings-dialog-section-title">{t("settingsSyncSectionTitle")}</h3>
+            <p className="settings-dialog-section-desc">{t("settingsSyncSectionDesc")}</p>
+            <div className="settings-sync-actions">
+              <button
+                type="button"
+                className="settings-dialog-secondary"
+                aria-label={t("settingsSyncExportButtonAria")}
+                onClick={handleExport}
+              >
+                {t("settingsSyncExportButton")}
+              </button>
+              <button
+                type="button"
+                className="settings-dialog-secondary"
+                aria-label={t("settingsSyncImportButtonAria")}
+                onClick={handleImport}
+              >
+                {t("settingsSyncImportButton")}
+              </button>
             </div>
           </section>
         </div>

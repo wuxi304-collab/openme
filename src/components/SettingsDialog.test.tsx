@@ -3,6 +3,8 @@ import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { I18nProvider } from "../i18n";
 import { SettingsProvider } from "../settings";
+import { ToastProvider } from "./useToast";
+import { ConfirmProvider } from "./useConfirm";
 import SettingsDialog from "./SettingsDialog";
 
 function renderDialog(open = true, onClose = () => undefined) {
@@ -12,7 +14,11 @@ function renderDialog(open = true, onClose = () => undefined) {
   return render(
     <I18nProvider>
       <SettingsProvider>
-        <SettingsDialog open={open} onClose={onClose} />
+        <ConfirmProvider>
+          <ToastProvider value={{ pushToast: () => undefined }}>
+            <SettingsDialog open={open} onClose={onClose} />
+          </ToastProvider>
+        </ConfirmProvider>
       </SettingsProvider>
     </I18nProvider>
   );
@@ -37,7 +43,7 @@ describe("SettingsDialog", () => {
     renderDialog();
     const dialog = screen.getByRole("dialog");
     expect(dialog).toBeTruthy();
-    expect(within(dialog).getByText(/Settings/i)).toBeTruthy();
+    expect(within(dialog).getByText(/Settings/i, { selector: "h2" })).toBeTruthy();
     expect(within(dialog).getByText(/local preferences/i)).toBeTruthy();
   });
 
