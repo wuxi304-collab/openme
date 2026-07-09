@@ -27,6 +27,7 @@
     "jszip": "^3.10.1",
     "mammoth": "^1.8.0",
     "marked": "^15.0.0",
+    "music-metadata": "^11.13.0",
     "occt-import-js": "^0.0.23",
     "papaparse": "^5.5.2",
     "pdfjs-dist": "^4.9.155",

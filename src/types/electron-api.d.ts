@@ -41,6 +41,9 @@ export interface ElectronAPI {
     getAppVersion: () => Promise<string>;
     getRuntimeInfo: () => Promise<RuntimeInfo>;
     getMediaUrl: (path: string) => Promise<string>;
+  getAudioMetadata: (path: string) => Promise<AudioMetadataResult | IpcFailureResult>;
+  getAudioFormat: (path: string) => Promise<AudioFormatProbe | IpcFailureResult>;
+  listAudioInFolder: (folderPath: string, options?: { recursive?: boolean; limit?: number }) => Promise<ListAudioFolderResult | IpcFailureResult>;
   readEpub: (path: string) => Promise<{ success: boolean; book?: EpubBook; message?: string }>;
   getCadEngineStatus: () => Promise<CadEngineStatus>;
   inspectCadDocument: (path: string) => Promise<CadInspectionResult>;
@@ -113,6 +116,64 @@ export interface FileHashResult {
   shortHash: string;
   size: number;
   computedAt: string;
+}
+
+// Lossless / hi-res audio metadata returned by the main process. Mirrors
+// the shape produced by `music-metadata` but flattened for the renderer —
+// cover art is inlined as a data: URL so we never need a second IPC.
+export interface AudioMetadataResult {
+  ok: true;
+  path: string;
+  tag: {
+    title: string | null;
+    artist: string | null;
+    album: string | null;
+    albumArtist: string | null;
+    year: number | null;
+    genre: string | null;
+    track: number | null;
+    trackTotal: number | null;
+    disc: number | null;
+    discTotal: number | null;
+    composer: string | null;
+    comment: string | null;
+  };
+  format: {
+    container: string | null;
+    codec: string | null;
+    lossless: boolean | null;
+    sampleRate: number | null;
+    bitsPerSample: number | null;
+    channels: number | null;
+    channelLayout: "mono" | "stereo" | "surround" | null;
+    bitrate: number | null;
+    durationSec: number | null;
+    encoder: string | null;
+  };
+  cover: { format: string; mime: string; data: string } | null;
+}
+
+// Lightweight probe: technical format block only, no tags or cover art.
+// Cheaper than AudioMetadataResult when the UI just needs the badge data.
+export interface AudioFormatProbe {
+  ok: true;
+  path: string;
+  container: string | null;
+  codec: string | null;
+  lossless: boolean | null;
+  sampleRate: number | null;
+  bitsPerSample: number | null;
+  channels: number | null;
+  bitrate: number | null;
+  durationSec: number | null;
+}
+
+// Result of scanning a folder for audio files. Used by the lossless
+// player to build a queue from a single folder drop.
+export interface ListAudioFolderResult {
+  ok: true;
+  folder: string;
+  files: { path: string; name: string; size: number }[];
 }
 
 export interface CadEngineStatus {

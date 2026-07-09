@@ -9,7 +9,16 @@ import { useToast } from "./useToast";
 import { CheckIcon } from "./icons/CheckIcon";
 import { CrossIcon } from "./icons/CrossIcon";
 import { formatFileSize, formatRelativeTime } from "../utils/format";
-import type { ElectronAPI, FileHashResult, IpcFailureResult, RevealResult } from "../types/electron-api";
+import {
+  formatBitrate,
+  formatBitDepth,
+  formatChannels,
+  formatDuration,
+  formatSampleRate,
+  getQualityTier,
+  isLosslessExtension,
+} from "../utils/audioFormat";
+import type { AudioFormatProbe, ElectronAPI, FileHashResult, IpcFailureResult, RevealResult } from "../types/electron-api";
 
 interface FileSummaryPanelProps {
   tab: FileTabState;
@@ -71,6 +80,27 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
   const [hashState, setHashState] = useState<HashState>({ kind: "idle" });
   const [copyFlash, setCopyFlash] = useState<"" | "path" | "hash" | "json">("");
   const copyTimer = useRef<number | null>(null);
+
+  // Audio-format probe for the side panel. We only show the audio section
+  // when the file is a recognised audio extension; the IPC is cheap and
+  // the panel already lives next to the viewer, so latency is invisible.
+  const showAudioSection = tab.category === "audio" || isLosslessExtension(tab.path);
+  const [audioProbe, setAudioProbe] = useState<AudioFormatProbe | null>(null);
+  useEffect(() => {
+    if (!showAudioSection) { setAudioProbe(null); return; }
+    let cancelled = false;
+    const api = getApi();
+    const promise = api?.getAudioFormat?.(tab.path);
+    if (!promise || typeof promise.then !== "function") return;
+    promise
+      .then((result) => {
+        if (cancelled) return;
+        if (isFailure(result)) { setAudioProbe(null); return; }
+        if (result && (result as AudioFormatProbe).ok) setAudioProbe(result as AudioFormatProbe);
+      })
+      .catch(() => { if (!cancelled) setAudioProbe(null); });
+    return () => { cancelled = true; };
+  }, [tab.path, showAudioSection]);
 
   // Kick off the SHA-256 stream-hash as soon as the panel mounts. The IPC
   // handler in main.js streams the file in 1 MiB chunks so even multi-GB
@@ -205,6 +235,53 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
           </div>
         </div>
       )}
+
+      {showAudioSection && audioProbe && (() => {
+        const tier = getQualityTier({
+          lossless: audioProbe.lossless,
+          sampleRate: audioProbe.sampleRate,
+          bitsPerSample: audioProbe.bitsPerSample,
+          channels: audioProbe.channels,
+        });
+        const tierKey = tier === "hi-res" ? "hiRes" : tier === "lossless-cd" ? "cd" : tier === "lossy" ? "lossy" : "lossless";
+        return (
+          <div className="summary-section audio-summary-section">
+            <span className="summary-section-title">{t("summaryAudioSection")}</span>
+            <div className="audio-summary-card">
+              <div className="audio-summary-head">
+                <span className={`ll-badge is-${tier}`}>{t(`losslessTier_${tierKey}`)}</span>
+                {audioProbe.container ? <span className="audio-summary-container">{audioProbe.container.toUpperCase()}</span> : null}
+              </div>
+              <dl className="summary-metadata-list">
+                <div className="summary-metadata-row">
+                  <dt>{t("losslessCodec")}</dt>
+                  <dd>{audioProbe.codec ?? audioProbe.container ?? "—"}</dd>
+                </div>
+                <div className="summary-metadata-row">
+                  <dt>{t("losslessSampleRate")}</dt>
+                  <dd>{formatSampleRate(audioProbe.sampleRate)}</dd>
+                </div>
+                <div className="summary-metadata-row">
+                  <dt>{t("losslessBitDepth")}</dt>
+                  <dd>{formatBitDepth(audioProbe.bitsPerSample)}</dd>
+                </div>
+                <div className="summary-metadata-row">
+                  <dt>{t("losslessChannels")}</dt>
+                  <dd>{formatChannels(audioProbe.channels)}</dd>
+                </div>
+                <div className="summary-metadata-row">
+                  <dt>{t("losslessBitrate")}</dt>
+                  <dd>{formatBitrate(audioProbe.bitrate)}</dd>
+                </div>
+                <div className="summary-metadata-row">
+                  <dt>{t("losslessDuration")}</dt>
+                  <dd>{formatDuration(audioProbe.durationSec)}</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="summary-section">
         <span className="summary-section-title">{t("summaryMetadataSection")}</span>

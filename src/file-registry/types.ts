@@ -38,6 +38,13 @@ export interface FileFormatDefinition {
   openStrategy?: FileOpenStrategy;
   riskLevel?: FileRiskLevel;
   tags?: string[];
+  /**
+   * True for losslessly-encoded audio (PCM/FLAC/ALAC/DSD/WavPack). Lets the
+   * UI badge the file as "Lossless" / "Hi-Res" and read bit-depth /
+   * sample-rate metadata that doesn't apply to lossy codecs. Always false
+   * (or omitted) for non-audio categories; default false when undefined.
+   */
+  isLossless?: boolean;
 }
 
 export interface FileRegistryStats {
