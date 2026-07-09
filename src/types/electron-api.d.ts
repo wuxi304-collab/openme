@@ -26,6 +26,7 @@ export interface ElectronAPI {
   openFileDialog: () => Promise<string[]>;
   openInSystem: (path: string) => Promise<void>;
   getAppVersion: () => Promise<string>;
+  getRuntimeInfo: () => Promise<RuntimeInfo>;
   getMediaUrl: (path: string) => Promise<string>;
   readEpub: (path: string) => Promise<{ success: boolean; book?: EpubBook; message?: string }>;
   getCadEngineStatus: () => Promise<CadEngineStatus>;
@@ -65,6 +66,24 @@ export interface EpubBook {
   language?: string;
   cover?: { data: string; mimeType: string } | null;
   chapters: { title: string; text: string }[];
+}
+
+// Snapshot of runtime + host details used by the About dialog. All fields
+// are optional because the renderer can also be opened in browser dev mode
+// where window.electronAPI is a noop shim that returns undefined.
+export interface RuntimeInfo {
+  appVersion?: string;
+  electron?: string;
+  chrome?: string;
+  node?: string;
+  v8?: string;
+  osName?: string;
+  osPlatform?: string;
+  osArch?: string;
+  systemLocale?: string;
+  hostname?: string;
+  cpus?: number;
+  totalMemGb?: number;
 }
 
 export interface CadEngineStatus {

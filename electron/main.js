@@ -626,6 +626,25 @@ ipcMain.handle("read-epub", async (_, filePath) => {
 });
 ipcMain.handle("get-app-version", () => app.getVersion());
 
+// Snapshot of runtime + host details used by the About dialog. Pulled in one
+// round-trip so the dialog can paint every row even when some sources are
+// unavailable (browser dev mode, missing preload). Keep the shape flat and
+// primitive — the renderer never needs anything more exotic than strings.
+ipcMain.handle("get-runtime-info", () => ({
+  appVersion: app.getVersion(),
+  electron: process.versions.electron ?? "",
+  chrome: process.versions.chrome ?? "",
+  node: process.versions.node ?? "",
+  v8: process.versions.v8 ?? "",
+  osName: `${os.type()} ${os.release()}`.trim(),
+  osPlatform: process.platform,
+  osArch: process.arch,
+  systemLocale: app.getLocale?.() ?? "",
+  hostname: os.hostname(),
+  cpus: os.cpus()?.length ?? 0,
+  totalMemGb: os.totalmem ? Math.round((os.totalmem() / (1024 ** 3)) * 10) / 10 : 0,
+}));
+
 ipcMain.handle("set-dirty-state", (_, dirty) => { hasUnsavedChanges = Boolean(dirty); });
 ipcMain.handle("window-minimize", () => mainWindow?.minimize());
 ipcMain.handle("window-maximize", () => {
