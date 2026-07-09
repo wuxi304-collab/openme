@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // Behavioural tests for the <ToastStack> component: stack rendering,
-// dismiss interactions, overflow hint, and i18n wiring.
+// dismiss interactions, overflow hint, hover-pause timer, progress bar,
+// and i18n wiring.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -10,6 +11,7 @@ import { I18nProvider } from "../i18n";
 afterEach(() => {
   cleanup();
   try { window.localStorage.removeItem("openme.lang"); } catch {}
+  vi.useRealTimers();
 });
 
 beforeEach(() => {
@@ -102,5 +104,51 @@ describe("ToastStack", () => {
       <I18nProvider><ToastStack toasts={[makeEntry()]} onDismiss={() => undefined} /></I18nProvider>
     );
     expect(screen.getByRole("button", { name: "Dismiss notification" })).toBeTruthy();
+  });
+
+  it("renders a CSS progress bar driven by --toast-ttl", () => {
+    const { container } = render(
+      <I18nProvider><ToastStack toasts={[makeEntry({ ttlMs: 3000 })]} onDismiss={() => undefined} /></I18nProvider>
+    );
+    const bar = container.querySelector(".app-toast-progress");
+    expect(bar).toBeTruthy();
+    const toast = container.querySelector(".app-toast") as HTMLElement;
+    expect(toast.style.getPropertyValue("--toast-ttl")).toBe("3000ms");
+  });
+
+  it("auto-dismisses when the TTL elapses (no hover)", () => {
+    vi.useFakeTimers();
+      const perfSpy = vi.spyOn(performance, "now").mockImplementation(() => 0);
+      const onDismiss = vi.fn();
+      const entry = makeEntry({ ttlMs: 1000 });
+      render(
+        <I18nProvider><ToastStack toasts={[entry]} onDismiss={onDismiss} /></I18nProvider>
+      );
+      expect(onDismiss).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(999);
+      expect(onDismiss).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(onDismiss).toHaveBeenCalledWith(entry.id);
+      perfSpy.mockRestore();
+    });
+
+    it("marks the toast paused while hovering and resumes on mouseleave", () => {
+      const { container } = render(
+        <I18nProvider><ToastStack toasts={[makeEntry()]} onDismiss={() => undefined} /></I18nProvider>
+      );
+      const toast = container.querySelector(".app-toast") as HTMLElement;
+      fireEvent.mouseEnter(toast);
+      expect(toast.classList.contains("is-paused")).toBe(true);
+      fireEvent.mouseLeave(toast);
+      expect(toast.classList.contains("is-paused")).toBe(false);
+    });
+
+  it("exposes the hover-pause hint as a localized title", () => {
+    try { window.localStorage.setItem("openme.lang", "en"); } catch {}
+    const { container } = render(
+      <I18nProvider><ToastStack toasts={[makeEntry()]} onDismiss={() => undefined} /></I18nProvider>
+    );
+    const toast = container.querySelector(".app-toast") as HTMLElement;
+    expect(toast.getAttribute("title")).toBe("Hover to pause auto-dismiss");
   });
 });

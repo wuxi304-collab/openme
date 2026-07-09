@@ -74,21 +74,11 @@ export default function App() {
   }, [recentFiles, searchQuery]);
 
   const activeTab = useMemo(() => tabs.find((t) => t.id === activeTabId) ?? null, [tabs, activeTabId]);
-  const hasDirtyTabs = tabs.some((tab) => tab.isDirty);
+    const hasDirtyTabs = tabs.some((tab) => tab.isDirty);
 
-  // Auto-dismiss each toast when its TTL elapses. Re-runs only when the
-  // toast list reference changes; cheaper than per-entry timers because
-  // we'd otherwise schedule N timers per push. Two-layer limit: toast
-  // list is capped at MAX_VISIBLE in <ToastStack> so the slice stays
-  // bounded even on a long load-path.
-  useEffect(() => {
-    if (toasts.length === 0) return;
-    const timers = toasts.map((entry) => window.setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== entry.id));
-    }, entry.ttlMs));
-    return () => { for (const id of timers) window.clearTimeout(id); };
-  }, [toasts]);
-  useEffect(() => {
+    // Toast TTL countdown is owned by <ToastStack> so hover-pause can freeze
+    // the timer cleanly without coordinating with an effect here.
+    useEffect(() => {
     try {
       if (typeof window.electronAPI?.setDirtyState === "function") {
         window.electronAPI.setDirtyState(hasDirtyTabs).catch(() => undefined);
