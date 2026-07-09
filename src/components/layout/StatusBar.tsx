@@ -77,14 +77,16 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
   const showRiskChip = activeTab?.riskLevel === "high";
   const showStrategyChip = activeTab?.openStrategy === "external" || activeTab?.openStrategy === "restricted";
   const [formatPopoverOpen, setFormatPopoverOpen] = useState(false);
-  const supportBadgeRef = useRef<HTMLButtonElement | null>(null);
-  const extensionFromPath = (() => {
-    if (!activeTab?.path) return "";
-    const lastDot = activeTab.path.lastIndexOf(".");
-    const lastSlash = Math.max(activeTab.path.lastIndexOf("/"), activeTab.path.lastIndexOf("\\"));
-    if (lastDot < 0 || lastDot < lastSlash) return "";
-    return `.${activeTab.path.slice(lastDot + 1).toLowerCase()}`;
-  })();
+    const [copiedPath, setCopiedPath] = useState(false);
+    const supportBadgeRef = useRef<HTMLButtonElement | null>(null);
+    const filenameRef = useRef<HTMLButtonElement | null>(null);
+    const extensionFromPath = (() => {
+      if (!activeTab?.path) return "";
+      const lastDot = activeTab.path.lastIndexOf(".");
+      const lastSlash = Math.max(activeTab.path.lastIndexOf("/"), activeTab.path.lastIndexOf("\\"));
+      if (lastDot < 0 || lastDot < lastSlash) return "";
+      return `.${activeTab.path.slice(lastDot + 1).toLowerCase()}`;
+    })();
 
   const strategyLabel = (strategy: FileOpenStrategy): string => {
     if (strategy === "external") return t("openStrategyExternal");
@@ -106,6 +108,32 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
 
   const strategyName = showStrategyChip && activeTab?.openStrategy ? strategyLabel(activeTab.openStrategy) : "";
 
+  const handleCopyPath = async () => {
+    const path = activeTab?.path;
+    if (!path) return;
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(path);
+      } else {
+        // Fallback for non-secure contexts: temp textarea + execCommand
+        const textarea = document.createElement("textarea");
+        textarea.value = path;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        textarea.style.pointerEvents = "none";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopiedPath(true);
+      window.setTimeout(() => setCopiedPath(false), 1600);
+    } catch {
+      // Silently swallow — user can always see the path in the title attribute.
+    }
+  };
+
   return (
     <footer className="status-bar">
       {activeTab?.isLoading && (
@@ -116,13 +144,17 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
           <i aria-hidden="true" />
           {activeTab?.isDirty ? t("modified") : t("ready")}
         </span>
-        <span
-          className="status-file"
-          title={activeTab?.path ?? ""}
-          aria-label={t("statusActiveFileAria")}
-        >
-          {activeTab?.name ?? t("waitingForFile")}
-        </span>
+        <button
+                  ref={filenameRef}
+                  type="button"
+                  className={`status-file status-filename-button${copiedPath ? " is-copied" : ""}`}
+                  title={activeTab?.path ?? t("statusFilenameCopyHint")}
+                  aria-label={copiedPath ? t("statusFilenameCopied") : t("statusFilenameCopy")}
+                  onClick={handleCopyPath}
+                  disabled={!activeTab?.path}
+                >
+                  {copiedPath ? t("statusFilenameCopied") : (activeTab?.name ?? t("waitingForFile"))}
+                </button>
         {!activeTab && (
           <span className="status-idle-hint" aria-label={t("statusIdleHintAria")}>
             {t("statusIdleHint")}

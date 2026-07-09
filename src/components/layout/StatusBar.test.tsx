@@ -3,7 +3,7 @@
 // line-ending detection, and the indeterminate progress bar.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import StatusBar from "./StatusBar";
 import { I18nProvider } from "../../i18n";
 import { SettingsProvider, useSettings } from "../../settings";
@@ -69,9 +69,9 @@ describe("StatusBar", () => {
 
   it("uses English aria-label when lang=en", () => {
     try { window.localStorage.setItem("openme.lang", "en"); } catch {}
-    renderInProviders(<StatusBar activeTab={{ name: "f.txt", content: "hello\n" }} />);
+      renderInProviders(<StatusBar activeTab={{ name: "f.txt", path: "/tmp/f.txt", content: "hello\n" }} />);
     expect(screen.getByRole("button", { name: "Toggle light or dark theme" })).toBeTruthy();
-    expect(screen.getByLabelText("Active file")).toBeTruthy();
+      expect(screen.getByLabelText("Copy file path")).toBeTruthy();
   });
 
   it("the theme pill cycles dark → light → dark", () => {
@@ -253,4 +253,69 @@ describe("StatusBar", () => {
           fireEvent.click(primary!);
           expect(openSystem).toHaveBeenCalled();
         });
-      });
+
+                // PR #85 — StatusBar filename click-to-copy
+                it("copies the active file path to the clipboard when the filename button is clicked", async () => {
+                  const writeText = vi.fn().mockResolvedValue(undefined);
+                  Object.defineProperty(navigator, "clipboard", {
+                    configurable: true,
+                    value: { writeText },
+                  });
+                  renderInProviders(
+                    <StatusBar activeTab={{ name: "hero.psd", path: String.raw`C:\demo\hero.psd` }} />
+                  );
+                  const btn = document.querySelector(".status-filename-button") as HTMLButtonElement | null;
+                  expect(btn).toBeTruthy();
+                  expect(btn?.disabled).toBe(false);
+                  fireEvent.click(btn!);
+                  await Promise.resolve();
+                  await Promise.resolve();
+                  expect(writeText).toHaveBeenCalledWith(String.raw`C:\demo\hero.psd`);
+                });
+
+                it("shows a 'Path copied' confirmation briefly after the filename is clicked", async () => {
+                  vi.useFakeTimers();
+                  try {
+                    const writeText = vi.fn().mockResolvedValue(undefined);
+                    Object.defineProperty(navigator, "clipboard", {
+                      configurable: true,
+                      value: { writeText },
+                    });
+                    renderInProviders(
+                      <StatusBar activeTab={{ name: "hero.psd", path: String.raw`C:\demo\hero.psd` }} />
+                    );
+                    const btn = document.querySelector(".status-filename-button") as HTMLButtonElement | null;
+                    fireEvent.click(btn!);
+                    // Flush microtasks so the async writeText() then setCopiedPath() resolves
+                    await act(async () => {
+                      await Promise.resolve();
+                      await Promise.resolve();
+                      await Promise.resolve();
+                    });
+                    const copied = document.querySelector(".status-filename-button.is-copied");
+                    expect(copied).toBeTruthy();
+                    expect(copied?.textContent ?? "").toMatch(/路径已复制|Path copied/);
+                    // After the timeout elapses, the is-copied class should drop
+                    await act(async () => {
+                      vi.advanceTimersByTime(1700);
+                    });
+                    expect(document.querySelector(".status-filename-button.is-copied")).toBeNull();
+                  } finally {
+                    vi.useRealTimers();
+                  }
+                });
+
+                it("disables the filename button when the active tab has no path", () => {
+                  renderInProviders(<StatusBar activeTab={{ name: "no-path.txt" }} />);
+                  const btn = document.querySelector(".status-filename-button") as HTMLButtonElement | null;
+                  expect(btn).toBeTruthy();
+                  expect(btn?.disabled).toBe(true);
+                });
+
+                it("uses English aria-label for the filename button under en locale", () => {
+                  try { window.localStorage.setItem("openme.lang", "en"); } catch {}
+                  renderInProviders(<StatusBar activeTab={{ name: "hero.psd", path: String.raw`C:\demo\hero.psd` }} />);
+                  const btn = document.querySelector(".status-filename-button") as HTMLButtonElement | null;
+                  expect(btn?.getAttribute("aria-label")).toBe("Copy file path");
+                });
+              });
