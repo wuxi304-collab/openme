@@ -18,7 +18,9 @@ const IPC_ERROR_CODES = {
   CONVERT_EXCEL_FAILED: { defaultMessage: "Excel 转换失败" },
   EXCEL_TOO_LARGE: { defaultMessage: "Excel 文件超过 50 MB 预览限制" },
   OPEN_IN_SYSTEM_FAILED: { defaultMessage: "无法打开" },
-  MEDIA_NOT_FOUND: { defaultMessage: "媒体文件不存在" },
+    REVEAL_IN_FOLDER_FAILED: { defaultMessage: "无法在文件管理器中显示" },
+    FILE_HASH_FAILED: { defaultMessage: "无法计算文件指纹" },
+    MEDIA_NOT_FOUND: { defaultMessage: "媒体文件不存在" },
   // ZIP
   ZIP_TOO_MANY_FILES: { defaultMessage: "压缩包文件过多（超过 100,000 项）" },
   ZIP_TOO_LARGE: { defaultMessage: "解压后体积超过 2 GB 安全限制" },

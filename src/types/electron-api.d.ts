@@ -25,9 +25,11 @@ export interface ElectronAPI {
   convertExcel: (path: string) => Promise<{ success: boolean; sheets?: unknown[]; message?: string }>;
   openFileDialog: () => Promise<string[]>;
   openInSystem: (path: string) => Promise<void>;
-  getAppVersion: () => Promise<string>;
-  getRuntimeInfo: () => Promise<RuntimeInfo>;
-  getMediaUrl: (path: string) => Promise<string>;
+    revealInFolder: (path: string) => Promise<RevealResult | IpcFailureResult>;
+    getFileHash: (path: string) => Promise<FileHashResult | IpcFailureResult>;
+    getAppVersion: () => Promise<string>;
+    getRuntimeInfo: () => Promise<RuntimeInfo>;
+    getMediaUrl: (path: string) => Promise<string>;
   readEpub: (path: string) => Promise<{ success: boolean; book?: EpubBook; message?: string }>;
   getCadEngineStatus: () => Promise<CadEngineStatus>;
   inspectCadDocument: (path: string) => Promise<CadInspectionResult>;
@@ -84,6 +86,20 @@ export interface RuntimeInfo {
   hostname?: string;
   cpus?: number;
   totalMemGb?: number;
+}
+
+export interface RevealResult {
+  ok: true;
+  revealed: boolean;
+}
+
+export interface FileHashResult {
+  ok: true;
+  algorithm: "sha256";
+  hash: string;
+  shortHash: string;
+  size: number;
+  computedAt: string;
 }
 
 export interface CadEngineStatus {

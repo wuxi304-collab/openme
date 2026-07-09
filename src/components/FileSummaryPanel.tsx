@@ -1,11 +1,15 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FileTabState } from "../types";
 import { getFileFormatByPath } from "../file-registry";
 import type { FileCapability, FileFormatDefinition } from "../file-registry";
 import { extractMetadata } from "../metadata";
 import { buildFileBrief } from "../brief";
 import { useI18n } from "../i18n";
+import { useToast } from "./useToast";
 import { CheckIcon } from "./icons/CheckIcon";
 import { CrossIcon } from "./icons/CrossIcon";
+import { formatFileSize, formatRelativeTime } from "../utils/format";
+import type { ElectronAPI, FileHashResult, IpcFailureResult, RevealResult } from "../types/electron-api";
 
 interface FileSummaryPanelProps {
   tab: FileTabState;
@@ -24,8 +28,35 @@ const capabilityKeys: Record<FileCapability, string> = {
 
 const coreCapabilities: FileCapability[] = ["detect", "preview", "metadata", "ai-summary", "edit", "external-open"];
 
+type HashState =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | { kind: "ready"; data: FileHashResult }
+  | { kind: "error" };
+
+function getApi(): ElectronAPI | null {
+  if (typeof window === "undefined") return null;
+  const api: ElectronAPI | undefined = (window as { electronAPI?: ElectronAPI | undefined }).electronAPI;
+  return api ?? null;
+}
+
+function isFailure(value: unknown): value is IpcFailureResult {
+  return !!value && typeof value === "object" && (value as { success?: boolean }).success === false;
+}
+
+async function copyToClipboard(text: string): Promise<boolean> {
+  if (typeof navigator === "undefined" || !navigator.clipboard) return false;
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPanelProps) {
-  const { t, tf } = useI18n();
+  const { t, tf, lang } = useI18n();
+  const { pushToast } = useToast();
   const registryFormat = getFileFormatByPath(tab.path);
   const metadata = extractMetadata({
     filePath: tab.path,
@@ -36,6 +67,108 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
     textSample: tab.content ?? undefined,
   });
   const brief = buildFileBrief(metadata);
+
+  const [hashState, setHashState] = useState<HashState>({ kind: "idle" });
+  const [copyFlash, setCopyFlash] = useState<"" | "path" | "hash" | "json">("");
+  const copyTimer = useRef<number | null>(null);
+
+  // Kick off the SHA-256 stream-hash as soon as the panel mounts. The IPC
+  // handler in main.js streams the file in 1 MiB chunks so even multi-GB
+  // inputs stay responsive.
+  useEffect(() => {
+    let cancelled = false;
+    setHashState({ kind: "loading" });
+    const api = getApi();
+    const promise = api?.getFileHash?.(tab.path);
+    if (!promise || typeof promise.then !== "function") {
+      setHashState({ kind: "error" });
+      return () => { cancelled = true; };
+    }
+    promise
+      .then((result) => {
+        if (cancelled) return;
+        if (isFailure(result)) setHashState({ kind: "error" });
+        else if (result && (result as FileHashResult).ok) setHashState({ kind: "ready", data: result as FileHashResult });
+        else setHashState({ kind: "error" });
+      })
+      .catch(() => { if (!cancelled) setHashState({ kind: "error" }); });
+    return () => { cancelled = true; };
+  }, [tab.path]);
+
+  // Reset transient copy indicator when the user switches tabs.
+  useEffect(() => {
+    setCopyFlash("");
+    if (copyTimer.current !== null) {
+      window.clearTimeout(copyTimer.current);
+      copyTimer.current = null;
+    }
+  }, [tab.path]);
+
+  // Cleanup pending copy timer on unmount.
+  useEffect(() => () => {
+    if (copyTimer.current !== null) window.clearTimeout(copyTimer.current);
+  }, []);
+
+  const flashCopy = useCallback((kind: "path" | "hash" | "json") => {
+    setCopyFlash(kind);
+    if (copyTimer.current !== null) window.clearTimeout(copyTimer.current);
+    copyTimer.current = window.setTimeout(() => {
+      setCopyFlash("");
+      copyTimer.current = null;
+    }, 1400);
+  }, []);
+
+  const handleCopyPath = useCallback(async () => {
+    const ok = await copyToClipboard(tab.path);
+    if (ok) {
+      flashCopy("path");
+      pushToast("success", t("summaryPathCopied"));
+    }
+  }, [tab.path, flashCopy, pushToast, t]);
+
+  const handleCopyHash = useCallback(async () => {
+    if (hashState.kind !== "ready") return;
+    const ok = await copyToClipboard(hashState.data.hash);
+    if (ok) {
+      flashCopy("hash");
+      pushToast("success", t("summaryHashCopied"));
+    }
+  }, [hashState, flashCopy, pushToast, t]);
+
+  const handleCopyJson = useCallback(async () => {
+    const payload = JSON.stringify({
+      path: tab.path,
+      name: tab.name,
+      size: tab.sourceFile?.size ?? null,
+      extension: tab.sourceFile?.extension ?? null,
+      modifiedAt: tab.sourceFile?.modified_at ?? null,
+      hash: hashState.kind === "ready" ? hashState.data.hash : null,
+      computedAt: hashState.kind === "ready" ? hashState.data.computedAt : null,
+    }, null, 2);
+    const ok = await copyToClipboard(payload);
+    if (ok) {
+      flashCopy("json");
+      pushToast("success", t("summaryCopyAsJsonCopied"));
+    }
+  }, [tab, hashState, flashCopy, pushToast, t]);
+
+  const handleRevealInFolder = useCallback(async () => {
+    const api = getApi();
+    const promise = api?.revealInFolder?.(tab.path);
+    if (!promise || typeof promise.then !== "function") {
+      pushToast("error", t("summaryRevealFailed"));
+      return;
+    }
+    const result = await promise;
+    if (isFailure(result) || !(result as RevealResult)?.ok) {
+      pushToast("error", t("summaryRevealFailed"));
+    }
+  }, [tab.path, pushToast, t]);
+
+  const sizeBytes = typeof tab.sourceFile?.size === "number" ? tab.sourceFile.size : null;
+  const modifiedAt = tab.sourceFile?.modified_at;
+  const modifiedDisplay = modifiedAt ? formatRelativeTime(modifiedAt, lang) : "—";
+  const sizeDisplay = sizeBytes === null ? "—" : formatFileSize(sizeBytes, lang);
 
   return (
     <aside className="file-summary-panel" aria-label={t("fileSummaryAria")}>
@@ -72,6 +205,73 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
           </div>
         </div>
       )}
+
+      <div className="summary-section">
+        <span className="summary-section-title">{t("summaryMetadataSection")}</span>
+        <dl className="summary-metadata-list">
+          <div className="summary-metadata-row">
+            <dt>{t("summaryPath")}</dt>
+            <dd>
+              <span className="summary-metadata-path" title={tab.path}>{tab.path}</span>
+              <button
+                type="button"
+                className={`summary-metadata-copy${copyFlash === "path" ? " is-copied" : ""}`}
+                onClick={handleCopyPath}
+                title={t("summaryPathCopyAria")}
+                aria-label={t("summaryPathCopyAria")}
+              >
+                {copyFlash === "path" ? <CheckIcon size={11} strokeWidth={2} /> : <CopyGlyph />}
+              </button>
+            </dd>
+          </div>
+          <div className="summary-metadata-row">
+            <dt>{t("summarySize")}</dt>
+            <dd>{sizeDisplay}</dd>
+          </div>
+          <div className="summary-metadata-row">
+            <dt>{t("summaryModified")}</dt>
+            <dd>{modifiedDisplay}</dd>
+          </div>
+          <div className="summary-metadata-row">
+            <dt>{t("summaryHash")}</dt>
+            <dd className="summary-metadata-hash-cell">
+              <span className="summary-metadata-hash">
+                {hashState.kind === "ready" ? hashState.data.shortHash : t("summaryHashPending")}
+              </span>
+              <span className="summary-metadata-hash-hint">
+                {hashState.kind === "ready" ? t("summaryHashShort") : hashState.kind === "error" ? t("summaryHashFailed") : ""}
+              </span>
+              <button
+                type="button"
+                className={`summary-metadata-copy${copyFlash === "hash" ? " is-copied" : ""}`}
+                onClick={handleCopyHash}
+                disabled={hashState.kind !== "ready"}
+                title={hashState.kind === "ready" ? t("summaryHashFull") : t("summaryHashPending")}
+                aria-label={t("summaryHashCopyAria")}
+              >
+                {copyFlash === "hash" ? <CheckIcon size={11} strokeWidth={2} /> : <CopyGlyph />}
+              </button>
+            </dd>
+          </div>
+        </dl>
+        <div className="summary-metadata-actions">
+          <button
+            type="button"
+            className="summary-metadata-button"
+            onClick={handleRevealInFolder}
+            title={t("summaryRevealInFolderAria")}
+          >
+            {t("summaryRevealInFolder")}
+          </button>
+          <button
+            type="button"
+            className={`summary-metadata-button${copyFlash === "json" ? " is-copied" : ""}`}
+            onClick={handleCopyJson}
+          >
+            {copyFlash === "json" ? t("summaryCopyAsJsonCopied") : t("summaryCopyAsJson")}
+          </button>
+        </div>
+      </div>
 
       <div className="summary-section">
         <span className="summary-section-title">{t("signalsSection")}</span>
@@ -121,6 +321,15 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
         <button type="button" onClick={onOpenInSystem}>{t("openInSystem")}</button>
       </div>
     </aside>
+  );
+}
+
+function CopyGlyph() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true">
+      <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1" fill="none" stroke="currentColor" />
+      <path d="M2 8.5V2.5h6" fill="none" stroke="currentColor" />
+    </svg>
   );
 }
 

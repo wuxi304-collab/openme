@@ -302,3 +302,149 @@
 .summary-action-list {
   list-style: none;
 }
+
+.summary-metadata-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.summary-metadata-row {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.summary-metadata-row dt {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.summary-metadata-row dd {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-metadata-path {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-family: "SFMono-Regular", Consolas, "Roboto Mono", monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: break-all;
+}
+
+.summary-metadata-hash-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.summary-metadata-hash {
+  flex: none;
+  color: rgba(255, 255, 255, 0.86);
+  font-family: "SFMono-Regular", Consolas, "Roboto Mono", monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.summary-metadata-hash-hint {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.summary-metadata-copy {
+  appearance: none;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+.summary-metadata-copy:hover:not(:disabled) {
+  color: #C91F37;
+  border-color: rgba(201, 31, 55, 0.42);
+  background: rgba(201, 31, 55, 0.08);
+}
+
+.summary-metadata-copy:focus-visible {
+  outline: 2px solid #C91F37;
+  outline-offset: 2px;
+}
+
+.summary-metadata-copy:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.summary-metadata-copy.is-copied {
+  color: #9be7a8;
+  border-color: rgba(81, 207, 102, 0.42);
+  background: rgba(81, 207, 102, 0.12);
+}
+
+.summary-metadata-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.summary-metadata-button {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.78);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+.summary-metadata-button:hover {
+  color: #C91F37;
+  border-color: rgba(201, 31, 55, 0.42);
+  background: rgba(201, 31, 55, 0.08);
+}
+
+.summary-metadata-button:focus-visible {
+  outline: 2px solid #C91F37;
+  outline-offset: 2px;
+}
+
+.summary-metadata-button.is-copied {
+  color: #9be7a8;
+  border-color: rgba(81, 207, 102, 0.42);
+  background: rgba(81, 207, 102, 0.12);
+}
