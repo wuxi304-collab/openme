@@ -80,6 +80,8 @@ export const translations: Record<string, Record<string, string>> = {
     statusLineEndingMixed: "混合",
     statusLineEndingNone: "无内容",
     livesAria: "本地处理",
+    // PR #79 — Toast hover-pause hint
+    toastHoverHint: "悬停以暂停自动关闭",
     // PR #77 — StatusBar polish v2
     statusIdleHint: "按 Ctrl+O 打开文件，或拖入任意文件",
     statusIdleHintAria: "空闲提示：按 Ctrl O 打开文件，或拖入任意文件",
@@ -985,6 +987,8 @@ export const translations: Record<string, Record<string, string>> = {
     statusLineEndingMixed: "Mixed",
     statusLineEndingNone: "No content",
     livesAria: "Local processing",
+    // PR #79 — Toast hover-pause hint
+    toastHoverHint: "Hover to pause auto-dismiss",
     // PR #77 — StatusBar polish v2
     statusIdleHint: "Press Ctrl+O to open a file, or drop one anywhere",
     statusIdleHintAria: "Idle hint: press Ctrl O to open a file, or drop one anywhere",
