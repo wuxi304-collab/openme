@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   readTextFile: (path, maxSize) => ipcRenderer.invoke("read-text-file", path, maxSize),
   openFileDialog: () => ipcRenderer.invoke("open-file-dialog"),
   openInSystem: (path) => ipcRenderer.invoke("open-in-system", path),
+  revealInFolder: (path) => ipcRenderer.invoke("reveal-in-folder", path),
+  getFileHash: (path) => ipcRenderer.invoke("get-file-hash", path),
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
   getRuntimeInfo: () => ipcRenderer.invoke("get-runtime-info"),
   getMediaUrl: (path) => ipcRenderer.invoke("get-media-url", path),

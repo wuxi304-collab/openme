@@ -527,6 +527,52 @@ ipcMain.handle("open-in-system", async (_, filePath) => {
   }
 });
 
+// Reveal a file in the host file manager (Explorer / Finder / Nautilus).
+// Returns `{ ok: true, revealed: true }` on success or IpcFailure so the
+// renderer can surface a toast without crashing the panel.
+ipcMain.handle("reveal-in-folder", async (_, filePath) => {
+  try {
+    if (!filePath || typeof filePath !== "string") return ipcError("FILE_NOT_FOUND");
+    if (!fs.existsSync(filePath)) return ipcError("FILE_NOT_FOUND");
+    shell.showItemInFolder(filePath);
+    return { ok: true, revealed: true };
+  } catch (e) {
+    log.error("reveal-in-folder failed", e);
+    return ipcError("REVEAL_IN_FOLDER_FAILED", { message: e.message });
+  }
+});
+
+// Stream-hash a file with SHA-256 and return the first 64 hex chars plus
+// the byte size so the panel can show "fingerprint" + "bytes". Uses a
+// 1 MiB chunk size to stay responsive on multi-GB inputs.
+ipcMain.handle("get-file-hash", async (_, filePath) => {
+  try {
+    if (!filePath || typeof filePath !== "string") return ipcError("FILE_NOT_FOUND");
+    if (!fs.existsSync(filePath)) return ipcError("FILE_NOT_FOUND");
+    const stats = fs.statSync(filePath);
+    const crypto = require("crypto");
+    const hash = crypto.createHash("sha256");
+    const stream = fs.createReadStream(filePath, { highWaterMark: 1024 * 1024 });
+    await new Promise((resolve, reject) => {
+      stream.on("data", (chunk) => hash.update(chunk));
+      stream.on("end", resolve);
+      stream.on("error", reject);
+    });
+    const full = hash.digest("hex");
+    return {
+      ok: true,
+      algorithm: "sha256",
+      hash: full,
+      shortHash: full.slice(0, 16),
+      size: stats.size,
+      computedAt: new Date().toISOString(),
+    };
+  } catch (e) {
+    log.error("get-file-hash failed", e);
+    return ipcError("FILE_HASH_FAILED", { message: e.message });
+  }
+});
+
 function safeArchiveRelativePath(entryName) {
   const normalized = path.posix.normalize(String(entryName).replace(/\\/g, "/"));
   if (!normalized || normalized === "." || normalized.startsWith("../") || path.posix.isAbsolute(normalized)) return null;
