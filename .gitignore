@@ -15,3 +15,7 @@ cad-host/*.svg
 Thumbs.db
 cad-host/previews/
 .tmp/
+
+.copilot-checkpoints/
+.copilot-sessions/
+

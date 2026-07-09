@@ -394,8 +394,44 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
         </ul>
       </div>
 
+      {brief.suggestedApps.length > 0 && (
+        <div className="summary-section">
+          <span className="summary-section-title">{t("summarySuggestedAppsSection")}</span>
+          <p className="summary-suggested-apps-hint">{t("summarySuggestedAppHint")}</p>
+          <ul className="summary-suggested-apps" aria-label={t("summarySuggestedAppsSection")}>
+            {brief.suggestedApps.map((hint) => {
+              const appKey = `app${hint.key.charAt(0).toUpperCase()}${hint.key.slice(1)}`;
+              const appName = t(appKey);
+              return (
+                <li key={hint.key} className="summary-suggested-app">
+                  <div className="summary-suggested-app-head">
+                    <strong>{appName}</strong>
+                    <span className="summary-suggested-app-plat">{hint.platforms.join(" \u00b7 ")}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="summary-suggested-app-button"
+                    onClick={onOpenInSystem}
+                    aria-label={tf("routeOpenWithApp", { app: appName })}
+                  >
+                    {tf("routeOpenWithApp", { app: appName })}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       <div className="summary-actions">
-        <button type="button" onClick={onOpenInSystem}>{t("openInSystem")}</button>
+        <button
+          type="button"
+          onClick={onOpenInSystem}
+          aria-label={brief.suggestedApps.length > 0 ? t("summarySuggestedAppFallbackAria") : undefined}
+          title={brief.suggestedApps.length > 0 ? t("summarySuggestedAppFallbackAria") : t("openInSystemLong")}
+        >
+          {t("openInSystem")}
+        </button>
       </div>
     </aside>
   );
