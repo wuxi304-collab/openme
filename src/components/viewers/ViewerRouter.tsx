@@ -91,7 +91,7 @@ function ViewerShell({ children }: { children: React.ReactNode }) {
 }
 
 function ViewerBoundary({ children }: { children: React.ReactNode }) {
-  return <ErrorBoundary><React.Suspense fallback={<LoadingState />}>{children}</React.Suspense></ErrorBoundary>;
+  return <ErrorBoundary showSaveLog><React.Suspense fallback={<LoadingState />}>{children}</React.Suspense></ErrorBoundary>;
 }
 
 function LoadingState() {

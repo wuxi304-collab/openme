@@ -450,6 +450,16 @@ export const translations: Record<string, Record<string, string>> = {
     viewerErrorTitle: "预览器出现错误",
     viewerErrorBody: "当前 Viewer 已被隔离，OpenMe 主工作台仍可继续使用。",
     viewerErrorRetry: "重试当前预览",
+    viewerErrorSaveLog: "保存错误日志",
+    viewerErrorLoadLog: "查看已捕获的错误",
+
+    // AppErrorBoundary (top-level)
+    appBoundaryKicker: "OpenMe 主界面异常",
+    appBoundaryTitle: "应用遇到严重错误",
+    appBoundaryBody: "已隔离崩溃区域。可以重试加载，或保存错误日志以便排查。",
+    appBoundaryRetry: "重新启动 OpenMe 主界面",
+    appBoundaryReload: "重新加载应用",
+    appBoundaryDismiss: "关闭提示",
 
     // PreviewPane
     contentPreview: "内容预览",
@@ -469,6 +479,13 @@ export const translations: Record<string, Record<string, string>> = {
     removeFromRecentToast: "已从最近文件移除 {name}",
     toastClose: "关闭提示",
     toastLimitHint: "{count} 条更早的提示已收起",
+
+    // Error log
+    errorLogSaveSuccess: "错误日志已保存到 {path}",
+    errorLogSaveFailed: "错误日志保存失败",
+    errorLogEmpty: "错误日志为空",
+    errorLogRingCount: "已捕获 {count} 条日志",
+    errorLogDismiss: "关闭错误日志",
 
     // Close confirm (legacy window.confirm prompts)
     unsavedCloseOne: "“{name}”有未保存修改，仍要关闭吗？",
@@ -1178,6 +1195,16 @@ export const translations: Record<string, Record<string, string>> = {
     viewerErrorTitle: "Viewer error",
     viewerErrorBody: "This viewer has been isolated. The OpenMe workbench keeps running.",
     viewerErrorRetry: "Retry preview",
+    viewerErrorSaveLog: "Save error log",
+    viewerErrorLoadLog: "View captured errors",
+
+    // AppErrorBoundary (top-level)
+    appBoundaryKicker: "Workbench crashed",
+    appBoundaryTitle: "OpenMe ran into a fatal error",
+    appBoundaryBody: "We isolated the crash. You can retry, or save the captured error log to share with us.",
+    appBoundaryRetry: "Restart OpenMe workbench",
+    appBoundaryReload: "Reload app",
+    appBoundaryDismiss: "Dismiss notification",
 
     // PreviewPane
     contentPreview: "Content preview",
@@ -1197,6 +1224,13 @@ export const translations: Record<string, Record<string, string>> = {
     removeFromRecentToast: "Removed {name} from recent",
     toastClose: "Dismiss notification",
     toastLimitHint: "{count} earlier notifications hidden",
+
+    // Error log
+    errorLogSaveSuccess: "Error log saved to {path}",
+    errorLogSaveFailed: "Could not save error log",
+    errorLogEmpty: "Error log is empty",
+    errorLogRingCount: "{count} entries captured",
+    errorLogDismiss: "Dismiss error log",
 
     // Close confirm (legacy window.confirm prompts)
     unsavedCloseOne: "“{name}” has unsaved changes. Close anyway?",
