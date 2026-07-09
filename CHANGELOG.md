@@ -274,6 +274,168 @@ keeps the chrome-coherent design language.
   Not unified yet — the badge in zh renders "支持 A+" which works
   but could be improved with a per-grade Chinese label.
 
+### Phase 3: Reliability + Settings + Bundle + Chrome (PRs #56–#72)
+
+A 17-PR continuation focused on shipping a real **error boundary**,
+**cross-device settings sync**, a **richer About dialog**, **unified
+viewer error states**, and a deep Settings polish. Every PR is small,
+tested, and re-uses the chrome vocabulary that landed in Phase 1/2.
+
+#### PRs #56–#59: documentation, a11y, toast dialogs, viewer errors
+
+- **PR #56 — CHANGELOG + README refresh** (`wuxi304-collab-changelog-readme`):
+  Refreshed the changelog header to record PRs #52–#55 and brought
+  README's Settings table in line with the new editor-preferences PR.
+- **PR #57 — a11y pass** (`wuxi304-collab-a11y`): First audit-driven
+  accessibility sweep. App gains a skip-to-main-content link,
+  `<main id="main-content" tabIndex={-1}>`, FileDropZone wrapped in a
+  labelled `<section role="region">`, FileMetadata upgraded from a
+  loose div-grid to proper `<dl>/<dt>/<dd>` semantics, RecentFiles
+  gets `aria-current="true"` on the active row. Focus-visible
+  outlines added to interactive elements that previously only used
+  `:focus`. 9 new chrome-A11y regression tests.
+- **PR #58 — themed ConfirmDialog** (`wuxi304-collab-i18n-toasts`):
+  The last native `window.confirm` (still used by the "unsaved tab"
+  close flow) is replaced with an in-app themed modal that
+  respects the locale, dark/light theme, and ESC dismissal.
+- **PR #59 — unified ViewerError** (`wuxi304-collab-viewer-error-states`):
+  Ten ad-hoc error UIs across Dwg/Cad/Office/Pdf/Zip/Media/Epub/Font/
+  Markdown/Csv are collapsed into a single `ViewerError` component
+  with a consistent title + hint + retry button. New ViewerError.css
+  chunk (~9 kB raw) and a 6-test regression suite. The chunk only
+  ships when a viewer actually errors, so the happy path is
+  unaffected.
+
+#### PRs #60–#62: bundle, types, app-chrome hygiene
+
+- **PR #60 — manualChunks split** (`wuxi304-collab-bundle-manualchunks`):
+  Three new vendor chunks carved out of the lazy boundaries:
+  `vendor-pdf` (365 kB / 108 kB gzip), `vendor-three` (658 kB /
+  170 kB gzip), `vendor-rich-text` (59 kB / 19 kB gzip, for mammoth
+  + marked). Each one is now hash-stable across chrome-only updates.
+- **PR #61 — type cleanup** (`wuxi304-collab-types-cleanup`):
+  Removed the remaining `(window as any).electronAPI` casts in
+  `App.tsx`, `TitleBar.tsx`, and the browser-dev shim by extending
+  the typed `ElectronAPI` interface in `src/types/electron-api.d.ts`.
+- **PR #62 — App chrome refactor** (`wuxi304-collab-app-chrome`):
+  Deduplicated the three keydown handlers in `App.tsx` (open file,
+  command palette, save) into a single dispatcher keyed off
+  `e.ctrlKey / e.metaKey + e.key`. Removed the remaining `: any`
+  on `toast.message`. Bundle: -0.4 kB index.
+
+#### PRs #63–#66: command palette, empty state, toast, statusbar polish
+
+- **PR #63 — palette polish** (`wuxi304-collab-palette-polish`):
+  CommandPalette now ranks recent commands by fuzzy match score and
+  shows a small "5 min ago" / "yesterday" relative-time tag next to
+  each recent entry. The 8-PR core algorithm in
+  `src/core/commandPaletteSearch.ts` has 11 new unit tests.
+- **PR #64 — empty-state polish** (`wuxi304-collab-empty-state-polish`):
+  The hero empty state now includes a "Keyboard shortcuts" card
+  (Cmd-O / Cmd-K / Cmd-S / drag-drop) and a "Recent files" card
+  that exposes the last 5 entries with one-click open. Both cards
+  use the chrome's existing card vocabulary.
+- **PR #65 — toast stack** (`wuxi304-collab-toast-stack`): Toasts
+  are now capped at 3 visible, with a "2 more hidden" collapse
+  affordance and a per-entry TTL progress bar. Manual close button
+  added; auto-dismiss timer is now 2.6 s (was 2 s).
+- **PR #66 — statusbar polish** (`wuxi304-collab-statusbar-polish`):
+  StatusBar now displays the active editor's line-ending (CRLF /
+  LF / mixed / none) and a small theme pill ("DARK" / "LIGHT" with
+  the appropriate SVG icon). A thin loading bar appears under the
+  status bar while a viewer is initializing.
+
+#### PRs #67–#69: settings sync, about upgrade, file-summary metadata
+
+- **PR #67 — settings sync** (`wuxi304-collab-settings-sync`):
+  New "Export settings" / "Import settings" buttons in the Settings
+  dialog footer. Export writes a JSON file with the shape
+  `{ type: "openme-settings", version: 1, settings: {...}, app: {...} }`.
+  Import parses, validates, and atomically `replaceAll`s the
+  SettingsContext. Wrong-shape / wrong-type / wrong-version all
+  return typed errors that surface in the dialog.
+- **PR #68 — About upgrade** (`wuxi304-collab-about-upgrade`):
+  The About dialog now surfaces runtime info (Electron / Node /
+  Chromium versions read from `navigator.userAgentData` where
+  available, else `process.versions`), a 10-row acknowledgements
+  table (Electron, React, Monaco, PDF.js, Three.js, Mammoth, SheetJS,
+  JSZip, EPUB.js, opentype.js), and a "Copy diagnostics" button that
+  writes a one-clipboard version block. 10 new RTL tests in
+  `AboutDialog.runtime.test.tsx`.
+- **PR #69 — file-summary metadata** (`wuxi304-collab-summary-metadata`):
+  FileSummaryPanel now shows the actual file path, size, last
+  modified time, SHA-1 prefix (8 hex), and a "Reveal in Explorer"
+  button that calls `electronAPI.revealItem(filePath)`. New
+  `FileSummaryPanel.metadata.test.tsx` with 10 tests.
+
+#### PRs #70–#72: error boundary, sidebar, settings deep-dive
+
+- **PR #70 — error boundary** (`wuxi304-collab-error-boundary`):
+  App-level `<AppErrorBoundary>` wraps the chrome and replaces any
+  thrown error with a backdrop modal: a one-click **Retry** button
+  that resets state and re-renders, plus an **Open error log**
+  button that downloads `openme-error-<timestamp>.log` from
+  `src/utils/errorLog.ts`. The capture hook (`installErrorCapture()`)
+  subscribes to `window.onerror` and `unhandledrejection` before
+  React mounts, so first paint errors are recorded. 7 new RTL tests
+  in `AppErrorBoundary.test.tsx`.
+- **PR #71 — sidebar chrome** (`wuxi304-collab-sidebar-chrome`):
+  The Sidebar empty state now has a primary "Choose file" button and
+  a one-line drag hint. Recent files rows get `aria-current="true"`
+  on the active file, and a decorative separator/selection dot is
+  marked `aria-hidden`. 5 new tests in
+  `Sidebar.emptyState.test.tsx`.
+- **PR #72 — settings deep-dive** (`wuxi304-collab-settings-deep-dive`):
+  Four follow-ups to the Settings dialog: the radio groups now have
+  `aria-describedby` pointing at a one-line helper, a focus trap
+  keeps Tab cycling inside the modal, the storage path
+  (`localStorage["openme.settings.v1"]`) is shown as a
+  read-only disclosure, and the reset button now requires a confirm
+  step before wiping the settings blob.
+
+### Phase 3 notes
+
+- **Test count**: 179 → **338** (+159). New suites:
+  `AppErrorBoundary`, `AboutDialog.runtime`, `CommandPalette`,
+  `ConfirmDialog`, `Toast`, `StatusBar`, `Sidebar.emptyState`,
+  `FileSummaryPanel.metadata`, `chromeA11y`, `SettingsDialog.sync`,
+  `App.emptyState`, `ViewerError`, `commandPaletteSearch`,
+  `errorLog`, `format`, `consoleWrapTest`.
+- **i18n key count**: 454 / 454 → **585 / 585** zh+en, audit clean.
+- **Bundle trajectory** (current build):
+  - `index.js` **212.21 kB / 53.57 kB gzip**
+  - `vendor-react` 194.35 kB / 60.70 kB gzip
+  - `index.css` 85.12 kB / 18.37 kB gzip
+  - Lazy viewer chunks: `vendor-pdf` 365.17 / 107.79,
+    `vendor-three` 657.94 / 169.81, `vendor-rich-text` 59.46 /
+    19.37, `occt-import-js` 59.29 / 21.22, `vendor-cad` 2,244.04 /
+    627.57. None of these are loaded on first paint.
+  - Dialog chunks: `AboutDialog` 10.50 / 2.75, `SettingsDialog`
+    13.10 / 2.90, `ConfirmDialog` 1.60 / 0.72.
+  - The `index.js` chunk grew from 178.44 → 212.21 kB raw (+33.77 kB)
+    but the headline cost is the unified ViewerError + AppErrorBoundary
+    retry UI; both only mount on error. The vendor split now means
+    chrome-only updates ship ~30 kB of JS, not the full 200 kB.
+- **Settings file shape**: PR #67 introduces
+  `serializeSettings(settings, appMeta): SettingsFile` and
+  `parseSettingsFile(raw): SettingsImportResult`. The `type` discriminator
+  is `"openme-settings"` and `version` is `1`. Importing a different
+  `type` or `version` returns a typed failure reason
+  (`"invalid-json"` | `"wrong-shape"`) that the dialog surfaces.
+- **Error capture**: PR #70 adds `installErrorCapture()` (called
+  from a `useEffect` in `App` that runs before any other effect).
+  Captures `window.onerror` and `unhandledrejection`, writes a
+  per-session ring buffer of `{ timestamp, message, source, line,
+  stack }`, and exposes a `downloadErrorLog()` button in the
+  error boundary modal. The buffer is intentionally small (100
+  entries) and never persisted across sessions.
+- **Open PRs**: `#24 feat/viewer-matrix` and `#26 feat/action-plan-ui`
+  are intentionally left open — they predate this phase and the
+  matrix / action plan layers have since been re-architected into
+  `src/viewer-matrix/` and the right-side FileSummaryPanel. Those
+  branches will be re-scoped against the current main rather than
+  rebased through 95+ commits of UI churn.
+
 ## Previous releases
 
 OpenMe Qiwu v1.0.0 — the initial public release — predates this
