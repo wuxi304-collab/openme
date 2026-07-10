@@ -156,21 +156,27 @@ export default function DwgViewer({ filePath, fileName }: Props) {
 
   return (
     <div className="dwg-viewer">
-      <div className="dwg-toolbar" aria-label={t("dwgToolbarAria")}>
+      <div className="dwg-toolbar" role="toolbar" aria-label={t("dwgToolbarAria")}>
         <span className="dwg-file-label" title={filePath}><i aria-hidden="true" />{fileName}<em className={fallbackEngine ? "is-fallback" : ""}>{engineName}{cadSummary ? ` · ${cadSummary}` : ""}</em></span>
         <div className="dwg-toolbar-group">
           {nativeSvgUrl && <button type="button" className="dwg-engine-switch" onClick={() => setViewMode(viewMode === "native" ? "compat" : "native")}>{viewMode === "native" ? t("dwgCompatCanvas") : t("dwgEngineeringPreview")}</button>}
           <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("zoom\ne")}>{t("dwgFitWindow")}</button>
           <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("pan")}>{t("dwgPan")}</button>
           <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("select")}>{t("dwgSelect")}</button>
-          <span className="dwg-tool-separator" />
+          <span className="dwg-tool-separator" aria-hidden="true" />
           <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("undo")}>{t("dwgUndo")}</button>
           <button type="button" disabled={viewMode === "native" || !manager} onClick={() => run("redo")}>{t("dwgRedo")}</button>
         </div>
       </div>
-      <div ref={containerRef} className={`dwg-canvas-host ${viewMode === "native" ? "is-hidden" : ""}`} />
+      <div
+        ref={containerRef}
+        className={`dwg-canvas-host ${viewMode === "native" ? "is-hidden" : ""}`}
+        role="img"
+        aria-label={t("dwgCanvasAria")}
+        aria-busy={loading && viewMode !== "native"}
+      />
       {viewMode === "native" && nativeSvgUrl && <div className="dwg-native-canvas"><img src={nativeSvgUrl} alt={tf("dwgAcadSharpAlt", { name: fileName })} /></div>}
-      {loading && viewMode === "compat" && <div className="dwg-overlay" role="status"><span className="dwg-loader" /><strong>{t("dwgParsingTitle")}</strong><small>{t("dwgParsingHint")}</small></div>}
+      {loading && viewMode === "compat" && <div className="dwg-overlay" role="status" aria-live="polite" aria-label={t("dwgParsingOverlayAria")}><span className="dwg-loader" /><strong>{t("dwgParsingTitle")}</strong><small>{t("dwgParsingHint")}</small></div>}
       {error && <ViewerError title={t("dwgErrorTitle")} message={error} action={{ label: t("dwgOpenInSystem"), onClick: () => window.electronAPI.openInSystem(filePath) }} />}
     </div>
   );

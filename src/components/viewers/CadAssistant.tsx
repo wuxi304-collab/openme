@@ -102,10 +102,10 @@ export default function CadAssistant({ filePath, fileName }: Props) {
 
       <div className="cad-ai-context"><span>{t("cadAssistantContextLabel")}</span><strong title={filePath}>{fileName}</strong><small>{t("cadAssistantContextHint")}</small></div>
 
-      <form className="cad-ai-form" onSubmit={submit}>
+      <form className="cad-ai-form" onSubmit={submit} role="group" aria-label={t("cadAssistantFormAria")} aria-busy={loading}>
         <label htmlFor="cad-request">{t("cadAssistantPromptLabel")}</label>
         <textarea id="cad-request" value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder={t("cadAssistantPromptPlaceholder")} />
-        <button type="submit" disabled={!configured || loading || !prompt.trim()}>{loading ? t("cadAssistantSubmitting") : t("cadAssistantSubmit")}</button>
+        <button type="submit" disabled={!configured || loading || !prompt.trim()} aria-label={loading ? t("cadAssistantSubmittingAria") : t("cadAssistantSubmit")}>{loading ? t("cadAssistantSubmitting") : t("cadAssistantSubmit")}</button>
       </form>
 
       {!configured && <p className="cad-ai-notice">{t("cadAssistantApiKeyNotice")}</p>}
@@ -118,11 +118,11 @@ export default function CadAssistant({ filePath, fileName }: Props) {
           closeLabel={t("viewerErrorClose")}
         />
       )}
-      {plan && <section className="cad-plan" aria-live="polite">
+      {plan && <section className="cad-plan" role="region" aria-label={t("cadAssistantPlanAria")} aria-live="polite">
         <div className="cad-plan-title"><strong>{plan.summary}</strong><span data-risk={plan.risk_level}>{t(RISK_LABEL_KEYS[plan.risk_level])}</span></div>
         {plan.needs_clarification && <p className="cad-plan-question">{plan.clarification_question}</p>}
         <ol>{plan.operations.map((operation) => <li key={operation.id}><code>{operation.action}</code><span>{operation.reason}</span></li>)}</ol>
-        <button type="button" className="cad-apply-button" disabled title={t("cadAssistantApplyHint")}>{t("cadAssistantApply")}</button>
+        <button type="button" className="cad-apply-button" disabled aria-disabled="true" title={t("cadAssistantApplyHint")}>{t("cadAssistantApply")}</button>
       </section>}
     </aside>
   );
