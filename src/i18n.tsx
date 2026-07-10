@@ -113,6 +113,16 @@ export const translations: Record<string, Record<string, string>> = {
     statusRiskAria: "文件风险等级 {level}",
     statusStrategyAria: "文件打开策略 {strategy}",
     statusFormatAria: "文件格式 {name}",
+    // Support-level chip in StatusBar (HonestSupportLevel A+/A/B/C/D/E/F)
+    statusSupportBadge: "等级 {level}",
+    statusSupportBadgeAria: "格式支持等级 {level}：{description}",
+    statusSupportLevelDescAplus: "完整原生支持",
+    statusSupportLevelDescA: "完整支持",
+    statusSupportLevelDescB: "仅生成预览",
+    statusSupportLevelDescC: "有限元数据",
+    statusSupportLevelDescD: "识别但无内置渲染",
+    statusSupportLevelDescE: "仅可用系统应用打开",
+    statusSupportLevelDescF: "尚未登记",
 
     // PR #83 — StatusBar format popover
     statusPopoverTitle: "格式详情",
@@ -1106,6 +1116,16 @@ export const translations: Record<string, Record<string, string>> = {
     statusRiskAria: "File risk level {level}",
     statusStrategyAria: "File open strategy {strategy}",
     statusFormatAria: "File format {name}",
+    // Support-level chip in StatusBar (HonestSupportLevel A+/A/B/C/D/E/F)
+    statusSupportBadge: "Level {level}",
+    statusSupportBadgeAria: "Format support level {level}: {description}",
+    statusSupportLevelDescAplus: "First-class native support",
+    statusSupportLevelDescA: "Full built-in support",
+    statusSupportLevelDescB: "Preview only",
+    statusSupportLevelDescC: "Limited metadata",
+    statusSupportLevelDescD: "Recognised, no built-in render",
+    statusSupportLevelDescE: "External app only",
+    statusSupportLevelDescF: "Not registered",
 
     // PR #83 — StatusBar format popover
     statusPopoverTitle: "Format details",
