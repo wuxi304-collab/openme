@@ -23,6 +23,8 @@ import {
   trackDisplayName,
   type QualityTier,
 } from "../../utils/audioFormat";
+import { useAudioMeter } from "../../hooks/useAudioMeter";
+import AudioMeterBars from "./AudioMeterBars";
 import ViewerError from "../ViewerError";
 import "../ViewerError.css";
 import "./LosslessAudioPlayer.css";
@@ -302,6 +304,16 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
   const isSurround = (meta?.format.channels ?? 0) > 2;
   const container = meta?.format.container ?? "—";
   const lossless = isLosslessExtension(filePath);
+    const channels = meta?.format.channels ?? 2;
+
+    // Real-time level meter driven by a Web Audio AnalyserNode graph. The
+    // hook is fault-tolerant: if AudioContext isn't available (SSR, very old
+    // Chromium), it returns a frozen silence frame and the player still works.
+    const { frame: meterFrame } = useAudioMeter({
+      audioRef,
+      playing,
+      sourceReady: source != null,
+    });
 
   if (error) {
     return (
@@ -410,7 +422,11 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
           </div>
         </div>
 
-        <div className="ll-transport" role="toolbar" aria-label={t("losslessTransportLabel")}>
+                  <div className="ll-meter-slot">
+                    <AudioMeterBars frame={meterFrame} floorDb={-60} channels={channels} />
+                  </div>
+
+                  <div className="ll-transport" role="toolbar" aria-label={t("losslessTransportLabel")}>
           <button type="button" className="ll-btn" aria-label={t("losslessPrev")} title={t("losslessPrevTitle")} onClick={() => handleAdvance("prev")} disabled={queue.length < 2}>
             <span aria-hidden="true">⏮</span>
           </button>
