@@ -306,7 +306,7 @@ export default function App() {
             <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} onReorder={handleReorderTabs} />
             <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
           <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} totalCount={recentFiles.length} onReveal={handleRevealRecent} onOpenInSystem={handleOpenRecentInSystem} />
-          <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
+          <main id="main-content" role="main" aria-label={t("appMainAria")} tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
             {tabs.length === 0 ? <EmptyState onOpenDialog={handleOpenDialog} recentFiles={recentFiles} onOpenRecent={(file) => { void openFileInTab(file); }} /> : activeTab ? (
               <div className="workspace-viewer-grid"><div className="workspace-viewer-main">{activeTab.isLoading ? <LoadingState /> : <ViewerRouter tab={activeTab} onChange={handleContentChange} onRetry={activeTab.sourceFile ? () => { void retryTab(activeTab.id); } : undefined} />}</div><FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} /></div>
             ) : null}
@@ -438,9 +438,9 @@ export function EmptyState({
 function LoadingState() {
   const { t } = useI18n();
   return (
-    <div className="loading-state">
+    <div className="loading-state" role="status" aria-live="polite" aria-busy="true">
       <div className="loading-card">
-        <div className="loading-dot-row">
+        <div className="loading-dot-row" aria-hidden="true">
           <div className="loading-dot" />
           <div className="loading-dot" />
           <div className="loading-dot" />
