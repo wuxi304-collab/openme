@@ -630,6 +630,10 @@ export const translations: Record<string, Record<string, string>> = {
     cad3dStepLoaderMissing: "STEP 加载器未就绪",
     cad3dErrorTitle: "3D 模型加载失败",
     cad3dOpenInSystem: "用系统程序打开",
+    cad3dStageAria: "3D 预览画布",
+    cad3dLoadingAria: "正在加载模型",
+    cad3dHintAria: "拖拽旋转 · 滚轮缩放 · 双击重置视角",
+    cad3dKeyboardHint: "拖拽 = 旋转 · 滚轮 = 缩放",
 
     // CadAssistant (CAD Copilot)
     cadAssistantAria: "CAD AI 助手",
@@ -1784,6 +1788,10 @@ export const translations: Record<string, Record<string, string>> = {
     cad3dStepLoaderMissing: "STEP loader not ready",
     cad3dErrorTitle: "3D model could not be loaded",
     cad3dOpenInSystem: "Open in system",
+    cad3dStageAria: "3D preview canvas",
+    cad3dLoadingAria: "Loading model",
+    cad3dHintAria: "Drag to rotate · scroll to zoom · double-click to reset view",
+    cad3dKeyboardHint: "Drag = rotate · scroll = zoom",
 
     // CadAssistant (CAD Copilot)
     cadAssistantAria: "CAD AI assistant",

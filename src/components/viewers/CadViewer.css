@@ -1,0 +1,108 @@
+.cad3d-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: var(--radius-lg, 8px);
+  border: 1px solid var(--border-default);
+  background: var(--bg-base);
+  overflow: hidden;
+}
+
+.cad3d-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.cad3d-header-left,
+.cad3d-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cad3d-header-kicker {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.cad3d-info-chip {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm, 4px);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cad3d-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.cad3d-stage-wrap {
+  flex: 1 1 auto;
+  position: relative;
+  min-height: 0;
+}
+
+.cad3d-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.cad3d-canvas:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.cad3d-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 17, 23, 0.7);
+}
+
+.cad3d-loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.cad3d-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--accent);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: cad3d-spin 0.9s linear infinite;
+}
+
+@keyframes cad3d-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cad3d-loading-text {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cad3d-spinner {
+    animation: none;
+  }
+}
