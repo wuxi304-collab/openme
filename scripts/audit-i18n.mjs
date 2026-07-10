@@ -81,7 +81,9 @@ const WHITELIST = new Set([
   "appCalibre", "appKindle", "appSystemViewer", "appFontManager",
   "appFontForge", "appPeazip", "appKeka", "appTheUnarchiver",
   "appBandizip", "appDjvulibre", "appGis",
-  ]);
+    // PR #100 — line ending markers are technical acronyms shown verbatim
+    "codeEditorEolLF", "codeEditorEolCRLF", "codeEditorEolCR",
+    ]);
 
 const untranslated = [];
 const onlyInZh = [];
