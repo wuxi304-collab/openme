@@ -144,6 +144,21 @@ export const translations: Record<string, Record<string, string>> = {
             tabMovedRightAnnounce: "已将 {name} 向右移动",
             tabReorderHint: "拖动或使用 Ctrl+Shift+←/→ 重新排序",
 
+    // PR #94 — StatusBar polish v3 (char/word count + BOM detection)
+    statusCharCount: "{count} 个字符",
+    statusCharCountShort: "{count} 字符",
+    statusCharCountAria: "文件共 {count} 个字符",
+    statusWordCount: "{count} 个词",
+    statusWordCountShort: "{count} 词",
+    statusWordCountAria: "文件共 {count} 个词",
+    statusWordCountEmpty: "0 词",
+    statusEncodingLabel: "文件编码",
+    statusEncodingUTF8: "UTF-8",
+    statusEncodingUTF8BOM: "UTF-8 (BOM)",
+    statusEncodingUTF16LE: "UTF-16 LE",
+    statusEncodingUTF16BE: "UTF-16 BE",
+    statusEncodingUnknown: "未知编码",
+
     // CommandPalette
     commandPaletteAria: "命令面板",
     searchCommandsAria: "搜索命令",
@@ -1150,6 +1165,21 @@ export const translations: Record<string, Record<string, string>> = {
         tabMovedLeftAnnounce: "Moved {name} left",
         tabMovedRightAnnounce: "Moved {name} right",
         tabReorderHint: "Drag or use Ctrl+Shift+Left/Right to reorder",
+
+    // PR #94 — StatusBar polish v3 (char/word count + BOM detection)
+    statusCharCount: "{count} characters",
+    statusCharCountShort: "{count} chars",
+    statusCharCountAria: "File has {count} characters",
+    statusWordCount: "{count} words",
+    statusWordCountShort: "{count} words",
+    statusWordCountAria: "File has {count} words",
+    statusWordCountEmpty: "0 words",
+    statusEncodingLabel: "File encoding",
+    statusEncodingUTF8: "UTF-8",
+    statusEncodingUTF8BOM: "UTF-8 (BOM)",
+    statusEncodingUTF16LE: "UTF-16 LE",
+    statusEncodingUTF16BE: "UTF-16 BE",
+    statusEncodingUnknown: "Unknown encoding",
 
     // CommandPalette
     commandPaletteAria: "Command palette",

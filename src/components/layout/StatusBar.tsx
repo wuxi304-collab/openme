@@ -56,6 +56,90 @@ function detectLineEnding(content: string | undefined): "lf" | "crlf" | "mixed" 
   return "none";
 }
 
+// Best-effort encoding detection from a JS string. The string has already
+// been decoded, so we can only see the original BOM.  UTF-16 LE/BE
+// encodings would have been transcoded to a regular JS string, so we
+// only flag what survived: UTF-8 with BOM, plain UTF-8, or "unknown"
+// for control-heavy content that doesn't look like text.
+type FileEncoding = "utf-8" | "utf-8-bom" | "utf-16-le" | "utf-16-be" | "unknown";
+
+function detectEncoding(content: string | undefined): FileEncoding | null {
+  if (content === undefined) return null;
+  if (content.length === 0) return null;
+  if (content.charCodeAt(0) === 0xfeff) return "utf-8-bom";
+  // If the file decodes as a string it was almost certainly read as UTF-8
+  // by the loader — we can't recover the original byte stream here.  The
+  // remaining cases are only useful when a custom decoder landed us a
+  // surrogate pair, which doesn't happen in practice, so we report
+  // "unknown" only for very high control-character density.
+  let controlCount = 0;
+  const sample = content.slice(0, 256);
+  for (let i = 0; i < sample.length; i += 1) {
+    const code = sample.charCodeAt(i);
+    if (code < 0x20 && code !== 0x09 && code !== 0x0a && code !== 0x0d) {
+      controlCount += 1;
+    }
+  }
+  if (controlCount > sample.length * 0.3) return "unknown";
+  return "utf-8";
+}
+
+function encodingKey(enc: FileEncoding): string {
+  switch (enc) {
+    case "utf-8-bom": return "statusEncodingUTF8BOM";
+    case "utf-16-le": return "statusEncodingUTF16LE";
+    case "utf-16-be": return "statusEncodingUTF16BE";
+    case "unknown": return "statusEncodingUnknown";
+    default: return "statusEncodingUTF8";
+  }
+}
+
+function countWords(content: string): number {
+  // Word counter suitable for a status-bar indicator.  CJK characters
+  // (Han, Hiragana, Katakana, Hangul) each count as one word because
+  // they don't separate on whitespace.  Latin / digit runs count as
+  // one word per whitespace-delimited run.  Punctuation is ignored.
+  if (content.length === 0) return 0;
+  let count = 0;
+  let inLatinWord = false;
+  for (let i = 0; i < content.length; i += 1) {
+    const code = content.charCodeAt(i);
+    const isSpace = code === 0x20 || code === 0x09 || code === 0x0a || code === 0x0d;
+    const isCjk =
+      (code >= 0x4e00 && code <= 0x9fff) ||
+      (code >= 0x3040 && code <= 0x30ff) ||
+      (code >= 0xac00 && code <= 0xd7af);
+    if (isSpace) {
+      inLatinWord = false;
+    } else if (isCjk) {
+      // Each CJK character is its own word; don't fuse with surrounding
+      // Latin because languages and editors interleave freely
+      // ("hello 你好 world" should be 3 words).
+      count += 1;
+      inLatinWord = false;
+    } else if (isLatinLike(code)) {
+      if (!inLatinWord) {
+        count += 1;
+        inLatinWord = true;
+      }
+    } else {
+      // punctuation / symbol — break the current Latin run.
+      inLatinWord = false;
+    }
+  }
+  return count;
+}
+
+function isLatinLike(code: number): boolean {
+  // ASCII letters, digits, underscore, and common accented Latin letters.
+  if (code >= 0x30 && code <= 0x39) return true; // 0-9
+  if (code >= 0x41 && code <= 0x5a) return true; // A-Z
+  if (code >= 0x61 && code <= 0x7a) return true; // a-z
+  if (code === 0x5f) return true; // _
+  if (code >= 0xc0 && code <= 0x024f) return true; // Latin-1 / Latin Extended
+  return false;
+}
+
 function statusLineEndingKey(kind: "lf" | "crlf" | "mixed" | "none"): string {
   switch (kind) {
     case "crlf": return "statusLineEndingCRLF";
@@ -70,9 +154,20 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
   const { settings, update } = useSettings();
   const lines = activeTab?.content !== undefined ? activeTab.content.split("\n").length : 0;
   const sizeLabel = typeof activeTab?.size === "number" ? formatBytes(activeTab.size, t("unknownSize")) : null;
+  // Use Array.from for code-point-correct CJK counting (otherwise a
+  // surrogate pair registers as two characters).  Word count uses our
+  // CJK-aware helper which treats each CJK ideograph run as one word.
+  const charCount = activeTab?.content !== undefined && activeTab.content.length > 0
+    ? Array.from(activeTab.content).length
+    : 0;
+  const wordCount = activeTab?.content !== undefined && activeTab.content.length > 0
+    ? countWords(activeTab.content)
+    : 0;
+  const encoding = detectEncoding(activeTab?.content);
   const format = activeTab?.path ? getFileFormatByPath(activeTab.path) : undefined;
   const lineEnding = detectLineEnding(activeTab?.content);
   const isBinary = activeTab?.content === null;
+  const showTextStats = !isBinary && activeTab?.content !== undefined && activeTab.content.length > 0;
   const showTabPosition = typeof activePosition === "number" && typeof totalTabs === "number" && totalTabs > 1;
   const showRiskChip = activeTab?.riskLevel === "high";
   const showStrategyChip = activeTab?.openStrategy === "external" || activeTab?.openStrategy === "restricted";
@@ -212,6 +307,24 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
         )}
         {sizeLabel && <span className="status-meta">{sizeLabel}</span>}
         {lines > 0 && <span className="status-meta">{`${lines.toLocaleString()} ${t("lines")}`}</span>}
+        {showTextStats && charCount > 0 && (
+          <span
+            className="status-meta status-char-count"
+            title={tf("statusCharCountAria", { count: charCount.toLocaleString() })}
+            aria-label={tf("statusCharCountAria", { count: charCount.toLocaleString() })}
+          >
+            {tf("statusCharCountShort", { count: charCount.toLocaleString() })}
+          </span>
+        )}
+        {showTextStats && (
+          <span
+            className="status-meta status-word-count"
+            title={tf("statusWordCountAria", { count: wordCount.toLocaleString() })}
+            aria-label={tf("statusWordCountAria", { count: wordCount.toLocaleString() })}
+          >
+            {wordCount === 0 ? t("statusWordCountEmpty") : tf("statusWordCountShort", { count: wordCount.toLocaleString() })}
+          </span>
+        )}
       </div>
       <div className="status-right">
         {showTabPosition && (
@@ -225,7 +338,13 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
         {activeTab?.isDirty && <span className="status-pill">{t("saveShortcut")}</span>}
         <span className="status-meta-text">{t("localFirst")}</span>
         <span className="status-meta-text status-line-ending">
-          <span className="status-meta-subdued">UTF-8</span>
+          <span
+            className="status-meta-subdued"
+            title={encoding ? t("statusEncodingLabel") : undefined}
+            aria-label={encoding ? t("statusEncodingLabel") : undefined}
+          >
+            {encoding ? t(encodingKey(encoding)) : "UTF-8"}
+          </span>
           <span aria-hidden="true">·</span>
           <span title={t("statusLineEndingLabel")}>{t(statusLineEndingKey(lineEnding))}</span>
         </span>
