@@ -9,6 +9,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 const PROGRESS_CHANNEL = "splash:progress";
 const INIT_CHANNEL = "splash:init";
 const LANG_CHANNEL = "splash:lang";
+const FADE_CHANNEL = "splash:fade";
 const READY_CHANNEL = "splash:ready";
 
 contextBridge.exposeInMainWorld("openmeSplash", {
@@ -29,6 +30,12 @@ contextBridge.exposeInMainWorld("openmeSplash", {
     const listener = (_event, payload) => handler(payload);
     ipcRenderer.on(LANG_CHANNEL, listener);
     return () => ipcRenderer.removeListener(LANG_CHANNEL, listener);
+  },
+  onFade(handler) {
+    if (typeof handler !== "function") return () => undefined;
+    const listener = () => handler();
+    ipcRenderer.on(FADE_CHANNEL, listener);
+    return () => ipcRenderer.removeListener(FADE_CHANNEL, listener);
   },
   notifyReady() {
     ipcRenderer.send(READY_CHANNEL);

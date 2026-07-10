@@ -58,6 +58,7 @@ let mainShown = false;
 // renders — file picker title, unzip destination title, and the unsaved-changes
 // close prompt. Falls back to Chinese defaults when the renderer hasn't pushed
 // any values yet (cold start).
+let uiLang = "zh";
 let uiStrings = {
   dialogSelectFile: "选择文件",
   dialogSelectFolder: "选择解压目标文件夹",
@@ -311,25 +312,88 @@ function findCadEngine() {
 
     function emitSplashInit() {
       if (!splashWindow || splashWindow.isDestroyed()) return;
-      splashWindow.webContents.send("splash:init", {
-        version: app.getVersion(),
-        lang: "zh",
-      });
-    }
+          try {
+            splashWindow.webContents.send("splash:init", {
+              version: app.getVersion(),
+              lang: uiLang,
+            });
+          } catch {
+            /* ignore — webContents may already be gone */
+          }
+        }
+
+        function emitSplashProgress(percent, phase) {
+          if (!splashWindow || splashWindow.isDestroyed()) return;
+          try {
+            splashWindow.webContents.send("splash:progress", {
+              percent,
+              phase,
+              lang: uiLang,
+            });
+          } catch {
+            /* ignore — webContents may already be gone */
+          }
+        }
+
+        function emitSplashLangChange() {
+          if (!splashWindow || splashWindow.isDestroyed()) return;
+          try {
+            splashWindow.webContents.send("splash:lang", { lang: uiLang });
+          } catch {
+            /* ignore — webContents may already be gone */
+          }
+        }
+
+        // Phase timing constants — see PR #95. Splash phases advance on a fixed
+        // schedule so users always see motion during cold start; lifecycle hooks
+        // (dom-ready / ready-to-show) bump us into later phases earlier when the
+        // renderer is actually ready. Per-phase dwell ensures each label is
+        // readable even on fast machines.
+        const SPLASH_PHASE_BOOT_MS = 320;
+        const SPLASH_PHASE_RENDERER_MS = 360;
+        const SPLASH_PHASE_ASSETS_MS = 260;
+        const SPLASH_PHASE_FADE_MS = 220;
+        const SPLASH_BOOT_PCT = 15;
+        const SPLASH_RENDERER_PCT = 45;
+        const SPLASH_ASSETS_PCT = 80;
+        const SPLASH_READY_PCT = 98;
+        const SPLASH_DONE_PCT = 100;
+
+        function scheduleSplashTimeline() {
+          // Phase 1 — engine (immediately). User has visual feedback the moment
+          // we have a splash surface on screen.
+          emitSplashProgress(SPLASH_BOOT_PCT, "splashPhaseBoot");
+          // Phase 2 — interface. After a short dwell, kick off the main window
+          // creation. We schedule createWindow here so the boot phase is always
+          // visible, even on machines where renderer loading is sub-200ms.
+          setTimeout(() => {
+            if (splashClosed) return;
+            emitSplashProgress(SPLASH_RENDERER_PCT, "splashPhaseRenderer");
+          }, SPLASH_PHASE_BOOT_MS);
+        }
 
     function hideSplash() {
       if (!splashWindow || splashWindow.isDestroyed()) return;
-      try {
-        splashWindow.hide();
-      } catch {
-        /* ignore — window already gone */
-      }
-      // Give the main window a frame to paint before destroying the splash
-      // so the user never sees a gap between splash-hide and main-show.
-      setTimeout(() => {
-        if (splashWindow && !splashWindow.isDestroyed()) splashWindow.destroy();
-      }, 180);
-    }
+          // Tell the splash renderer to fade itself out before we destroy it.
+          // The CSS `.splash.is-fading` rule animates opacity to 0 over
+          // SPLASH_PHASE_FADE_MS. If the splash webContents is already gone
+          // (e.g. window-all-closed raced), we just destroy synchronously.
+          try {
+            splashWindow.webContents.send("splash:fade");
+          } catch {
+            /* ignore — renderer may be gone */
+          }
+          try {
+            splashWindow.hide();
+          } catch {
+            /* ignore — window already gone */
+          }
+          // Give the main window a frame to paint before destroying the splash
+          // so the user never sees a gap between splash-hide and main-show.
+          setTimeout(() => {
+            if (splashWindow && !splashWindow.isDestroyed()) splashWindow.destroy();
+          }, 240);
+        }
 
     function createWindow() {
   mainWindow = new BrowserWindow({
@@ -369,30 +433,51 @@ function findCadEngine() {
 
       log.info("Main window created");
 
-      // ready-to-show fires once the renderer has produced its first real
-      // frame. Showing before this causes a white / blank flash. We swap
-      // splash → main here so the user sees a single continuous transition.
-      mainWindow.once("ready-to-show", () => {
-        if (!mainWindow || mainWindow.isDestroyed()) return;
-        mainShown = true;
-        mainWindow.show();
-        log.info("Main window ready-to-show");
-        // Slight delay so the main frame has painted before tearing the
-        // splash down — avoids a single-frame gap.
-        setTimeout(() => hideSplash(), 120);
-      });
+            // dom-ready fires when the renderer's document has finished parsing
+            // (HTML loaded, scripts resolved). This is roughly the "renderer
+            // connected" milestone — splash advances to "preparing assets".
+            mainWindow.webContents.once("dom-ready", () => {
+              if (splashClosed) return;
+              // Throttle: if we're still in the boot/renderer phases, advance
+              // through to assets immediately; otherwise just bump the percent.
+              emitSplashProgress(SPLASH_ASSETS_PCT, "splashPhaseAssets");
+              log.info("Main window dom-ready");
+            });
 
-      // Hard ceiling: if the renderer never reports ready-to-show (e.g. JS
-      // crash), still show the window after 8s so the user can see an error
-      // surface or close it manually instead of staring at a frozen splash.
-      setTimeout(() => {
-        if (!mainShown && mainWindow && !mainWindow.isDestroyed()) {
-          log.warn("ready-to-show timed out — forcing main window visible");
-          mainShown = true;
-          mainWindow.show();
-          hideSplash();
-        }
-      }, 8000);
+            // ready-to-show fires once the renderer has produced its first real
+            // frame. Showing before this causes a white / blank flash. We swap
+            // splash → main here so the user sees a single continuous transition.
+            mainWindow.once("ready-to-show", () => {
+              if (!mainWindow || mainWindow.isDestroyed()) return;
+              mainShown = true;
+              mainWindow.show();
+              log.info("Main window ready-to-show");
+              // Splash "ready" → fade out → destroy. Hold the splash for the
+              // configured dwell so users actually see the "almost there" label
+              // even on a fast machine, then fade smoothly into the main window.
+              if (!splashClosed) {
+                emitSplashProgress(SPLASH_READY_PCT, "splashPhaseReady");
+                setTimeout(() => {
+                  if (splashClosed) return;
+                  emitSplashProgress(SPLASH_DONE_PCT, "splashPhaseReady");
+                  // Slight delay so the progress fill visually reaches 100% before
+                  // we fade the splash away.
+                  setTimeout(() => hideSplash(), SPLASH_PHASE_FADE_MS);
+                }, SPLASH_PHASE_ASSETS_MS);
+              }
+            });
+
+            // Hard ceiling: if the renderer never reports ready-to-show (e.g. JS
+            // crash), still show the window after 8s so the user can see an error
+            // surface or close it manually instead of staring at a frozen splash.
+            setTimeout(() => {
+              if (!mainShown && mainWindow && !mainWindow.isDestroyed()) {
+                log.warn("ready-to-show timed out — forcing main window visible");
+                mainShown = true;
+                mainWindow.show();
+                hideSplash();
+              }
+            }, 8000);
 
       if (isDev) {
         mainWindow.loadURL(DEV_ORIGIN);
@@ -430,10 +515,14 @@ app.whenReady().then(() => {
   // Spawn the splash FIRST so the user has immediate visual feedback
   // before the main window's renderer even starts loading the bundle.
   createSplashWindow();
+  emitSplashInit();
+  scheduleSplashTimeline();
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createSplashWindow();
+      emitSplashInit();
+      scheduleSplashTimeline();
       createWindow();
     }
   });
@@ -445,7 +534,14 @@ app.on("window-all-closed", () => {
 
 ipcMain.handle("set-ui-strings", (_, strings) => {
   if (strings && typeof strings === "object") {
-    uiStrings = { ...uiStrings, ...strings };
+    if (typeof strings.lang === "string" && (strings.lang === "zh" || strings.lang === "en")) {
+      uiLang = strings.lang;
+      emitSplashLangChange();
+    }
+    // Strip the meta `lang` field before merging into uiStrings — it's not a
+    // dialog string, just a hint we use for splash localization.
+    const { lang: _lang, ...rest } = strings;
+    uiStrings = { ...uiStrings, ...rest };
   }
 });
 

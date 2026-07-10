@@ -2193,20 +2193,23 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   };
   // Push the locale-dependent strings the main process needs for native
   // dialogs (file picker title, unsaved-changes prompt). Re-pushed on every
-  // language change so a mid-session switch takes effect immediately.
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.electronAPI?.setUiStrings) return;
-    const bundle: Record<string, string> = {
-      dialogSelectFile: t("dialogSelectFile"),
-      dialogSelectFolder: t("dialogSelectFolder"),
-      closePromptTitle: t("closePromptTitle"),
-      closePromptMessage: t("closePromptMessage"),
-      closePromptDetail: t("closePromptDetail"),
-      closePromptKeepEditing: t("closePromptKeepEditing"),
-      closePromptDiscard: t("closePromptDiscard"),
-    };
-    window.electronAPI.setUiStrings(bundle).catch(() => undefined);
-  }, [lang, t]);
+    // language change so a mid-session switch takes effect immediately. The
+    // `lang` field is a meta-hint for the splash screen — main reads it to
+    // localize phase labels during cold start (see PR #95).
+    useEffect(() => {
+      if (typeof window === "undefined" || !window.electronAPI?.setUiStrings) return;
+      const bundle: Record<string, string> & { lang: "zh" | "en" } = {
+        lang,
+        dialogSelectFile: t("dialogSelectFile"),
+        dialogSelectFolder: t("dialogSelectFolder"),
+        closePromptTitle: t("closePromptTitle"),
+        closePromptMessage: t("closePromptMessage"),
+        closePromptDetail: t("closePromptDetail"),
+        closePromptKeepEditing: t("closePromptKeepEditing"),
+        closePromptDiscard: t("closePromptDiscard"),
+      };
+      window.electronAPI.setUiStrings(bundle).catch(() => undefined);
+    }, [lang, t]);
   return <I18nContext.Provider value={{ lang, setLang, t, tf }}>{children}</I18nContext.Provider>;
 }
 

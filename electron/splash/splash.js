@@ -84,13 +84,20 @@
     dot.style.animation = "";
   }
 
+    function fadeOut() {
+      const root = document.querySelector(".splash");
+      if (!root) return;
+      root.classList.add("is-fading");
+    }
+
   /* Public API exposed to main via preload contextBridge. */
   const api = {
     setProgress,
     setPhase,
     setVersion,
     applyI18n,
-  };
+      fadeOut,
+    };
 
   window.splash = api;
 
@@ -112,5 +119,8 @@
     if (typeof bridge.onLangChange === "function") {
       bridge.onLangChange((lang) => applyI18n(resolveLang(lang)));
     }
-  }
-})();
+        if (typeof bridge.onFade === "function") {
+          bridge.onFade(() => fadeOut());
+        }
+      }
+    })();

@@ -26,7 +26,7 @@ export interface GetSettingsStoragePathResult {
 
 export interface ElectronAPI {
   getFileInfo: (path: string) => Promise<FileInfo | IpcFailureResult>;
-  setUiStrings: (strings: Partial<UiStrings>) => Promise<void>;
+  setUiStrings: (strings: Partial<UiStrings> & { lang?: "zh" | "en" }) => Promise<void>;
   loadRecentFiles: () => Promise<RecentFilesStore>;
   saveRecentFiles: (store: { files: FileInfo[]; version: number }) => Promise<void>;
   readFileContent: (path: string, maxSize?: number) => Promise<{ type: string; data?: string; mimeType?: string; message?: string }>;
