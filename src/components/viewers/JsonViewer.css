@@ -1,0 +1,215 @@
+.json-viewer-root {
+  font-family: var(--font-mono, "JetBrains Mono", "Menlo", monospace);
+  color: var(--text-primary);
+}
+
+.json-viewer-root .json-toolbar {
+  font-family: var(--font-sans, "Inter", sans-serif);
+  font-size: 11px;
+  gap: 8px;
+}
+
+.json-viewer-root .json-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.json-viewer-root .json-search-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  background: var(--bg-base);
+  color: var(--text-muted);
+  transition: border-color 160ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.json-viewer-root .json-search-field:focus-within {
+  border-color: var(--accent);
+}
+
+.json-viewer-root .json-search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 11px;
+  width: 200px;
+  font-family: inherit;
+}
+
+.json-viewer-root .json-search-count {
+  margin-left: 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.json-viewer-root .json-tool-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+    border-color 160ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+    color 160ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.json-viewer-root .json-tool-button:hover:not(:disabled) {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.json-viewer-root .json-tool-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.json-viewer-root .json-tool-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.json-viewer-root .json-tool-button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.json-viewer-root .viewer-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.json-viewer-root .viewer-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.json-tree {
+  line-height: 1.55;
+}
+
+.json-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 120ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.json-row:hover {
+  background: var(--bg-surface);
+}
+
+.json-row.is-focused {
+  background: rgba(230, 0, 18, 0.1);
+  outline: 1px solid rgba(230, 0, 18, 0.3);
+}
+
+.json-row.is-search-hit {
+  background: rgba(255, 196, 0, 0.08);
+}
+
+.json-chevron {
+  display: inline-block;
+  width: 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 10px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.json-chevron-spacer {
+  display: inline-block;
+  width: 12px;
+  flex-shrink: 0;
+}
+
+.json-key {
+  color: var(--accent);
+}
+
+.json-string {
+  color: #1d8348;
+}
+.json-number {
+  color: #2874a6;
+}
+.json-boolean {
+  color: #884ea0;
+}
+.json-null {
+  color: var(--text-muted);
+  font-style: italic;
+}
+.json-bracket {
+  color: var(--text-primary);
+}
+.json-comma {
+  color: var(--text-muted);
+}
+.json-summary {
+  color: var(--text-muted);
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.json-statusbar {
+  border-top: 1px solid var(--border-muted);
+  background: var(--bg-surface);
+  padding: 4px 10px;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-muted);
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.json-statusbar-path {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .json-row,
+  .json-tool-button,
+  .json-search-field,
+  .json-search-input {
+    transition: none !important;
+  }
+  .json-tool-button:active:not(:disabled) {
+    transform: none;
+  }
+}
