@@ -1199,12 +1199,19 @@ main:focus { outline: none; }
 .app-toast { position:relative; display:flex; align-items:center; gap:9px; padding:10px 13px 12px; border:1px solid #ffffff18; border-radius:10px; color:#f6f3ee; background:#24211dcc; box-shadow:0 14px 38px #0008; backdrop-filter:blur(12px); font-size:12px; pointer-events:auto; overflow:hidden; animation:toast-in var(--dur-fast) var(--ease-out); transform:translateY(calc(var(--stack-index, 0) * -14px)); transition:transform var(--dur-base) var(--ease-out); }
 .app-toast i { width:20px; height:20px; flex:none; display:grid; place-items:center; border-radius:50%; color:#102014; background:#65c978; font-style:normal; font-weight:900; }
 .app-toast.is-error i { color:#2a100d; background:#ef6a58; }
+.app-toast.is-info i { color:#102014; background:#d9aa35; }
 .app-toast-message { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .app-toast-close { flex:none; width:22px; height:22px; display:grid; place-items:center; border:0; border-radius:6px; color:#a9a39a; background:transparent; font-size:14px; line-height:1; cursor:pointer; transition:color var(--dur-fast) var(--ease-out),background-color var(--dur-fast) var(--ease-out); }
 .app-toast-close:hover { color:#fff; background:#ffffff14; }
 .app-toast-close:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
 .app-toast-progress { position:absolute; left:0; right:0; bottom:0; height:2px; background:linear-gradient(90deg,#65c978,#d9aa35); transform-origin:left; transform:scaleX(1); animation:toast-ttl var(--toast-ttl, 2600ms) linear forwards; pointer-events:none; }
 .app-toast.is-error .app-toast-progress { background:linear-gradient(90deg,#ef6a58,#a9362a); }
+.app-toast.is-info .app-toast-progress { background:linear-gradient(90deg,#d9aa35,#a96f1f); }
+.app-toast-action { flex:none; padding:3px 9px; border:1px solid #ffffff24; border-radius:7px; color:#fff; background:#ffffff14; font-size:11px; font-weight:600; letter-spacing:.02em; cursor:pointer; transition:background-color var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out); }
+.app-toast-action:hover { background:#ffffff24; border-color:#ffffff38; }
+.app-toast-action:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+.app-toast.is-info .app-toast-action { color:#1a1208; background:#d9aa35; border-color:#d9aa35; }
+.app-toast.is-info .app-toast-action:hover { background:#e3b945; border-color:#e3b945; }
 .app-toast:hover .app-toast-progress,
 .app-toast:focus-within .app-toast-progress,
 .app-toast.is-paused .app-toast-progress { animation-play-state:paused; }

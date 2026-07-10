@@ -1,15 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckIcon } from "./icons/CheckIcon";
 import { AlertIcon } from "./icons/AlertIcon";
+import { InfoIcon } from "./icons/InfoIcon";
 import { useI18n } from "../i18n";
 
-export type ToastKind = "success" | "error";
+export type ToastKind = "success" | "error" | "info";
+
+export interface ToastAction {
+  /** Visible button label. */
+  label: string;
+  /** Where the action sends the user — currently only "external" (open URL). */
+  kind: "external";
+  /** URL to open. Opened via window.open() so Electron handles the protocol. */
+  url: string;
+}
 
 export interface ToastEntry {
   id: number;
   kind: ToastKind;
   message: string;
   ttlMs: number;
+  /** Optional action button rendered to the right of the message. */
+  action?: ToastAction;
 }
 
 // Toast stack — replaces the old single-toast pattern. The App holds the
@@ -119,19 +131,39 @@ function ToastItem({ entry, stackIndex, onDismiss }: ItemProps) {
       <i aria-hidden="true">
         {entry.kind === "success" ? (
           <CheckIcon size={12} strokeWidth={2.25} />
-        ) : (
+              ) : entry.kind === "error" ? (
           <AlertIcon size={13} strokeWidth={1.75} />
-        )}
-      </i>
+              ) : (
+                <InfoIcon size={13} strokeWidth={1.75} />
+              )}
+            </i>
       <span className="app-toast-message">{entry.message}</span>
-      <button
-        type="button"
-        className="app-toast-close"
-        aria-label={t("toastClose")}
-        onClick={() => onDismiss(entry.id)}
-      >
-        ×
-      </button>
+            {entry.action ? (
+              <button
+                type="button"
+                className="app-toast-action"
+                onClick={() => {
+                  if (entry.action?.kind === "external") {
+                    try {
+                      window.open(entry.action.url, "_blank", "noopener,noreferrer");
+                    } catch {
+                      /* ignore — popup blockers / no shell */
+                    }
+                  }
+                  onDismiss(entry.id);
+                }}
+              >
+                {entry.action.label}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="app-toast-close"
+              aria-label={t("toastClose")}
+              onClick={() => onDismiss(entry.id)}
+            >
+              ×
+            </button>
       <div className="app-toast-progress" aria-hidden="true" />
     </div>
   );

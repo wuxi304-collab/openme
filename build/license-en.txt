@@ -1,0 +1,40 @@
+OpenMe Qiwu — End-User License Agreement (English)
+
+Copyright (c) 2026 Gangtie Shuxu (钢铁私塾). All rights reserved.
+
+By installing this software you agree to the following terms.
+
+1. License Grant
+   Gangtie Shuxu grants you a non-exclusive, non-transferable, royalty-free
+   license to install and use one (1) copy of OpenMe Qiwu on Windows 10 or
+   Windows 11 (x64) for personal or commercial purposes.
+
+2. Source Code
+   This product is open source under the MIT License. Source code is
+   available at https://github.com/wuxi304-collab/openme . The MIT terms
+   apply to the source code; the EULA above applies to the prebuilt
+   binary distribution.
+
+3. Restrictions
+   - Do not redistribute the prebuilt binary as your own product.
+   - Do not use the "Gangtie Shuxu" / "钢铁私塾" trademark or the
+     "OpenMe Qiwu" product name without written permission.
+   - Reverse engineering the binary for the purpose of bypassing
+     license checks is prohibited.
+
+4. Disclaimer
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. IN NO
+   EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE.
+
+5. Privacy
+   OpenMe Qiwu is a local-first application. It does not register an
+   account, does not upload your files, and does not phone home. Files
+   you open are read from disk and rendered in your own process only.
+
+6. Contact
+   WeChat: wuxi3042205
+   Source: https://github.com/wuxi304-collab/openme
+
+By clicking "I Agree" you confirm that you have read and understood
+this agreement.

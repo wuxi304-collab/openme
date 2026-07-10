@@ -69,6 +69,41 @@ export default function App() {
     void load();
   }, []);
 
+    // Detect whether we're running as the portable .exe and offer the
+    // installed version once per session. The portable build does not
+    // create desktop / Start-menu shortcuts — the setup build does — so
+    // pointing users at it from the running app is the most reliable way
+    // to surface that option. We only fire the toast on first mount, in
+    // portable mode, and only if the user hasn't dismissed it before
+    // (session-scoped flag in localStorage).
+    useEffect(() => {
+      const SEEN_KEY = "openme.installHint.seen";
+      if (typeof window === "undefined") return;
+      if (window.localStorage.getItem(SEEN_KEY) === "1") return;
+      if (typeof window.electronAPI?.getInstallMode !== "function") return;
+      let cancelled = false;
+      void window.electronAPI.getInstallMode().then((mode) => {
+        if (cancelled || mode !== "portable") return;
+        window.localStorage.setItem(SEEN_KEY, "1");
+        const id = nextToastId();
+        setToasts((prev) => [
+          ...prev,
+          {
+            id,
+            kind: "info",
+            message: `${t("installModeHintTitle")} — ${t("installModeHintBody")}`,
+            ttlMs: 9000,
+            action: {
+              kind: "external",
+              label: t("installModeHintAction"),
+              url: "https://github.com/wuxi304-collab/openme/releases/latest",
+            },
+          },
+        ]);
+      }).catch(() => undefined);
+      return () => { cancelled = true; };
+    }, [t]);
+
   const filteredFiles = useMemo(() => {
     if (!searchQuery.trim()) return recentFiles;
     const q = searchQuery.toLowerCase();

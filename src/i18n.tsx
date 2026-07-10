@@ -688,6 +688,11 @@ export const translations: Record<string, Record<string, string>> = {
     toastClose: "关闭提示",
     toastLimitHint: "{count} 条更早的提示已收起",
 
+    // Install mode hint (portable → setup)
+    installModeHintTitle: "正在使用便携版",
+    installModeHintBody: "下载安装版可获得桌面快捷方式、开始菜单项，以及更快的启动速度。",
+    installModeHintAction: "前往 GitHub 下载",
+
     // Error log
     errorLogSaveSuccess: "错误日志已保存到 {path}",
     errorLogSaveFailed: "错误日志保存失败",
@@ -1770,6 +1775,11 @@ export const translations: Record<string, Record<string, string>> = {
     removeFromRecentToast: "Removed {name} from recent",
     toastClose: "Dismiss notification",
     toastLimitHint: "{count} earlier notifications hidden",
+
+    // Install mode hint (portable → setup)
+    installModeHintTitle: "Running the portable build",
+    installModeHintBody: "Install the setup version to get desktop and Start-menu shortcuts plus faster startup.",
+    installModeHintAction: "Open GitHub releases",
 
     // Error log
     errorLogSaveSuccess: "Error log saved to {path}",

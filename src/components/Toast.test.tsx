@@ -151,4 +151,83 @@ describe("ToastStack", () => {
     const toast = container.querySelector(".app-toast") as HTMLElement;
     expect(toast.getAttribute("title")).toBe("Hover to pause auto-dismiss");
   });
-});
+
+    it("renders an info-kind toast with the info variant", () => {
+      render(
+        <I18nProvider>
+          <ToastStack
+            toasts={[makeEntry({ kind: "info", message: "Running portable" })]}
+            onDismiss={() => undefined}
+          />
+        </I18nProvider>
+      );
+      const toast = screen.getByRole("status").querySelector(".app-toast")!;
+      expect(toast.classList.contains("is-info")).toBe(true);
+      expect(screen.getByText("Running portable")).toBeTruthy();
+    });
+
+    it("renders an action button when entry.action is set", () => {
+      render(
+        <I18nProvider>
+          <ToastStack
+            toasts={[
+              makeEntry({
+                kind: "info",
+                message: "Get the installer",
+                action: {
+                  kind: "external",
+                  label: "Open GitHub",
+                  url: "https://example.com/release",
+                },
+              }),
+            ]}
+            onDismiss={() => undefined}
+          />
+        </I18nProvider>
+      );
+      const button = screen.getByRole("button", { name: "Open GitHub" });
+      expect(button.classList.contains("app-toast-action")).toBe(true);
+    });
+
+    it("omits the action button when entry.action is absent", () => {
+      const { container } = render(
+        <I18nProvider><ToastStack toasts={[makeEntry()]} onDismiss={() => undefined} /></I18nProvider>
+      );
+      const actionButtons = container.querySelectorAll(".app-toast-action");
+      expect(actionButtons.length).toBe(0);
+    });
+
+    it("opens the action URL via window.open when the action button is clicked", () => {
+      const openSpy = vi.fn();
+      const originalOpen = window.open;
+      window.open = openSpy;
+      try {
+        render(
+          <I18nProvider>
+            <ToastStack
+              toasts={[
+                makeEntry({
+                  kind: "info",
+                  message: "Get the installer",
+                  action: {
+                    kind: "external",
+                    label: "Open",
+                    url: "https://example.com/release",
+                  },
+                }),
+              ]}
+              onDismiss={() => undefined}
+            />
+          </I18nProvider>
+        );
+        fireEvent.click(screen.getByRole("button", { name: "Open" }));
+        expect(openSpy).toHaveBeenCalledWith(
+          "https://example.com/release",
+          "_blank",
+          "noopener,noreferrer",
+        );
+      } finally {
+        window.open = originalOpen;
+      }
+    });
+  });
