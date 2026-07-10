@@ -756,6 +756,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
 .status-ready i { width:6px; height:6px; border-radius:50%; background:var(--mario-green); }
 .status-file { max-width:280px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:#aaa39a; }
 .status-meta { color:#69635c; }
+.status-meta + .status-meta::before { content:"·"; margin-right:8px; margin-left:-4px; color:#3a3631; }
+.status-char-count, .status-word-count { font-variant-numeric:tabular-nums; }
 .status-lives { color:#e8dfd1; }
 .status-idle-hint { color:#69635c; font-style:italic; letter-spacing:.02em; }
 .status-format-chip, .status-binary-chip, .status-risk-chip, .status-strategy-chip, .status-tab-position, .status-support-badge { display:inline-flex; align-items:center; gap:4px; padding:1px 7px; border-radius:999px; font:700 8.5px/1.4 var(--font-mono); letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; }
