@@ -3,6 +3,64 @@
 All notable changes to **OpenMe Qiwu** are documented here. Dates are in
 ISO-8601 (YYYY-MM-DD). Versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] - 2026-07-10
+
+First public Windows release. Ships as a signed NSIS installer plus a
+single-file portable build, both produced by electron-builder from the
+`release/v1.0.0` branch. The installer creates a desktop shortcut and
+a Start-menu entry; the portable build runs without installation from
+any folder.
+
+### Highlights
+
+- **App identity** — OpenMe Qiwu v1.0.0, published by Gangtie Shuxu
+  (钢铁私塾). Contact `wuxi3042205` on WeChat for support. No login, no
+  account, no telemetry — purely local-first.
+- **Native splash** with real progress, version badge, publisher line,
+  and elapsed-time counter. Replaces the black box that used to appear
+  while Electron warmed the renderer.
+- **About dialog** wired to `app.getVersion()` so the version label
+  always reflects the running build.
+- **NSIS installer** with desktop + Start-menu shortcuts, license
+  display, and an English / Chinese language selector; portable build
+  for users who can't install.
+
+### Polish arc (PRs #83–#116, May–July 2026)
+
+The merge window between v0.1.0 and v1.0.0 was a 34-PR polish arc
+focused on industrial-grade a11y and chrome details:
+
+- **Status bar** (PRs #83, #85, #92, #93, #94, #114): Support-level
+  badge, filename click-to-copy, format popover, sticky char/word
+  counts, line-ending detection, then role=contentinfo + lines-chip
+  aria-label + theme pill aria-pressed.
+- **File tabs**: drag-to-reorder with live insertion-line indicator,
+  middle-click / Ctrl-W close, unsaved-changes prompt, dirty dot with
+  i18n aria-label.
+- **Sidebar**: empty-state hero, recent-files card with click-to-open
+  and reveal-in-folder, search box with debounce + clear button.
+- **Command palette** (PR #70+): fuzzy rank, kind tags, relative-time
+  chips, Tab focus cycling inside the palette.
+- **Complex viewers** localised: PDF, Office, Zip, Media, Font, EPUB,
+  DWG, CAD, with separate CSS files replacing inline Tailwind
+  utilities.
+- **Markdown viewer toolbar** (PR #112): aria-keyshortcuts on Bold /
+  Italic / Link, sr-only keyboard-hint chip via aria-describedby.
+- **CAD viewer** (PR #111): THREE.js stage role=img + canvas
+  tabIndex=0 + spinner keyframes with reduced-motion override.
+- **Cross-chrome** (PRs #115, #116): ShortcutsOverlay Tab focus trap,
+  FileDropZone aria-describedby, TitleBar role=banner, App `<main>`
+  role=main + LoadingState role=status aria-live=polite.
+
+By the numbers:
+
+- **116 PRs** merged on `main` since the project took its current shape.
+- **699 vitest tests** passing (started this arc at ~62, grew with each
+  viewer + chrome slice).
+- **923 zh · 923 en i18n keys**, all audit-clean, every literal routed
+  through `t()` / `tf()`.
+- Zero untranslated Chinese strings outside the i18n dictionary.
+
 ## [Unreleased]
 
 ### i18n + Chrome + Polish arc (PRs #31–#55, 2025-Q4)
@@ -438,6 +496,8 @@ tested, and re-uses the chrome vocabulary that landed in Phase 1/2.
 
 ## Previous releases
 
-OpenMe Qiwu v1.0.0 — the initial public release — predates this
-changelog. See `README.md` and `ARCHITECTURE.md` for the original
-feature set.
+OpenMe Qiwu v0.1.0 was the first public release (April 2026). It ships
+the file viewer matrix and v1 of every chrome surface. See the v1.0.0
+release notes (this file, top section) for the polish arc added
+between v0.1.0 and v1.0.0, or grab the artifacts from the [v0.1.0
+release page](https://github.com/wuxi304-collab/openme/releases/tag/v0.1.0).

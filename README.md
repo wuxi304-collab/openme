@@ -122,6 +122,17 @@ OpenMe 启吾的中国文化元素不靠装饰，而靠秩序。
 
 ## 快速开始
 
+> **下载 v1.0.0（Windows x64）** — 钢铁私塾旗下产品，No login，无云端依赖。
+>
+> | 形态 | 链接 | 何时使用 |
+> | --- | --- | --- |
+> | **NSIS 安装包** | [OpenMe-Qiwu-1.0.0-setup-x64.exe](https://github.com/wuxi304-collab/openme/releases/download/v1.0.0/OpenMe-Qiwu-1.0.0-setup-x64.exe) | 普通装机，自动建桌面/开始菜单快捷方式 |
+> | **便携版** | [OpenMe-Qiwu-1.0.0-portable-x64.exe](https://github.com/wuxi304-collab/openme/releases/download/v1.0.0/OpenMe-Qiwu-1.0.0-portable-x64.exe) | 解压即用、U盘携带 |
+>
+> **联系 / 反馈**：WeChat `wuxi3042205` · 邮箱见 *About* → *Publisher*
+>
+> **校验**：[SHA256SUMS.txt](https://github.com/wuxi304-collab/openme/releases/download/v1.0.0/SHA256SUMS.txt) 列了 installer / portable 的 SHA-256。
+
 要求：
 
 - Windows

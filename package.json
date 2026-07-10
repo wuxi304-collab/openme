@@ -1,7 +1,7 @@
 {
   "name": "openme-desktop",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "OpenMe Qiwu is a local-first desktop workspace for previewing and inspecting everyday files — published by Gangtie Shuxu (钢铁私塾).",
   "main": "electron/main.js",
   "author": "Gangtie Shuxu (钢铁私塾)",
