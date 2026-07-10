@@ -412,6 +412,10 @@ export const translations: Record<string, Record<string, string>> = {
     fontLoading: "正在加载字体…",
     fontErrorTitle: "字体无法加载",
     fontErrorBody: "文件可能损坏或使用了不支持的字体容器。",
+    fontToolbarAria: "字体预览工具栏",
+    fontPreviewAria: "字体大字符预览",
+    fontSpecimensAria: "字体规格示例列表",
+    fontSizeCurrentAria: "当前字号 {size}px",
     fontSample1: "OpenMe 字体预览",
     fontSample2: "天地玄黄 宇宙洪荒",
     fontSample3: "Aa Bb Cc 0123456789",
@@ -435,6 +439,9 @@ export const translations: Record<string, Record<string, string>> = {
     epubNext: "下一章",
     epubTocAria: "章节目录",
     epubChapterFallback: "第 {index} 章",
+    epubToolbarAria: "阅读工具栏",
+    epubReaderAria: "章节正文",
+    epubFooterAria: "章节导航",
 
     // MediaViewer
     mediaLoadFailed: "媒体无法打开",
@@ -1547,6 +1554,10 @@ export const translations: Record<string, Record<string, string>> = {
     fontLoading: "Loading font…",
     fontErrorTitle: "Font could not be loaded",
     fontErrorBody: "The file may be corrupt or use an unsupported font container.",
+    fontToolbarAria: "Font preview toolbar",
+    fontPreviewAria: "Large character preview",
+    fontSpecimensAria: "Specimen list",
+    fontSizeCurrentAria: "Current size {size}px",
     fontSample1: "OpenMe font preview",
     fontSample2: "天地玄黄 宇宙洪荒",
     fontSample3: "Aa Bb Cc 0123456789",
@@ -1570,6 +1581,9 @@ export const translations: Record<string, Record<string, string>> = {
     epubNext: "Next chapter",
     epubTocAria: "Chapter list",
     epubChapterFallback: "Chapter {index}",
+    epubToolbarAria: "Reading toolbar",
+    epubReaderAria: "Chapter body",
+    epubFooterAria: "Chapter navigation",
 
     // MediaViewer
     mediaLoadFailed: "Cannot open media",
