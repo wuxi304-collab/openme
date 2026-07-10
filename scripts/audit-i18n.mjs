@@ -83,7 +83,10 @@ const WHITELIST = new Set([
   "appBandizip", "appDjvulibre", "appGis",
     // PR #100 — line ending markers are technical acronyms shown verbatim
     "codeEditorEolLF", "codeEditorEolCRLF", "codeEditorEolCR",
-    ]);
+        // PR #105 — numeric cursor template "{current} / {total}" reads identically
+        // in zh and en (numbers + slash, no words to translate)
+        "pdfMatchCursor",
+        ]);
 
 const untranslated = [];
 const onlyInZh = [];
