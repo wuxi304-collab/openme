@@ -1,30 +1,161 @@
+import { useRef, useState } from "react";
 import { FileTabState } from "../../types";
 import { useI18n } from "../../i18n";
 import { detectCategory } from "../../utils/fileTypeDetector";
 import FileTypeIcon from "../FileTypeIcon";
 
-interface Props { tabs: FileTabState[]; activeId: string | null; onSelect: (id: string) => void; onClose: (id: string) => void; }
-export default function FileTabs({ tabs, activeId, onSelect, onClose }: Props) {
+interface Props {
+  tabs: FileTabState[];
+  activeId: string | null;
+  onSelect: (id: string) => void;
+  onClose: (id: string) => void;
+  onReorder: (fromIndex: number, toIndex: number) => void;
+}
+
+type DropEdge = "before" | "after" | null;
+
+export default function FileTabs({ tabs, activeId, onSelect, onClose, onReorder }: Props) {
   const { t, tf } = useI18n();
+  const draggingIdRef = useRef<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ index: number; edge: DropEdge } | null>(null);
+  const reorderAnnouncement = useRef("");
+  const [, setAnnounceTick] = useState(0);
+  const announce = (message: string) => {
+    reorderAnnouncement.current = message;
+    setAnnounceTick((tick) => tick + 1);
+  };
+
   if (!tabs.length) return null;
-  const move = (index: number, direction: number, event: React.KeyboardEvent<HTMLButtonElement>) => { const next = (index + direction + tabs.length) % tabs.length; onSelect(tabs[next].id); requestAnimationFrame(() => event.currentTarget.closest("[role=tablist]")?.querySelectorAll<HTMLButtonElement>("[role=tab]")[next]?.focus()); };
+
+  const focusTab = (index: number) => {
+    requestAnimationFrame(() => {
+      const list = document.querySelector<HTMLDivElement>(".file-tabs .tabs-scroll");
+      const target = list?.querySelectorAll<HTMLButtonElement>("[role=tab]")[index];
+      target?.focus();
+    });
+  };
+
+  const moveFocus = (index: number, direction: number, event: React.KeyboardEvent<HTMLButtonElement>) => {
+    const next = (index + direction + tabs.length) % tabs.length;
+    onSelect(tabs[next].id);
+    focusTab(next);
+    event.preventDefault();
+  };
+
+  const moveTab = (index: number, direction: number, event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.ctrlKey || event.metaKey) {
+      const target = Math.max(0, Math.min(tabs.length - 1, index + direction));
+      if (target === index) return;
+      const toIndex = direction > 0 ? target + 1 : target;
+      onReorder(index, toIndex);
+      announce(
+        direction > 0
+          ? tf("tabMovedRightAnnounce", { name: tabs[index].name })
+          : tf("tabMovedLeftAnnounce", { name: tabs[index].name })
+      );
+      focusTab(target);
+      event.preventDefault();
+      event.stopPropagation();
+    } else {
+      moveFocus(index, direction, event);
+    }
+  };
+
+  const handleDragStart = (event: React.DragEvent<HTMLDivElement>, index: number) => {
+    const tab = tabs[index];
+    draggingIdRef.current = tab.id;
+    setDraggingId(tab.id);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", tab.id);
+  };
+
+  const handleDragOverTab = (event: React.DragEvent<HTMLDivElement>, index: number) => {
+    if (!draggingIdRef.current) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    const rect = event.currentTarget.getBoundingClientRect();
+    const midpoint = rect.left + rect.width / 2;
+    const edge: DropEdge = event.clientX < midpoint ? "before" : "after";
+    if (dropTarget?.index === index && dropTarget.edge === edge) return;
+    setDropTarget({ index, edge });
+  };
+
+  const handleDragLeaveTab = (event: React.DragEvent<HTMLDivElement>) => {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+    setDropTarget(null);
+  };
+
+  const handleDropTab = (event: React.DragEvent<HTMLDivElement>, index: number) => {
+    event.preventDefault();
+    const draggedId = draggingIdRef.current;
+    if (!draggedId) return;
+    const fromIndex = tabs.findIndex((tab) => tab.id === draggedId);
+    if (fromIndex < 0) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const midpoint = rect.left + rect.width / 2;
+    const edge: DropEdge = event.clientX < midpoint ? "before" : "after";
+    let toIndex = edge === "after" ? index + 1 : index;
+    if (toIndex > fromIndex) toIndex -= 1;
+    if (toIndex !== fromIndex) onReorder(fromIndex, toIndex);
+    draggingIdRef.current = null;
+    setDraggingId(null);
+    setDropTarget(null);
+  };
+
+  const handleDragEnd = () => {
+    draggingIdRef.current = null;
+    setDraggingId(null);
+    setDropTarget(null);
+  };
+
   return (
     <nav className="file-tabs" aria-label={t("fileTabsAria")}>
       <span className="tabs-label">{t("workspaceSet")}</span>
-      <div className="tabs-scroll" role="tablist">
+      <div className="tabs-scroll" role="tablist" aria-describedby="file-tabs-reorder-hint">
         {tabs.map((tab, index) => {
           const active = tab.id === activeId;
+          const dragging = tab.id === draggingId;
+          const dropBefore = dropTarget?.index === index && dropTarget.edge === "before";
+          const dropAfter = dropTarget?.index === index && dropTarget.edge === "after";
+          const tabClass = [
+            "file-tab",
+            active ? "is-active" : "",
+            dragging ? "is-dragging" : "",
+            dropBefore ? "drop-before" : "",
+            dropAfter ? "drop-after" : "",
+          ].filter(Boolean).join(" ");
           return (
-            <div key={tab.id} className={`file-tab ${active ? "is-active" : ""}`}>
+            <div
+              key={tab.id}
+              className={tabClass}
+              draggable
+              onDragStart={(event) => handleDragStart(event, index)}
+              onDragOver={(event) => handleDragOverTab(event, index)}
+              onDragLeave={handleDragLeaveTab}
+              onDrop={(event) => handleDropTab(event, index)}
+              onDragEnd={handleDragEnd}
+              data-tab-index={index}
+            >
               <button
                 type="button"
                 role="tab"
                 className="tab-main"
                 aria-selected={active}
+                aria-grabbed={dragging || undefined}
+                aria-label={tf("tabDragHandleAria", { name: tab.name })}
                 tabIndex={active ? 0 : -1}
                 onKeyDown={(event) => {
-                  if (event.key === "ArrowRight") move(index, 1, event);
-                  if (event.key === "ArrowLeft") move(index, -1, event);
+                  if (event.key === "ArrowRight") moveTab(index, 1, event);
+                  if (event.key === "ArrowLeft") moveTab(index, -1, event);
+                  if (event.key === "Home") { onSelect(tabs[0].id); focusTab(0); event.preventDefault(); }
+                  if (event.key === "End") { onSelect(tabs[tabs.length - 1].id); focusTab(tabs.length - 1); event.preventDefault(); }
+                }}
+                onAuxClick={(event) => {
+                  if (event.button === 1) {
+                    event.preventDefault();
+                    onClose(tab.id);
+                  }
                 }}
                 onClick={() => onSelect(tab.id)}
               >
@@ -36,6 +167,9 @@ export default function FileTabs({ tabs, activeId, onSelect, onClose }: Props) {
                 type="button"
                 className="tab-close"
                 aria-label={tf("closeTabAria", { name: tab.name })}
+                onAuxClick={(event) => {
+                  if (event.button === 1) event.preventDefault();
+                }}
                 onClick={() => onClose(tab.id)}
               >
                 ×
@@ -44,6 +178,12 @@ export default function FileTabs({ tabs, activeId, onSelect, onClose }: Props) {
           );
         })}
       </div>
+      <span id="file-tabs-reorder-hint" className="sr-only">
+        {t("tabReorderHint")}
+      </span>
+      <span role="status" aria-live="polite" className="sr-only">
+        {reorderAnnouncement.current}
+      </span>
     </nav>
   );
 }

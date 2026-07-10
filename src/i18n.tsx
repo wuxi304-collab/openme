@@ -139,6 +139,10 @@ export const translations: Record<string, Record<string, string>> = {
     workspaceSet: "工作集",
     unsaved: "未保存",
     closeTabAria: "关闭 {name}",
+            tabDragHandleAria: "拖动以重新排序 {name}",
+            tabMovedLeftAnnounce: "已将 {name} 向左移动",
+            tabMovedRightAnnounce: "已将 {name} 向右移动",
+            tabReorderHint: "拖动或使用 Ctrl+Shift+←/→ 重新排序",
 
     // CommandPalette
     commandPaletteAria: "命令面板",
@@ -1142,6 +1146,10 @@ export const translations: Record<string, Record<string, string>> = {
     workspaceSet: "Workspace",
     unsaved: "Unsaved",
     closeTabAria: "Close {name}",
+        tabDragHandleAria: "Drag to reorder {name}",
+        tabMovedLeftAnnounce: "Moved {name} left",
+        tabMovedRightAnnounce: "Moved {name} right",
+        tabReorderHint: "Drag or use Ctrl+Shift+Left/Right to reorder",
 
     // CommandPalette
     commandPaletteAria: "Command palette",
