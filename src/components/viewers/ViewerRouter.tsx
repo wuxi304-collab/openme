@@ -8,6 +8,7 @@ import JsonViewer from "./JsonViewer";
 import ImageViewer from "./ImageViewer";
 import SvgViewer from "./SvgViewer";
 import CadAssistant from "./CadAssistant";
+import HexViewer from "./HexViewer";
 import OpenMeRouteCard from "./OpenMeRouteCard";
 
 const CodeEditor = React.lazy(() => import("./CodeEditor"));
@@ -82,7 +83,13 @@ export default function ViewerRouter({ tab, onChange, onRetry }: ViewerRouterPro
           return <ViewerShell>{tab.binaryData ? <FontViewer base64Data={tab.binaryData} fileName={tab.name} /> : <OpenMeRouteCard tab={tab} route={route} title={t("routeFontNoData")} description={t("routeFontNoDataDesc")} onRetry={onRetry} />}</ViewerShell>;
         case "dwg":
           return <div className="cad-workspace"><div className="cad-stage"><ViewerBoundary><DwgViewer filePath={tab.path} fileName={tab.name} /></ViewerBoundary></div><CadAssistant filePath={tab.path} fileName={tab.name} /></div>;
-        case "design":
+                case "other":
+                  // Unknown / unregistered binary files get a hex dump so users can
+                  // at least inspect the raw bytes instead of staring at a "we don't
+                  // know this format" card. Falls back to the generic route card
+                  // when there's no binary data (e.g. open failed before read).
+                  return <ViewerShell>{tab.binaryData ? <HexViewer base64Data={tab.binaryData} fileName={tab.name} /> : <OpenMeRouteCard tab={tab} route={route} title={t("routeGenericTitle")} description={t("routeGenericDesc")} onRetry={onRetry} />}</ViewerShell>;
+                case "design":
           return <OpenMeRouteCard tab={tab} route={route} title={t("routeDesignTitle")} description={t("routeDesignDesc")} onRetry={onRetry} />;
         case "package":
           return <OpenMeRouteCard tab={tab} route={route} title={t("routePackageTitle")} description={t("routePackageDesc")} onRetry={onRetry} />;

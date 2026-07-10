@@ -403,7 +403,25 @@ export const translations: Record<string, Record<string, string>> = {
     mediaLocalDisclaimer: "源文件未被修改，未上传。",
     mediaOpenInSystem: "用系统程序打开",
 
-    // LosslessAudioPlayer
+    // HexViewer
+    hexLabel: "十六进制视图",
+    hexAria: "十六进制字节视图",
+    hexAddressLabel: "偏移",
+    hexAddressAria: "当前偏移地址",
+    hexSearchAria: "搜索字节序列",
+    hexSearchPlaceholder: "搜索字节或文本（支持 504B 或 PK）",
+    hexSearchHint: "空格分隔的两位十六进制（如 50 4B 03 04）或 ASCII 文本",
+    hexEmpty: "文件为空",
+    hexTruncated: "仅显示前 {shown} / {total} 字节 — 全部内容已加载，但渲染时跳过以保证流畅",
+    hexCopiedOffset: "已复制偏移 {offset}",
+    hexMatchCount: "{count} 处匹配",
+    hexNoMatch: "未找到匹配",
+    hexKeyboardHint: "PageUp/PageDown 翻页 · Home/End 跳首尾 · / 进入搜索",
+    hexSearchSubmit: "搜索",
+    hexSearchNext: "下一处",
+    hexSearchPrev: "上一处",
+
+        // LosslessAudioPlayer
     losslessPlayerLabel: "无损音乐播放器",
     losslessFormatLabel: "音频格式详情",
     losslessTransportLabel: "播放控制",
@@ -1433,7 +1451,25 @@ export const translations: Record<string, Record<string, string>> = {
     mediaLocalDisclaimer: "Source file untouched, nothing uploaded.",
     mediaOpenInSystem: "Open in system",
 
-    // LosslessAudioPlayer
+    // HexViewer
+    hexLabel: "Hex view",
+    hexAria: "Hexadecimal byte view",
+    hexAddressLabel: "Offset",
+    hexAddressAria: "Current byte offset",
+    hexSearchAria: "Search byte sequence",
+    hexSearchPlaceholder: "Search bytes or text (e.g. 504B or PK)",
+    hexSearchHint: "Space-separated hex pairs (e.g. 50 4B 03 04) or ASCII text",
+    hexEmpty: "File is empty",
+    hexTruncated: "Showing first {shown} of {total} bytes -- full content is loaded, skipping the rest to keep things smooth",
+    hexCopiedOffset: "Copied offset {offset}",
+    hexMatchCount: "{count} matches",
+    hexNoMatch: "No matches",
+    hexKeyboardHint: "PageUp/PageDown to scroll -- Home/End jump to ends -- / to search",
+    hexSearchSubmit: "Search",
+    hexSearchNext: "Next",
+    hexSearchPrev: "Previous",
+
+        // LosslessAudioPlayer
     losslessPlayerLabel: "Lossless audio player",
     losslessFormatLabel: "Audio format details",
     losslessTransportLabel: "Playback controls",
