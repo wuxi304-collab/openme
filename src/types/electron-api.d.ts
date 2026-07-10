@@ -64,7 +64,14 @@ export interface ElectronAPI {
   exportSettingsToFile: (payload: unknown, defaultName?: string) => Promise<{ ok: true; path: string } | { ok: false; canceled: true } | IpcFailureResult>;
   importSettingsFromFile: () => Promise<{ ok: true; path: string; data: unknown } | { ok: false; canceled: true } | IpcFailureResult>;
     getSettingsStoragePath: () => Promise<GetSettingsStoragePathResult | IpcFailureResult>;
-  }
+      /**
+       * Returns how the user is currently running the app. The renderer uses
+       * this to surface a one-time toast on portable launches pointing at
+       * the setup installer. Returns one of `"installed"`, `"portable"`,
+       * or `"dev"` (when running outside Electron via `npm run electron`).
+       */
+      getInstallMode: () => Promise<"installed" | "portable" | "dev">;
+    }
 
   export interface UiStrings {
     dialogSelectFile: string;

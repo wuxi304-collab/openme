@@ -301,8 +301,11 @@ function findCadEngine() {
       const splashHtml = path.join(__dirname, "splash", "splash.html");
       splashWindow.loadFile(splashHtml);
       splashWindow.once("ready-to-show", () => {
-        if (splashWindow && !splashWindow.isDestroyed()) splashWindow.show();
-      });
+              if (splashWindow && !splashWindow.isDestroyed()) {
+                splashWindow.show();
+                splashFirstShownAt = Date.now();
+              }
+            });
       splashWindow.on("closed", () => {
         splashWindow = null;
         splashClosed = true;
@@ -358,6 +361,13 @@ function findCadEngine() {
         const SPLASH_ASSETS_PCT = 80;
         const SPLASH_READY_PCT = 98;
         const SPLASH_DONE_PCT = 100;
+                // Hold the splash for at least this long once it has appeared, so
+                // the user always sees the brand surface even on fast machines.
+                // 800ms is long enough to read the tagline + phase label but short
+                // enough to feel snappy. Without this, fast hardware dismisses the
+                // splash in ~250ms and the user perceives a black flash instead.
+                const SPLASH_MIN_VISIBLE_MS = 800;
+                let splashFirstShownAt = 0;
 
         function scheduleSplashTimeline() {
           // Phase 1 — engine (immediately). User has visual feedback the moment
@@ -374,26 +384,36 @@ function findCadEngine() {
 
     function hideSplash() {
       if (!splashWindow || splashWindow.isDestroyed()) return;
-          // Tell the splash renderer to fade itself out before we destroy it.
-          // The CSS `.splash.is-fading` rule animates opacity to 0 over
-          // SPLASH_PHASE_FADE_MS. If the splash webContents is already gone
-          // (e.g. window-all-closed raced), we just destroy synchronously.
-          try {
-            splashWindow.webContents.send("splash:fade");
-          } catch {
-            /* ignore — renderer may be gone */
-          }
-          try {
-            splashWindow.hide();
-          } catch {
-            /* ignore — window already gone */
-          }
-          // Give the main window a frame to paint before destroying the splash
-          // so the user never sees a gap between splash-hide and main-show.
-          setTimeout(() => {
-            if (splashWindow && !splashWindow.isDestroyed()) splashWindow.destroy();
-          }, 240);
-        }
+              // Minimum-visible-time gate — hold the splash until the user has
+              // had at least SPLASH_MIN_VISIBLE_MS to read the brand surface,
+              // regardless of how fast the renderer finished loading. Without
+              // this gate the splash disappears in a flicker on fast machines.
+              const elapsed = splashFirstShownAt > 0 ? Date.now() - splashFirstShownAt : 0;
+              const remaining = Math.max(0, SPLASH_MIN_VISIBLE_MS - elapsed);
+              // Tell the splash renderer to fade itself out before we destroy it.
+              // The CSS `.splash.is-fading` rule animates opacity to 0 over
+              // SPLASH_PHASE_FADE_MS. If the splash webContents is already gone
+              // (e.g. window-all-closed raced), we just destroy synchronously.
+              const startFade = () => {
+                try {
+                  splashWindow.webContents.send("splash:fade");
+                } catch {
+                  /* ignore — renderer may be gone */
+                }
+                try {
+                  splashWindow.hide();
+                } catch {
+                  /* ignore — window already gone */
+                }
+                // Give the main window a frame to paint before destroying the splash
+                // so the user never sees a gap between splash-hide and main-show.
+                setTimeout(() => {
+                  if (splashWindow && !splashWindow.isDestroyed()) splashWindow.destroy();
+                }, 240);
+              };
+              if (remaining > 0) setTimeout(startFade, remaining);
+              else startFade();
+            }
 
     function createWindow() {
   mainWindow = new BrowserWindow({
@@ -1071,6 +1091,27 @@ ipcMain.handle("window-maximize", () => {
 });
 ipcMain.handle("window-close", () => mainWindow?.close());
 ipcMain.handle("window-is-maximized", () => mainWindow?.isMaximized() ?? false);
+
+    // Install mode detection — used by the renderer to show a one-time
+    // toast on portable launches offering to download the installer. We
+    // distinguish three modes:
+    //   * "installed" — running from %LOCALAPPDATA%\Programs or Program Files
+    //   * "portable"  — launched via electron-builder portable (sets
+    //                   PORTABLE_EXECUTABLE_DIR) or running from a temp dir
+    //   * "dev"       — running from a git checkout via `npm run electron`
+    ipcMain.handle("app:install-mode", () => {
+      if (isDev) return "dev";
+      if (process.env.PORTABLE_EXECUTABLE_DIR) return "portable";
+      const exeDir = path.dirname(app.getPath("exe")).toLowerCase();
+      if (
+        exeDir.includes("\\programs\\") ||
+        exeDir.includes("\\appdata\\local\\programs\\") ||
+        exeDir.includes("\\program files\\")
+      ) {
+        return "installed";
+      }
+      return "portable";
+    });
 
 function getAiConfigPath() {
   return path.join(app.getPath("userData"), "ai-config.json");
