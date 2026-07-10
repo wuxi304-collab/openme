@@ -131,7 +131,7 @@
   font-weight: 700;
   padding: 8px 14px;
   cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
 .viewer-error-boundary-actions button:hover,
@@ -609,7 +609,7 @@
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.62);
   cursor: pointer;
-  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+  transition: color 120ms var(--ease-out), background 120ms var(--ease-out), border-color 120ms var(--ease-out);
 }
 
 .summary-metadata-copy:hover:not(:disabled) {
@@ -653,7 +653,7 @@
   letter-spacing: 0.04em;
   padding: 6px 12px;
   cursor: pointer;
-  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+  transition: color 120ms var(--ease-out), background 120ms var(--ease-out), border-color 120ms var(--ease-out);
 }
 
 .summary-metadata-button:hover {

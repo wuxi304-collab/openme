@@ -306,10 +306,12 @@
   justify-content: center;
   min-width: 36px;
   min-height: 32px;
-  transition: background 120ms ease, transform 80ms ease, border-color 120ms ease;
-}
-.ll-btn:hover:not(:disabled) { background: #243056; border-color: #ffffff30; }
-.ll-btn:active:not(:disabled) { transform: scale(0.96); }
+  transition: background 120ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+                transform 80ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+                border-color 120ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+  }
+  .ll-btn:hover:not(:disabled) { background: #243056; border-color: #ffffff30; }
+  .ll-btn:active:not(:disabled) { transform: scale(0.96); }
 .ll-btn:disabled { opacity: 0.35; cursor: default; }
 .ll-btn.is-primary {
   background: linear-gradient(135deg, #5da9ff, #6a3ec4);
@@ -379,7 +381,7 @@
 .ll-queue > summary::before {
   content: "▸";
   color: #6f7a93;
-  transition: transform 120ms ease;
+  transition: transform 120ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
   display: inline-block;
 }
 .ll-queue[open] > summary::before { transform: rotate(90deg); }

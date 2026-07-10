@@ -90,7 +90,8 @@
   cursor: pointer;
   transition: background var(--dur-fast, 140ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
               border-color var(--dur-fast, 140ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
-              color var(--dur-fast, 140ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+              color var(--dur-fast, 140ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              transform 120ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .confirm-dialog-cancel {
@@ -103,6 +104,10 @@
   background: var(--bg-surface, rgba(255, 255, 255, 0.04));
   border-color: var(--border-default, rgba(255, 255, 255, 0.12));
   color: var(--text-primary);
+}
+
+.confirm-dialog-cancel:active {
+  transform: scale(0.97);
 }
 
 .confirm-dialog-cancel:focus-visible {
@@ -120,6 +125,10 @@
 .confirm-dialog-confirm:hover {
   background: color-mix(in srgb, var(--accent, #6cd1ff) 88%, white);
   border-color: color-mix(in srgb, var(--accent, #6cd1ff) 88%, white);
+}
+
+.confirm-dialog-confirm:active {
+  transform: scale(0.97);
 }
 
 .confirm-dialog-confirm:focus-visible {
@@ -147,4 +156,8 @@
 @media (prefers-reduced-motion: reduce) {
   .confirm-dialog-overlay { animation: none; }
   .confirm-dialog-card    { animation: none; }
+  .confirm-dialog-cancel,
+  .confirm-dialog-confirm { transition: none; }
+  .confirm-dialog-cancel:active,
+  .confirm-dialog-confirm:active { transform: none; }
 }
