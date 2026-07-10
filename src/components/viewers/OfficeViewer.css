@@ -1,0 +1,264 @@
+.office-viewer-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.office-viewer-shell .office-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--bg-surface);
+  font-size: 11px;
+  min-height: 38px;
+}
+
+.office-viewer-shell .office-toolbar-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Sheet tabs */
+.office-sheet-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--bg-surface);
+  overflow-x: auto;
+  min-height: 38px;
+}
+
+.office-sheet-tabs button {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 3px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 160ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+    color 160ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+    border-color 160ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.office-sheet-tabs button:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.office-sheet-tabs button.is-active {
+  background: rgba(230, 0, 18, 0.12);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.office-sheet-tabs button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Excel */
+.office-excel-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-base);
+}
+
+.office-excel-sheet {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.office-excel-grid-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.office-excel-grid {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.office-excel-grid thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-surface);
+}
+
+.office-excel-grid th,
+.office-excel-grid td {
+  height: 28px;
+  max-width: 300px;
+  padding: 4px 10px;
+  overflow: hidden;
+  border-right: 1px solid var(--border-muted);
+  border-bottom: 1px solid var(--border-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.office-excel-grid tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.office-excel-row-number {
+  position: sticky;
+  left: 0;
+  width: 54px;
+  color: var(--text-muted) !important;
+  background: var(--bg-surface);
+  text-align: right !important;
+  z-index: 1;
+}
+
+.office-excel-pagination {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  border-top: 1px solid var(--border-muted);
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.office-excel-pagination button {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  cursor: pointer;
+  transition:
+    background-color 120ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+    border-color 120ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.office-excel-pagination button:hover:not(:disabled) {
+  background: var(--bg-surface);
+}
+
+.office-excel-pagination button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.office-excel-pagination button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.office-excel-pagination button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* Word */
+.office-word-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.office-word-stage .office-doc-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #d9d7d2;
+}
+
+.office-word-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 12px;
+  border-top: 1px solid var(--border-muted);
+  background: var(--bg-surface);
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.office-word-statusbar button {
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  padding: 2px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    background-color 120ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+    transform 120ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.office-word-statusbar button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.office-word-statusbar button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* PPTX */
+.office-pptx-message {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-secondary);
+}
+
+.office-pptx-message svg {
+  color: var(--text-muted);
+}
+
+.office-pptx-title {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.office-pptx-body {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .office-viewer-shell * {
+    transition: none !important;
+  }
+  .office-excel-pagination button:active:not(:disabled),
+  .office-word-statusbar button:active:not(:disabled) {
+    transform: none;
+  }
+}
