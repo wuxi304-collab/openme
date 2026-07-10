@@ -1,0 +1,215 @@
+/* OpenMe Qiwu splash screen — full-bleed, dark, accent glow.
+ *
+ * Splash is the very first surface the user sees. Goals:
+ *  - confirm launch immediately (no white flash, no spinner-only loading)
+ *  - show what stage the app is at so users don't think it's frozen
+ *  - keep the brand consistent with the in-app titlebar publisher pill
+ *
+ * Colors are hardcoded (not CSS vars) because the splash has no theme
+ * provider — it must render before any renderer-side code runs.
+ */
+
+:root {
+  color-scheme: dark;
+  --bg-base: #0e0d0b;
+  --bg-elevated: #1a1814;
+  --border-subtle: rgba(216, 121, 48, 0.20);
+  --text-primary: #f4ebde;
+  --text-secondary: #b8b2a8;
+  --text-muted: #8a8478;
+  --accent: #d87930;
+  --accent-glow: rgba(216, 121, 48, 0.45);
+  --accent-soft: rgba(216, 121, 48, 0.12);
+  --track: rgba(255, 255, 255, 0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+               "Microsoft YaHei", "Noto Sans CJK SC", Roboto, sans-serif;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.splash {
+  position: relative;
+  width: 420px;
+  height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* Soft radial accent glow behind the card */
+.splash-glow {
+  position: absolute;
+  inset: -40px;
+  background: radial-gradient(ellipse at center, var(--accent-glow) 0%, transparent 65%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+  animation: splash-glow-pulse 4s ease-in-out infinite;
+}
+
+@keyframes splash-glow-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 0.85; transform: scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-glow { animation: none; }
+}
+
+.splash-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 32px 40px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45),
+              inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  width: 100%;
+}
+
+.splash-logo {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #e89456 0%, var(--accent) 100%);
+  box-shadow: 0 8px 24px rgba(216, 121, 48, 0.35),
+              inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+  margin-bottom: 2px;
+}
+
+.splash-logo img {
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+
+.splash-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.splash-tagline {
+  font-size: 12px;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.splash-progress-track {
+  width: 100%;
+  height: 4px;
+  background: var(--track);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.splash-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent) 0%, #f1a564 100%);
+  border-radius: 999px;
+  transition: width 320ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.splash-phase {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  min-height: 18px;
+}
+
+.splash-phase-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  animation: splash-dot-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes splash-dot-pulse {
+  0%, 100% { transform: scale(1);   opacity: 0.85; }
+  50%      { transform: scale(1.2); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-phase-dot { animation: none; }
+}
+
+.splash-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 600 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.splash-meta > * + *::before {
+  content: "·";
+  margin-right: 10px;
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.splash-version {
+  color: var(--text-secondary);
+}
+
+.splash-publisher {
+  color: var(--accent);
+}
+
+.splash-hint {
+  position: relative;
+  z-index: 1;
+  margin-top: 18px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+/* When phase advances, the text swaps in via JS — keep a tiny fade */
+.splash-phase-text {
+  transition: opacity 180ms ease-out;
+}
+.splash-phase-text.is-swapping {
+  opacity: 0;
+}

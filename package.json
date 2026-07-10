@@ -1,10 +1,10 @@
 {
   "name": "openme-desktop",
   "private": true,
-    "version": "0.1.0",
-    "description": "OpenMe Qiwu is a local-first desktop workspace for previewing and inspecting everyday files — published by Gangtie Shuxu (钢铁私塾).",
+  "version": "0.1.0",
+  "description": "OpenMe Qiwu is a local-first desktop workspace for previewing and inspecting everyday files — published by Gangtie Shuxu (钢铁私塾).",
   "main": "electron/main.js",
-    "author": "Gangtie Shuxu (钢铁私塾)",
+  "author": "Gangtie Shuxu (钢铁私塾)",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -69,15 +69,37 @@
     "win": {
       "target": [
         {
-              "target": "portable",
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
           "arch": [
             "x64"
           ]
         }
       ],
-          "icon": "public/icons/icon.ico",
-          "artifactName": "OpenMe-Qiwu-${version}-portable-x64.${ext}"
-        },
+      "icon": "public/icons/icon.ico"
+    },
+    "portable": {
+      "artifactName": "OpenMe-Qiwu-${version}-portable-x64.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "OpenMe Qiwu",
+      "artifactName": "OpenMe-Qiwu-${version}-setup-x64.${ext}",
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "public/icons/icon.ico",
+      "uninstallerIcon": "public/icons/icon.ico",
+      "installerHeaderIcon": "public/icons/icon.ico"
+    },
     "extraResources": [
       {
         "from": "cad-host/publish",

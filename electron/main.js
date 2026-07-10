@@ -48,7 +48,10 @@ app.on("web-contents-created", (_event, contents) => {
 });
 
 let mainWindow = null;
+let splashWindow = null;
 let hasUnsavedChanges = false;
+let splashClosed = false;
+let mainShown = false;
 
 // Localized strings pushed from the renderer on mount (and whenever the user
 // switches language). Main process uses these for native dialogs that the OS
@@ -257,7 +260,78 @@ function findCadEngine() {
     messageCode: "dwgEngineMessageLibreDwg",
   };
 }
-function createWindow() {
+
+    // Splash lifecycle — see electron/splash/splash.html. The splash is a
+    // separate, frameless, always-on-top BrowserWindow that loads its own
+    // static HTML. It survives until `hideSplash()` is called by the main
+    // window's `ready-to-show` event (or 8s safety timeout if main never
+    // reports ready — desktop cold start + first bundle parse can be slow).
+    function createSplashWindow() {
+      if (splashWindow && !splashWindow.isDestroyed()) return splashWindow;
+      splashWindow = new BrowserWindow({
+        width: 420,
+        height: 320,
+        center: true,
+        resizable: false,
+        movable: false,
+        minimizable: false,
+        maximizable: false,
+        fullscreenable: false,
+        frame: false,
+        transparent: false,
+        backgroundColor: "#0e0d0b",
+        alwaysOnTop: true,
+        skipTaskbar: true,
+        show: false,
+        title: "OpenMe Qiwu",
+        icon: path.join(__dirname, "../public/icons/icon.ico"),
+        webPreferences: {
+          preload: path.join(__dirname, "splash-preload.js"),
+          contextIsolation: true,
+          nodeIntegration: false,
+          sandbox: true,
+          webSecurity: true,
+        },
+      });
+      splashWindow.removeMenu();
+      // Render from filesystem so it works identically in dev (file://) and
+      // packaged (asar). The splash directory ships as part of
+      // `electron/**/*` (see package.json `build.files`).
+      const splashHtml = path.join(__dirname, "splash", "splash.html");
+      splashWindow.loadFile(splashHtml);
+      splashWindow.once("ready-to-show", () => {
+        if (splashWindow && !splashWindow.isDestroyed()) splashWindow.show();
+      });
+      splashWindow.on("closed", () => {
+        splashWindow = null;
+        splashClosed = true;
+      });
+      return splashWindow;
+    }
+
+    function emitSplashInit() {
+      if (!splashWindow || splashWindow.isDestroyed()) return;
+      splashWindow.webContents.send("splash:init", {
+        version: app.getVersion(),
+        lang: "zh",
+      });
+    }
+
+    function hideSplash() {
+      if (!splashWindow || splashWindow.isDestroyed()) return;
+      try {
+        splashWindow.hide();
+      } catch {
+        /* ignore — window already gone */
+      }
+      // Give the main window a frame to paint before destroying the splash
+      // so the user never sees a gap between splash-hide and main-show.
+      setTimeout(() => {
+        if (splashWindow && !splashWindow.isDestroyed()) splashWindow.destroy();
+      }, 180);
+    }
+
+    function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1100,
     height: 720,
@@ -271,52 +345,81 @@ function createWindow() {
     titleBarOverlay: false,
     title: "OpenMe Qiwu",
     icon: path.join(__dirname, "../public/icons/icon.ico"),
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      // OS-level renderer sandbox. Combined with contextIsolation: true
-      // and nodeIntegration: false, the renderer cannot escape its
-      // process even if a V8 vulnerability is exploited. The preload
-      // script (preload.js) only uses contextBridge + ipcRenderer,
-      // both of which are part of Electron's sandbox-safe subset.
-      sandbox: true,
-      webSecurity: true,
-      allowRunningInsecureContent: false,
-    },
-  });
+        // backgroundColor prevents the white flash before React mounts.
+        backgroundColor: "#0e0d0b",
+        show: false,
+        webPreferences: {
+          preload: path.join(__dirname, "preload.js"),
+          contextIsolation: true,
+          nodeIntegration: false,
+          // OS-level renderer sandbox. Combined with contextIsolation: true
+          // and nodeIntegration: false, the renderer cannot escape its
+          // process even if a V8 vulnerability is exploited. The preload
+          // script (preload.js) only uses contextBridge + ipcRenderer,
+          // both of which are part of Electron's sandbox-safe subset.
+          sandbox: true,
+          webSecurity: true,
+          allowRunningInsecureContent: false,
+          spellcheck: false,
+          backgroundThrottling: false,
+        },
+      });
 
-  hardenWebContents(mainWindow.webContents);
+      hardenWebContents(mainWindow.webContents);
 
-  log.info("Main window created");
+      log.info("Main window created");
 
-  if (isDev) {
-    mainWindow.loadURL(DEV_ORIGIN);
-    mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
-  }
+      // ready-to-show fires once the renderer has produced its first real
+      // frame. Showing before this causes a white / blank flash. We swap
+      // splash → main here so the user sees a single continuous transition.
+      mainWindow.once("ready-to-show", () => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        mainShown = true;
+        mainWindow.show();
+        log.info("Main window ready-to-show");
+        // Slight delay so the main frame has painted before tearing the
+        // splash down — avoids a single-frame gap.
+        setTimeout(() => hideSplash(), 120);
+      });
 
+      // Hard ceiling: if the renderer never reports ready-to-show (e.g. JS
+      // crash), still show the window after 8s so the user can see an error
+      // surface or close it manually instead of staring at a frozen splash.
+      setTimeout(() => {
+        if (!mainShown && mainWindow && !mainWindow.isDestroyed()) {
+          log.warn("ready-to-show timed out — forcing main window visible");
+          mainShown = true;
+          mainWindow.show();
+          hideSplash();
+        }
+      }, 8000);
 
-  mainWindow.on("close", (event) => {
-    if (!hasUnsavedChanges) return;
-    const choice = dialog.showMessageBoxSync(mainWindow, {
-      type: "warning",
-        title: uiStrings.closePromptTitle,
-        message: uiStrings.closePromptMessage,
-        detail: uiStrings.closePromptDetail,
-        buttons: [uiStrings.closePromptKeepEditing, uiStrings.closePromptDiscard],
-      defaultId: 0,
-      cancelId: 0,
-      noLink: true,
-    });
-    if (choice === 0) event.preventDefault();
-    else hasUnsavedChanges = false;
-  });
-  mainWindow.on("closed", () => {
-    mainWindow = null;
-  });
-}
+      if (isDev) {
+        mainWindow.loadURL(DEV_ORIGIN);
+        mainWindow.webContents.openDevTools();
+      } else {
+        mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+      }
+
+      mainWindow.on("close", (event) => {
+        if (!hasUnsavedChanges) return;
+        const choice = dialog.showMessageBoxSync(mainWindow, {
+          type: "warning",
+          title: uiStrings.closePromptTitle,
+          message: uiStrings.closePromptMessage,
+          detail: uiStrings.closePromptDetail,
+          buttons: [uiStrings.closePromptKeepEditing, uiStrings.closePromptDiscard],
+          defaultId: 0,
+          cancelId: 0,
+          noLink: true,
+        });
+        if (choice === 0) event.preventDefault();
+        else hasUnsavedChanges = false;
+      });
+      mainWindow.on("closed", () => {
+        mainWindow = null;
+      });
+    }
 
 app.whenReady().then(() => {
   protocol.handle("openme-media", (request) => {
@@ -324,9 +427,15 @@ app.whenReady().then(() => {
     if (!mediaPath || !fs.existsSync(mediaPath) || !fs.statSync(mediaPath).isFile()) return new Response("Not found", { status: 404 });
     return net.fetch(pathToFileURL(mediaPath).toString());
   });
+  // Spawn the splash FIRST so the user has immediate visual feedback
+  // before the main window's renderer even starts loading the bundle.
+  createSplashWindow();
   createWindow();
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createSplashWindow();
+      createWindow();
+    }
   });
 });
 
