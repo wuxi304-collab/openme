@@ -829,6 +829,16 @@ export const translations: Record<string, Record<string, string>> = {
                 aboutContactWechatCopy: "复制微信号",
                 aboutContactWechatCopied: "已复制",
                 aboutContactIntro: "如需定制开发、技术合作或问题反馈，欢迎添加微信交流",
+
+                // Splash / startup screen
+                splashTitle: "OpenMe Qiwu",
+                splashTagline: "万能文件打开器 · 钢铁私塾出品",
+                splashPhaseBoot: "正在启动内核",
+                splashPhaseRenderer: "正在加载界面",
+                splashPhaseAssets: "正在准备文件支持矩阵",
+                splashPhaseReady: "即将开始",
+                splashVersion: "v{version}",
+                splashHint: "首次启动需要几秒钟，请稍候",
         aboutMemoryGb: "{n} GB",
         aboutCpusCount: "{n} 核",
         aboutCopyRuntime: "复制运行时信息",
@@ -1812,6 +1822,16 @@ export const translations: Record<string, Record<string, string>> = {
                 aboutContactWechatCopy: "Copy WeChat ID",
                 aboutContactWechatCopied: "Copied",
                 aboutContactIntro: "For custom development, technical collaboration or feedback, add the WeChat below",
+
+                // Splash / startup screen
+                splashTitle: "OpenMe Qiwu",
+                splashTagline: "Universal file opener · by Gangtie Shuxu",
+                splashPhaseBoot: "Starting engine",
+                splashPhaseRenderer: "Loading interface",
+                splashPhaseAssets: "Preparing file support matrix",
+                splashPhaseReady: "Almost ready",
+                splashVersion: "v{version}",
+                splashHint: "First launch takes a few seconds, please hold on",
         aboutMemoryGb: "{n} GB",
         aboutCpusCount: "{n} cores",
         aboutCopyRuntime: "Copy runtime details",
