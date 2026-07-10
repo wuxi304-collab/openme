@@ -164,12 +164,11 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
           <SupportBadge
             level={format.supportLevel}
             label={format.name}
+            t={t}
             tf={tf}
             buttonRef={supportBadgeRef}
             onClick={() => setFormatPopoverOpen((value) => !value)}
             isActive={formatPopoverOpen}
-            activeLabel={t("statusPopoverClose")}
-            idleLabel={t("statusFormatAria")}
           />
         )}
         {formatPopoverOpen && format && activeTab?.path && (
@@ -244,37 +243,48 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
   );
 }
 
+// Map HonestSupportLevel (A+/A/B/C/D/E/F) to the i18n key that holds the
+// longer human-readable description surfaced in the chip's title/aria text.
+const SUPPORT_LEVEL_DESC_KEYS: Record<HonestSupportLevel, string> = {
+  "A+": "statusSupportLevelDescAplus",
+  A: "statusSupportLevelDescA",
+  B: "statusSupportLevelDescB",
+  C: "statusSupportLevelDescC",
+  D: "statusSupportLevelDescD",
+  E: "statusSupportLevelDescE",
+  F: "statusSupportLevelDescF",
+};
+
 function SupportBadge({
   level,
   label,
+  t,
   tf,
   buttonRef,
   onClick,
   isActive,
-  activeLabel,
-  idleLabel,
 }: {
   level: HonestSupportLevel;
   label: string;
+  t: (key: string) => string;
   tf: (key: string, params?: Record<string, string | number>) => string;
   buttonRef?: React.RefObject<HTMLButtonElement | null>;
   onClick?: () => void;
   isActive?: boolean;
-  activeLabel?: string;
-  idleLabel?: string;
 }) {
+  const description = t(SUPPORT_LEVEL_DESC_KEYS[level]);
   return (
     <button
       ref={buttonRef}
       type="button"
       className={`status-support-badge support-${level.replace("+", "plus")} is-button`}
-      title={label}
-      aria-label={isActive ? activeLabel : idleLabel}
+      title={`${label} · ${description}`}
+      aria-label={tf("statusSupportBadgeAria", { level, description })}
       aria-expanded={isActive}
       aria-haspopup="dialog"
       onClick={onClick}
     >
-      {tf("summarySupportBadge", { level })}
+      {tf("statusSupportBadge", { level })}
     </button>
   );
 }

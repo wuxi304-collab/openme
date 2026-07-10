@@ -319,3 +319,54 @@ describe("StatusBar", () => {
                   expect(btn?.getAttribute("aria-label")).toBe("Copy file path");
                 });
               });
+
+  // PR #95 — Support-level chip in StatusBar surfaces HonestSupportLevel
+  // (A+/A/B/C/D/E/F) as a colored letter-only pill that opens the format
+  // popover when clicked.
+  describe("Support badge chip", () => {
+    it("renders the level-prefixed chip body and the format-name tooltip for a D-level file (.psd)", () => {
+      renderInProviders(
+        <StatusBar activeTab={{ name: "hero.psd", path: String.raw`C:\demo\hero.psd` }} />
+      );
+      const chip = document.querySelector(".status-support-badge") as HTMLButtonElement | null;
+      expect(chip).toBeTruthy();
+          expect(chip?.textContent?.trim()).toBe("等级 D");
+      expect(chip?.className).toContain("support-D");
+          const title = chip?.getAttribute("title") ?? "";
+          expect(title).toContain("Photoshop Document");
+          // Default locale is zh; description should be in Chinese.
+          expect(title).toMatch(/识别但无内置渲染|Recognised, no built-in render/);
+        });
+
+    it("uses the localised description in the title under en locale", () => {
+      try { window.localStorage.setItem("openme.lang", "en"); } catch {}
+      renderInProviders(
+        <StatusBar activeTab={{ name: "hero.psd", path: String.raw`C:\demo\hero.psd` }} />
+      );
+      const chip = document.querySelector(".status-support-badge") as HTMLButtonElement | null;
+          expect(chip?.textContent?.trim()).toBe("Level D");
+          expect(chip?.getAttribute("title") ?? "").toContain("Recognised, no built-in render");
+        });
+
+    it("reflects the registry's support level — B for .txt, A for .json and .png", () => {
+      renderInProviders(
+        <>
+          <StatusBar activeTab={{ name: "plain.txt", path: String.raw`C:\demo\plain.txt` }} />
+          <StatusBar activeTab={{ name: "data.json", path: String.raw`C:\demo\data.json` }} />
+          <StatusBar activeTab={{ name: "logo.png", path: String.raw`C:\demo\logo.png` }} />
+        </>
+      );
+      const chips = document.querySelectorAll(".status-support-badge");
+      expect(chips.length).toBe(3);
+          expect(chips[0].textContent?.trim()).toBe("等级 B");
+      expect(chips[0].className).toContain("support-B");
+          expect(chips[1].textContent?.trim()).toBe("等级 A");
+      expect(chips[1].className).toContain("support-A");
+          expect(chips[2].textContent?.trim()).toBe("等级 A");
+    });
+
+    it("does not render the chip when no tab is active", () => {
+      renderInProviders(<StatusBar activeTab={null} />);
+      expect(document.querySelector(".status-support-badge")).toBeNull();
+    });
+  });

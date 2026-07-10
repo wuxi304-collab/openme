@@ -754,12 +754,44 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
 .status-meta { color:#69635c; }
 .status-lives { color:#e8dfd1; }
 .status-idle-hint { color:#69635c; font-style:italic; letter-spacing:.02em; }
-.status-format-chip, .status-binary-chip, .status-risk-chip, .status-strategy-chip, .status-tab-position { display:inline-flex; align-items:center; gap:4px; padding:1px 7px; border-radius:999px; font:700 8.5px/1.4 var(--font-mono); letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; }
+.status-format-chip, .status-binary-chip, .status-risk-chip, .status-strategy-chip, .status-tab-position, .status-support-badge { display:inline-flex; align-items:center; gap:4px; padding:1px 7px; border-radius:999px; font:700 8.5px/1.4 var(--font-mono); letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; }
 .status-format-chip { color:#cbc4b9; background:#ffffff08; border:1px solid #ffffff18; }
 .status-binary-chip { color:#d9aa35; background:rgba(217,170,53,.10); border:1px solid rgba(217,170,53,.32); }
 .status-risk-chip { color:#C91F37; background:rgba(201,31,55,.10); border:1px solid rgba(201,31,55,.36); }
 .status-strategy-chip { color:#6da3d4; background:rgba(109,163,212,.10); border:1px solid rgba(109,163,212,.32); }
 .status-tab-position { color:#aaa39a; background:#ffffff08; border:1px solid #ffffff18; font-weight:600; }
+/* Honor-system support chip — color encodes the HonestSupportLevel tier so
+   users see at a glance whether the file is fully rendered, preview-only,
+   or routed to an external app. Letter-only body keeps the chip compact. */
+.status-support-badge.is-button {
+  cursor: pointer;
+  border: 1px solid;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform 120ms var(--ease-out);
+}
+.status-support-badge.is-button:focus-visible {
+  outline: 2px solid var(--mario-yellow);
+  outline-offset: 1px;
+}
+.status-support-badge.is-button:active { transform: scale(0.94); }
+.support-Aplus { color:#79d28a; background:rgba(60,154,82,.14); border-color:rgba(60,154,82,.55); }
+.support-A     { color:#79d28a; background:rgba(60,154,82,.10); border-color:rgba(60,154,82,.42); }
+.support-B     { color:#ffd56b; background:rgba(217,170,53,.12); border-color:rgba(217,170,53,.50); }
+.support-C     { color:#e89c4a; background:rgba(196,118,40,.12);  border-color:rgba(196,118,40,.50); }
+.support-D     { color:#aaa39a; background:#ffffff08;            border-color:#ffffff18; }
+.support-E     { color:#6da3d4; background:rgba(109,163,212,.10); border-color:rgba(109,163,212,.42); }
+.support-F     { color:#C91F37; background:rgba(201,31,55,.10);   border-color:rgba(201,31,55,.42); }
+@media (prefers-reduced-motion: reduce) {
+  .status-support-badge.is-button { transition: none; }
+  .status-support-badge.is-button:active { transform: none; }
+}
 
 @keyframes panel-enter { from { opacity:0; transform:translateY(8px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
 @keyframes coin-float-quiet { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
