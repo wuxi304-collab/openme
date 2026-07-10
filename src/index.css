@@ -1226,4 +1226,47 @@ main:focus { outline: none; }
 @keyframes shortcuts-fade { from { opacity:0; } }
 @keyframes shortcuts-in { from { opacity:0; transform:translateY(-8px) scale(.97); } }
 .recent-row { position:relative; display:flex; align-items:center; margin:2px 6px; border:1px solid transparent; border-radius:9px; }.recent-row.is-active { border-color:#d9aa35; background:#332f25; box-shadow:inset 3px 0 #e9b73d; }.recent-row .recent-file { flex:1; min-width:0; margin:0; background:transparent; box-shadow:none; }.recent-row.is-active .recent-file { border-color:transparent; background:transparent; box-shadow:none; }.recent-remove { width:25px; height:25px; flex:none; margin-right:5px; border:0; border-radius:6px; color:#6f6960; background:transparent; opacity:0; transition:opacity var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out),background-color var(--dur-fast) var(--ease-out); }.recent-remove:focus-visible { opacity:1; outline:2px solid var(--accent); }.recent-remove:active { transform:scale(.97); }@media (hover:hover) and (pointer:fine) { .recent-row:hover .recent-remove { opacity:1; }.recent-remove:hover { color:#fff; background:#a9362a; } }
+
+/* PR #86 — Recent file right-click context menu */
+.recent-context-menu {
+  position: fixed;
+  z-index: 600;
+  min-width: 220px;
+  max-width: 280px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(28, 26, 23, 0.98);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  animation: recent-context-menu-in var(--dur-fast) var(--ease-out);
+}
+.recent-context-menu-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.recent-context-menu-item {
+  appearance: none;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #e8dfd1;
+  font: 500 12px/1.3 var(--font-ui, system-ui);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.recent-context-menu-item:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.recent-context-menu-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.recent-context-menu-item.is-destructive { color: #f1a299; }
+.recent-context-menu-item.is-destructive:hover { background: rgba(169, 54, 42, 0.32); color: #fff; }
+.recent-context-menu-item.is-success { color: #9be7a8; }
+.recent-context-menu-item.is-error { color: #f1a299; }
+.recent-context-menu-item-label { display: inline-block; vertical-align: middle; }
+@keyframes recent-context-menu-in {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .recent-context-menu { animation: none; }
+}
 .archive-action-error { min-height:34px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:5px 10px; color:#ffb1a5; background:#5b211b; font-size:11px; }.archive-action-error button { width:24px; height:24px; border:0; border-radius:5px; color:#ffd5ce; background:transparent; }

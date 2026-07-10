@@ -43,6 +43,16 @@ export const translations: Record<string, Record<string, string>> = {
     removeFromListAria: "从列表移除",
     removeFromListTitle: "从列表移除",
     removeFromRecent: "从最近文件移除",
+    // PR #86 — Recent file right-click context menu
+    recentMenuOpen: "打开",
+    recentMenuReveal: "在文件管理器中显示",
+    recentMenuCopyPath: "复制文件路径",
+    recentMenuCopied: "路径已复制",
+    recentMenuCopyPathFailed: "复制失败，请重试",
+    recentMenuOpenWithSystem: "用系统默认应用打开",
+    recentMenuRemove: "从最近列表中移除",
+    recentMenuRemoveConfirmTitle: "移除最近文件",
+    recentMenuRemoveConfirmMessage: "确定要从最近列表中移除 {name} 吗？",
     extensionOrFile: "文件",
     sidebarRecentA11y: "最近打开的文件列表",
     sidebarEmptyBrowse: "选择文件",
@@ -985,6 +995,16 @@ export const translations: Record<string, Record<string, string>> = {
     removeFromListAria: "Remove from list",
     removeFromListTitle: "Remove from list",
     removeFromRecent: "Remove {name} from recent",
+    // PR #86 — Recent file right-click context menu
+    recentMenuOpen: "Open",
+    recentMenuReveal: "Show in file manager",
+    recentMenuCopyPath: "Copy file path",
+    recentMenuCopied: "Path copied",
+    recentMenuCopyPathFailed: "Copy failed, please retry",
+    recentMenuOpenWithSystem: "Open with system default app",
+    recentMenuRemove: "Remove from recent list",
+    recentMenuRemoveConfirmTitle: "Remove recent file",
+    recentMenuRemoveConfirmMessage: "Are you sure you want to remove {name} from the recent list?",
     extensionOrFile: "file",
     sidebarRecentA11y: "Recently opened files",
     sidebarEmptyBrowse: "Pick files",
@@ -2051,6 +2071,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useI18n() { return useContext(I18nContext); }
+
 
 
 

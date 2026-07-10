@@ -169,6 +169,8 @@ export default function App() {
     }, [addToRecent, openFileInTab, t]);
   const handleSelectFile = useCallback(async (file: FileInfo) => { await openFileInTab(file); }, [openFileInTab]);
   const handleRemoveRecent = useCallback(async (file: FileInfo) => { const updated = recentFiles.filter((item) => item.path !== file.path); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); pushToast("success", tf("removeFromRecentToast", { name: file.name })); }, [recentFiles, tf, pushToast]);
+  const handleRevealRecent = useCallback((file: FileInfo) => { void window.electronAPI.revealInFolder(file.path); }, []);
+  const handleOpenRecentInSystem = useCallback((file: FileInfo) => { void window.electronAPI.openInSystem(file.path); }, []);
   const handleCloseTab = useCallback(async (tabId: string) => { const closingTab = tabs.find((tab) => tab.id === tabId); if (closingTab?.isDirty && settings.confirmTabClose && !(await confirmCloseTab(closingTab.name))) return; setTabs((prev) => { const idx = prev.findIndex((t) => t.id === tabId); const newTabs = prev.filter((t) => t.id !== tabId); if (activeTabId === tabId) { if (newTabs.length > 0) setActiveTabId(newTabs[Math.min(idx, newTabs.length - 1)].id); else setActiveTabId(null); } return newTabs; }); }, [activeTabId, tabs, confirmCloseTab, settings.confirmTabClose]);
   const handleOpenDialog = useCallback(async () => { try { const paths = await window.electronAPI.openFileDialog(); if (paths?.length) handleFilePaths(paths); } catch (error) { console.error("Dialog error:", error); } }, [handleFilePaths]);
     const handleCloseAllTabs = useCallback(async () => { if (hasDirtyTabs && settings.confirmTabClose && !(await confirmCloseAll(tabs.filter((tab) => tab.isDirty).length))) return; setTabs([]); setActiveTabId(null); }, [hasDirtyTabs, tabs, confirmCloseAll, settings.confirmTabClose]);
@@ -234,7 +236,7 @@ export default function App() {
                       <TitleBar />
             <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} />
             <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
-          <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} totalCount={recentFiles.length} />
+          <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} totalCount={recentFiles.length} onReveal={handleRevealRecent} onOpenInSystem={handleOpenRecentInSystem} />
           <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
             {tabs.length === 0 ? <EmptyState onOpenDialog={handleOpenDialog} recentFiles={recentFiles} onOpenRecent={(file) => { void openFileInTab(file); }} /> : activeTab ? (
               <div className="workspace-viewer-grid"><div className="workspace-viewer-main">{activeTab.isLoading ? <LoadingState /> : <ViewerRouter tab={activeTab} onChange={handleContentChange} onRetry={activeTab.sourceFile ? () => { void retryTab(activeTab.id); } : undefined} />}</div><FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} /></div>
