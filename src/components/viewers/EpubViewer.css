@@ -1,0 +1,230 @@
+.epub-viewer {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  background: var(--bg-base);
+}
+
+.epub-sidebar {
+  border-right: 1px solid #cfc6b5;
+  background: #f3efe6;
+  overflow: auto;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.epub-sidebar h2 {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.35;
+  color: #29251f;
+  font-family: Georgia, "Noto Serif SC", serif;
+}
+
+.epub-sidebar p {
+  margin: 0;
+  font-size: 11px;
+  color: #70695e;
+}
+
+.epub-sidebar img {
+  width: 100%;
+  height: auto;
+  border: 1px solid #c8beac;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.epub-sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.epub-sidebar nav button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  text-align: left;
+  color: #4d473d;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.epub-sidebar nav button > span {
+  flex: none;
+  width: 22px;
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  color: #70695e;
+  text-align: right;
+}
+
+.epub-sidebar nav button.is-active {
+  background: #dfd7c8;
+  color: #201e1a;
+  border-color: #c8beac;
+}
+
+.epub-sidebar nav button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.epub-reader {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #e9e4d8;
+  position: relative;
+}
+
+.epub-progress {
+  flex: none;
+  height: 2px;
+  background: #cfc6b5;
+  position: relative;
+  overflow: hidden;
+}
+
+.epub-progress > i {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 180ms var(--ease-out, ease);
+  display: block;
+}
+
+.epub-toolbar {
+  height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 18px;
+  border-bottom: 1px solid #cfc6b5;
+  color: #70695e;
+  background: #f3efe6;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.epub-toolbar > span:first-child {
+  margin-right: auto;
+}
+
+.epub-toolbar input {
+  width: 180px;
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid #c8beac;
+  border-radius: 7px;
+  color: #2c2924;
+  background: #fff;
+  font-size: 12px;
+}
+
+.epub-toolbar input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.epub-toolbar button {
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.epub-toolbar button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.epub-reader article {
+  flex: 1;
+  overflow: auto;
+  width: min(760px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 48px 16px 80px;
+  color: #29251f;
+  font-family: Georgia, "Noto Serif SC", serif;
+  line-height: 1.9;
+}
+
+.epub-reader article h1 {
+  margin: 0 0 34px;
+  font-size: 1.65em;
+  line-height: 1.35;
+}
+
+.epub-reader article p {
+  margin: 0 0 1em;
+  text-indent: 2em;
+}
+
+.epub-footer {
+  height: 48px;
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 20px;
+  border-top: 1px solid #cfc6b5;
+  background: #f3efe6;
+}
+
+.epub-footer button {
+  padding: 0 14px;
+  border: 1px solid #c8beac;
+  border-radius: 7px;
+  color: #4d473d;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.epub-footer button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.epub-footer button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .epub-sidebar nav button:hover,
+  .epub-footer button:hover:not(:disabled) {
+    color: #201e1a;
+    background: #dfd7c8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .epub-progress > i {
+    transition: none;
+  }
+}

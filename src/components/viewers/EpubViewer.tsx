@@ -3,6 +3,7 @@ import { useI18n } from "../../i18n";
 import { describeIpcError, isIpcFailure } from "../../core/ipcError";
 import ViewerError from "../ViewerError";
 import "../ViewerError.css";
+import "./EpubViewer.css";
 
 type Chapter = { title: string | null; index?: number; text: string };
 type Book = { title: string; creator?: string; language?: string; cover?: { data: string; mimeType: string } | null; chapters: Chapter[] };
@@ -72,12 +73,12 @@ export default function EpubViewer({ filePath }: Props) {
           ))}
         </nav>
       </aside>
-      <main className="epub-reader">
+      <main className="epub-reader" role="region" aria-label={t("epubReaderAria")}>
         <div className="epub-progress" aria-label={tf("epubProgressAria", { n: progressPct })}>
           <i style={{ transform: `scaleX(${(chapter + 1) / book.chapters.length})` }} />
         </div>
-        <div className="epub-toolbar">
-          <span>{tf("epubChapterCounter", { current: chapter + 1, total: book.chapters.length })}</span>
+        <div className="epub-toolbar" role="toolbar" aria-label={t("epubToolbarAria")}>
+          <span aria-live="polite">{tf("epubChapterCounter", { current: chapter + 1, total: book.chapters.length })}</span>
           <label>
             <span className="sr-only">{t("epubSearchAria")}</span>
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("epubSearchPlaceholder")} />
@@ -91,7 +92,7 @@ export default function EpubViewer({ filePath }: Props) {
           <h1>{chapterLabel(book.chapters[chapter], chapter)}</h1>
           {paragraphs.map((paragraph, index) => !needle || paragraph.toLocaleLowerCase().includes(needle) ? <p key={index}>{paragraph}</p> : null)}
         </article>
-        <footer>
+        <footer className="epub-footer" role="navigation" aria-label={t("epubFooterAria")}>
           <button type="button" disabled={chapter === 0} onClick={() => setChapter((value) => value - 1)}>{t("epubPrev")}</button>
           <button type="button" disabled={chapter === book.chapters.length - 1} onClick={() => setChapter((value) => value + 1)}>{t("epubNext")}</button>
         </footer>
