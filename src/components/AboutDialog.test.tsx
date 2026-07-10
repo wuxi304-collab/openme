@@ -90,3 +90,46 @@ describe("AboutDialog", () => {
     (window as { electronAPI?: unknown }).electronAPI = original;
   });
 });
+
+  describe("AboutDialog — publisher / contact section (v0.1.0)", () => {
+    beforeEach(() => {
+      (window as unknown as { electronAPI: unknown }).electronAPI = {
+        appVersion: () => Promise.resolve("0.1.0"),
+        getRuntimeInfo: () => Promise.resolve(null),
+        openExternal: () => Promise.resolve(),
+        platform: "win32",
+      };
+    });
+
+    it("renders the publisher section in English", () => {
+      localStorage.setItem("openme.lang", "en");
+      render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+      expect(screen.getByText("Publisher")).toBeTruthy();
+      expect(screen.getByText("Gangtie Shuxu")).toBeTruthy();
+      expect(screen.getByText("Contact")).toBeTruthy();
+      expect(screen.getByText("wuxi3042205")).toBeTruthy();
+    });
+
+    it("renders the publisher section in Chinese (brand name kept verbatim)", () => {
+      localStorage.setItem("openme.lang", "zh");
+      render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+      expect(screen.getByText("出品方")).toBeTruthy();
+      expect(screen.getByText("钢铁私塾")).toBeTruthy();
+      expect(screen.getByText("联系方式")).toBeTruthy();
+      expect(screen.getByText("wuxi3042205")).toBeTruthy();
+    });
+
+    it("copies the WeChat id when the copy button is clicked", async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: { writeText },
+      });
+      localStorage.setItem("openme.lang", "en");
+      render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+      const button = screen.getByRole("button", { name: "Copy WeChat ID" });
+      fireEvent.click(button);
+      await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith("wuxi3042205"));
+      await vi.waitFor(() => expect(screen.getByText("Copied")).toBeTruthy());
+    });
+  });

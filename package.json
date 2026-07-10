@@ -1,10 +1,10 @@
 {
   "name": "openme-desktop",
   "private": true,
-  "version": "1.0.0",
-  "description": "OpenMe Qiwu is a local-first desktop workspace for previewing and inspecting everyday files.",
+    "version": "0.1.0",
+    "description": "OpenMe Qiwu is a local-first desktop workspace for previewing and inspecting everyday files — published by Gangtie Shuxu (钢铁私塾).",
   "main": "electron/main.js",
-  "author": "OpenMe contributors",
+    "author": "Gangtie Shuxu (钢铁私塾)",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -69,14 +69,15 @@
     "win": {
       "target": [
         {
-          "target": "dir",
+              "target": "portable",
           "arch": [
             "x64"
           ]
         }
       ],
-      "icon": "public/icons/icon.ico"
-    },
+          "icon": "public/icons/icon.ico",
+          "artifactName": "OpenMe-Qiwu-${version}-portable-x64.${ext}"
+        },
     "extraResources": [
       {
         "from": "cad-host/publish",

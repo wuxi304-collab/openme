@@ -440,3 +440,75 @@
   .about-dialog-card { max-height: 100vh; border-radius: 0; }
   .about-dialog-shortcuts th { width: 100px; }
 }
+
+/* AboutDialog — publisher / contact section (v0.1.0 release branding) */
+
+.about-dialog-publisher {
+  margin-top: 4px;
+}
+
+.about-dialog-publisher-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(216, 121, 48, 0.10), rgba(216, 121, 48, 0.04));
+  border: 1px solid rgba(216, 121, 48, 0.35);
+}
+
+.about-dialog-publisher-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.about-dialog-publisher-tagline {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.about-dialog-contact-intro {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.about-dialog-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+}
+
+.about-dialog-contact-label {
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.about-dialog-contact-id {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+  user-select: all;
+  background: var(--bg-elevated);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle, var(--border-default));
+  flex: 1;
+  min-width: 140px;
+  text-align: center;
+}

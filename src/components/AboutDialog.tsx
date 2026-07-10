@@ -12,6 +12,7 @@ const PROJECT_REPO = "https://github.com/wuxi304-collab/openme";
 const PROJECT_DOCS = `${PROJECT_REPO}#readme`;
 const PROJECT_ISSUES = `${PROJECT_REPO}/issues/new`;
 const PROJECT_LICENSE = `${PROJECT_REPO}/blob/main/LICENSE`;
+const PUBLISHER_WECHAT = "wuxi3042205";
 
 // Static fallback used in browser dev mode when window.electronAPI is
 // a no-op shim (see src/main.tsx). Either an empty string or "—".
@@ -74,7 +75,7 @@ export default function AboutDialog({ open, onClose }: Props) {
   const { t, tf, lang } = useI18n();
   const [version, setVersion] = useState<string>("");
   const [runtime, setRuntime] = useState<RuntimeInfo | null>(null);
-  const [copyState, setCopyState] = useState<"" | "version" | "runtime">("");
+    const [copyState, setCopyState] = useState<"" | "version" | "runtime" | "wechat">("");
   const copyTimer = useRef<number | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
 
@@ -134,7 +135,7 @@ export default function AboutDialog({ open, onClose }: Props) {
     if (copyTimer.current !== null) window.clearTimeout(copyTimer.current);
   }, []);
 
-  const flashCopy = useCallback((kind: "version" | "runtime") => {
+  const flashCopy = useCallback((kind: "version" | "runtime" | "wechat") => {
     setCopyState(kind);
     if (copyTimer.current !== null) window.clearTimeout(copyTimer.current);
     copyTimer.current = window.setTimeout(() => {
@@ -142,6 +143,11 @@ export default function AboutDialog({ open, onClose }: Props) {
       copyTimer.current = null;
     }, 1400);
   }, []);
+
+    const handleCopyWechat = useCallback(async () => {
+      const ok = await copyToClipboard(PUBLISHER_WECHAT);
+      if (ok) flashCopy("wechat");
+    }, [flashCopy]);
 
   const handleOverlayClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === overlayRef.current) onClose();
@@ -342,6 +348,32 @@ export default function AboutDialog({ open, onClose }: Props) {
             <a className="about-dialog-link" href={PROJECT_ISSUES} target="_blank" rel="noreferrer noopener">{t("aboutReportIssue")}</a>
           </div>
         </section>
+
+                <section className="about-dialog-section about-dialog-publisher" aria-label={t("aboutPublisherTitle")}>
+                  <h3 className="about-dialog-section-title">{t("aboutPublisherTitle")}</h3>
+                  <div className="about-dialog-publisher-card">
+                    <div className="about-dialog-publisher-name">{t("aboutPublisherName")}</div>
+                    <p className="about-dialog-publisher-tagline">{t("aboutPublisherTagline")}</p>
+                  </div>
+                </section>
+
+                <section className="about-dialog-section about-dialog-contact" aria-label={t("aboutContactTitle")}>
+                  <h3 className="about-dialog-section-title">{t("aboutContactTitle")}</h3>
+                  <p className="about-dialog-contact-intro">{t("aboutContactIntro")}</p>
+                  <div className="about-dialog-contact-row">
+                    <span className="about-dialog-contact-label">{t("aboutContactWechatLabel")}</span>
+                    <code className="about-dialog-contact-id">{t("aboutContactWechatId")}</code>
+                    <button
+                      type="button"
+                      className={`about-dialog-copy-button${copyState === "wechat" ? " is-copied" : ""}`}
+                      onClick={handleCopyWechat}
+                      aria-label={t("aboutContactWechatCopy")}
+                      title={copyState === "wechat" ? t("aboutContactWechatCopied") : t("aboutContactWechatCopy")}
+                    >
+                      {copyState === "wechat" ? t("aboutContactWechatCopied") : t("aboutContactWechatCopy")}
+                    </button>
+                  </div>
+                </section>
 
         <footer className="about-dialog-footer">
           <button type="button" className="about-dialog-primary" onClick={onClose}>{t("aboutClose")}</button>
