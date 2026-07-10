@@ -20,7 +20,7 @@ export default function TitleBar() {
     try { await window.electronAPI.windowMaximize(); const state = await window.electronAPI.windowIsMaximized(); setMaximized(state); } catch { }
   };
   return (
-    <header className="app-titlebar">
+    <header className="app-titlebar" role="banner" aria-label={t("appName")}>
       <div className="titlebar-brand no-drag">
         <img className="brand-token" src="./openme-logo-64.png" alt="" aria-hidden="true" /><span>OPENME</span>
         <span className="titlebar-separator" aria-hidden="true" /><span className="titlebar-context">{t("appName")}</span>
@@ -30,7 +30,7 @@ export default function TitleBar() {
             </span>
           </div>
       <div className="titlebar-level" aria-label={t("world")}><span className="level-pip" aria-hidden="true" />{t("world")}</div>
-      <div className="window-controls no-drag">
+          <div className="window-controls no-drag" role="toolbar" aria-label={t("windowControlsAria")}>
         <button
           type="button"
           className="about-info-button"

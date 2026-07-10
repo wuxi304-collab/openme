@@ -81,4 +81,53 @@ describe("ShortcutsOverlay", () => {
     const titles = screen.getAllByRole("heading", { level: 3 }).map((n) => n.textContent);
     expect(titles).toEqual(["Files", "Tabs", "Application"]);
   });
+
+  // PR #115 — focus trap and prior-focus restoration
+  it("focuses the close button on open (PR #115 focus trap)", () => {
+    render(
+      <I18nProvider><ShortcutsOverlay open onClose={() => undefined} /></I18nProvider>
+    );
+    const closeBtn = document.querySelector(".shortcuts-overlay-close") as HTMLButtonElement | null;
+    expect(closeBtn).toBeTruthy();
+    expect(document.activeElement).toBe(closeBtn);
+  });
+
+  it("Tab from the last focusable wraps back to the first (PR #115)", () => {
+    render(
+      <I18nProvider><ShortcutsOverlay open onClose={() => undefined} /></I18nProvider>
+    );
+    const closeBtn = document.querySelector(".shortcuts-overlay-close") as HTMLButtonElement;
+    closeBtn.focus();
+    fireEvent.keyDown(window, { key: "Tab" });
+    // Wraps: focus stays on the only focusable element
+    expect(document.activeElement).toBe(closeBtn);
+  });
+
+  it("Shift+Tab from the first focusable wraps to the last (PR #115)", () => {
+    render(
+      <I18nProvider><ShortcutsOverlay open onClose={() => undefined} /></I18nProvider>
+    );
+    const closeBtn = document.querySelector(".shortcuts-overlay-close") as HTMLButtonElement;
+    closeBtn.focus();
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(closeBtn);
+  });
+
+  it("restores focus to the previously focused element on close (PR #115)", () => {
+    const outsideBtn = document.createElement("button");
+    outsideBtn.textContent = "Outside";
+    document.body.appendChild(outsideBtn);
+    outsideBtn.focus();
+    expect(document.activeElement).toBe(outsideBtn);
+    const { rerender } = render(
+      <I18nProvider><ShortcutsOverlay open onClose={() => undefined} /></I18nProvider>
+    );
+    const closeBtn = document.querySelector(".shortcuts-overlay-close") as HTMLButtonElement;
+    expect(document.activeElement).toBe(closeBtn);
+    rerender(
+      <I18nProvider><ShortcutsOverlay open={false} onClose={() => undefined} /></I18nProvider>
+    );
+    expect(document.activeElement).toBe(outsideBtn);
+    outsideBtn.remove();
+  });
 });
