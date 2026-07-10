@@ -86,6 +86,8 @@ const WHITELIST = new Set([
         // PR #105 — numeric cursor template "{current} / {total}" reads identically
         // in zh and en (numbers + slash, no words to translate)
         "pdfMatchCursor",
+        // PR #106 — PowerPoint is a brand name kept verbatim in zh too
+        "officePptxLabel",
         ]);
 
 const untranslated = [];
