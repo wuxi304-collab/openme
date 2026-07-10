@@ -105,16 +105,19 @@
   padding: 24px 28px 20px;
   display: grid;
   grid-template-columns: 220px 1fr;
-  grid-template-rows: auto auto auto auto;
+  grid-template-rows: auto auto auto auto auto;
   grid-template-areas:
     "cover meta"
     "cover format"
     "progress progress"
+    "meter meter"
     "transport transport"
     "queue queue";
   gap: 18px 28px;
   align-items: start;
 }
+
+.ll-meter-slot { grid-area: meter; }
 
 .ll-cover {
   grid-area: cover;
@@ -492,3 +495,103 @@
   .ll-format-grid { grid-template-columns: repeat(2, 1fr); }
   .ll-volume { min-width: 80px; }
 }
+
+  /* ---------- Live level meter ---------- */
+  .ll-meter {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 14px;
+    border: 1px solid #ffffff12;
+    border-radius: 10px;
+    background:
+      linear-gradient(180deg, #0e1320d8 0%, #0b0e16d8 100%);
+    box-shadow: inset 0 0 0 1px #ffffff08;
+  }
+  .ll-meter-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .ll-meter-title {
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #6f7a93;
+  }
+  .ll-meter-scale {
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    color: #4d5673;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ll-meter-row {
+    display: grid;
+    grid-template-columns: 18px 1fr 56px;
+    align-items: center;
+    gap: 8px;
+  }
+  .ll-meter-channel {
+    font-size: 10px;
+    font-weight: 700;
+    color: #b9c4dc;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .ll-meter-track {
+    position: relative;
+    height: 14px;
+    border-radius: 4px;
+    background:
+      repeating-linear-gradient(90deg, #ffffff08 0 1px, transparent 1px 10%),
+      #06090fcc;
+    border: 1px solid #ffffff12;
+    overflow: hidden;
+  }
+  .ll-meter-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 80ms linear, opacity 120ms ease-out;
+    box-shadow: 0 0 12px #62c97a55;
+    will-change: width;
+  }
+  .ll-meter-peak {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 2px;
+    background: #f5c94f;
+    transform: translateX(-1px);
+    transition: left 100ms linear, opacity 200ms ease-out;
+    opacity: 0;
+    box-shadow: 0 0 6px #f5c94faa;
+  }
+  .ll-meter-peak.is-active { opacity: 1; }
+  .ll-meter-tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: #ffffff14;
+    pointer-events: none;
+  }
+  .ll-meter-db {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    font-weight: 600;
+    color: #c5d2ee;
+    letter-spacing: 0.02em;
+  }
+  .ll-meter.is-silent .ll-meter-fill { opacity: 0.35; }
+  .ll-meter.is-silent .ll-meter-db { color: #4d5673; }
+
+  /* Reduced motion: smooth fill transitions become instant. */
+  @media (prefers-reduced-motion: reduce) {
+    .ll-meter-fill { transition: none; }
+    .ll-meter-peak { transition: none; }
+  }
