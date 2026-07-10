@@ -1,0 +1,117 @@
+/* CodeEditor v2 — toolbar, dirty badge, footer */
+
+.code-editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--viewer-header-bg, rgba(15, 27, 45, 0.6));
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  flex-wrap: wrap;
+}
+
+.code-editor-toolbar-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  color: var(--text-secondary, #9CA3AF);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.code-editor-toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary, #E8EDF2);
+}
+
+.code-editor-toolbar-btn:focus-visible {
+  outline: none;
+  border-color: var(--accent, #FDD835);
+  box-shadow: 0 0 0 2px rgba(253, 216, 53, 0.35);
+}
+
+.code-editor-toolbar-btn.is-active {
+  background: rgba(253, 216, 53, 0.16);
+  color: var(--accent, #FDD835);
+  border-color: rgba(253, 216, 53, 0.4);
+}
+
+.code-editor-toolbar-btn.is-active:hover {
+  background: rgba(253, 216, 53, 0.22);
+}
+
+.code-editor-toolbar-btn-ghost {
+  border-color: var(--border-subtle, rgba(255, 255, 255, 0.1));
+  color: var(--text-muted, #6B7280);
+}
+
+.code-editor-toolbar-btn-ghost:hover {
+  color: var(--text-primary, #E8EDF2);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.code-editor-toolbar-hint {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted, #6B7280);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.code-editor-dirty-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--accent, #FDD835);
+  border-radius: 50%;
+  margin-left: 4px;
+  animation: code-editor-dirty-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes code-editor-dirty-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+.code-editor-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--viewer-footer-bg, rgba(15, 27, 45, 0.85));
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+  font-size: 11px;
+  color: var(--text-muted, #9CA3AF);
+  user-select: none;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.code-editor-footer-cell {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.code-editor-footer-sep {
+  opacity: 0.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .code-editor-toolbar-btn,
+  .code-editor-dirty-badge {
+    animation: none !important;
+    transition: none !important;
+  }
+}
