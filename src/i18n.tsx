@@ -325,6 +325,12 @@ export const translations: Record<string, Record<string, string>> = {
     svgFit: "适应",
     svgZoomIn: "放大",
     svgZoomOut: "缩小",
+    svgReset: "重置视图",
+    svgOneToOne: "1:1 实际尺寸",
+    svgKeyboardHint: "快捷键：+/- 缩放 · 0 重置 · 1 实际尺寸",
+    svgZoomMenuAria: "缩放预设",
+    svgZoomPreset: "缩放 {percent}%",
+    svgZoomAnnounce: "当前缩放 {percent}%",
 
     // CsvViewer
     csvRows: "行",
@@ -1383,6 +1389,12 @@ export const translations: Record<string, Record<string, string>> = {
     svgFit: "Fit",
     svgZoomIn: "Zoom in",
     svgZoomOut: "Zoom out",
+    svgReset: "Reset view",
+    svgOneToOne: "1:1 actual size",
+    svgKeyboardHint: "Shortcuts: +/- zoom · 0 reset · 1 actual size",
+    svgZoomMenuAria: "Zoom presets",
+    svgZoomPreset: "Zoom {percent}%",
+    svgZoomAnnounce: "Now at {percent}%",
 
     // CsvViewer
     csvRows: "rows",
