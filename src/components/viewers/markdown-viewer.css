@@ -1,0 +1,197 @@
+/* MarkdownViewer — formatting toolbar + dark-friendly preview pane.
+   The viewer itself is a glass-surface editor (subtle background, mono
+   textarea, light-on-dark preview), and the toolbar buttons mirror the
+   other viewer chrome (transparent surfaces, accent on hover/active). */
+
+.md-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: var(--bg-base, #fff);
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+}
+
+.md-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-muted, rgba(0, 0, 0, 0.06));
+  background: var(--bg-surface, rgba(0, 0, 0, 0.02));
+  flex-wrap: wrap;
+}
+
+.md-toolbar-group,
+.md-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.md-toolbar-stats {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 10.5px;
+  color: var(--text-muted, #6b7280);
+  padding: 0 8px;
+  border-left: 1px solid var(--border-muted, rgba(0, 0, 0, 0.06));
+  border-right: 1px solid var(--border-muted, rgba(0, 0, 0, 0.06));
+  margin: 0 4px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.md-toolbar-sep {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background: var(--border-muted, rgba(0, 0, 0, 0.1));
+  margin: 0 4px;
+}
+
+.md-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary, #455a64);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur-fast, 120ms) var(--ease-out, ease),
+    color var(--dur-fast, 120ms) var(--ease-out, ease),
+    transform var(--dur-press, 100ms) var(--ease-out, ease);
+  user-select: none;
+}
+
+.md-toolbar-btn:hover:not(:disabled) {
+  background: var(--bg-hover, rgba(0, 0, 0, 0.05));
+  color: var(--text-primary, #1f2937);
+}
+
+.md-toolbar-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.md-toolbar-btn:focus-visible {
+  outline: 2px solid var(--focus-ring, #3b82f6);
+  outline-offset: 1px;
+}
+
+.md-toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.md-toolbar-copy {
+  font-size: 10.5px;
+  padding: 0 10px;
+  font-weight: 600;
+}
+
+.md-toolbar-copy.is-copied {
+  background: color-mix(in srgb, var(--success, #10b981) 12%, transparent);
+  color: var(--success, #10b981);
+}
+
+.md-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  background: transparent;
+  color: var(--text-muted, #90a4ae);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 10.5px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background-color var(--dur-fast, 120ms) var(--ease-out, ease),
+    color var(--dur-fast, 120ms) var(--ease-out, ease),
+    border-color var(--dur-fast, 120ms) var(--ease-out, ease),
+    transform var(--dur-press, 100ms) var(--ease-out, ease);
+}
+
+.md-mode-btn:hover:not(:disabled) {
+  background: var(--bg-hover, rgba(0, 0, 0, 0.04));
+  color: var(--text-primary, #1f2937);
+}
+
+.md-mode-btn.is-active {
+  background: linear-gradient(135deg, var(--accent, #FF5252), var(--accent-strong, #E52521));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(229, 37, 33, 0.25);
+}
+
+.md-mode-btn:focus-visible {
+  outline: 2px solid var(--focus-ring, #3b82f6);
+  outline-offset: 1px;
+}
+
+.md-stage {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.md-pane {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.md-pane-split {
+  border-right: 1px solid var(--border-muted, rgba(0, 0, 0, 0.06));
+}
+
+.md-pane-preview {
+  border-right: none;
+}
+
+.md-textarea {
+  flex: 1;
+  width: 100%;
+  padding: 16px;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  color: var(--text-primary, #263238);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.md-textarea::placeholder {
+  color: var(--text-muted, #94a3b8);
+}
+
+.markdown-preview-frame {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-toolbar-btn,
+  .md-mode-btn {
+    transition: none;
+  }
+}
