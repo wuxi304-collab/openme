@@ -256,6 +256,28 @@ export const translations: Record<string, Record<string, string>> = {
     mdModePreview: "预览",
     mdPreviewFrameTitle: "Markdown 预览",
     mdRenderError: "渲染错误",
+    mdToolbarAria: "Markdown 格式工具栏",
+    mdToolbarBold: "加粗",
+    mdToolbarBoldAria: "加粗（Ctrl+B）",
+    mdToolbarItalic: "斜体",
+    mdToolbarItalicAria: "斜体（Ctrl+I）",
+    mdToolbarStrikethrough: "删除线",
+    mdToolbarStrikethroughAria: "删除线",
+    mdToolbarHeading1: "一级标题",
+    mdToolbarHeading2: "二级标题",
+    mdToolbarHeading3: "三级标题",
+    mdToolbarLink: "链接",
+    mdToolbarLinkAria: "插入或编辑链接（Ctrl+K）",
+    mdToolbarInlineCode: "行内代码",
+    mdToolbarCodeBlock: "代码块",
+    mdToolbarBulletList: "无序列表",
+    mdToolbarNumberedList: "有序列表",
+    mdToolbarQuote: "引用",
+    mdToolbarCopyHtml: "复制为 HTML",
+    mdToolbarCopyHtmlCopied: "HTML 已复制",
+    mdToolbarStats: "{words} 词 · {chars} 字符",
+    mdToolbarAnchorCopied: "已复制标题链接",
+    mdToolbarAnchorAria: "复制此标题的链接",
 
     // SvgViewer
     svgLabel: "SVG",
@@ -1208,6 +1230,28 @@ export const translations: Record<string, Record<string, string>> = {
     mdModePreview: "Preview",
     mdPreviewFrameTitle: "Markdown preview",
     mdRenderError: "Render error",
+    mdToolbarAria: "Markdown formatting toolbar",
+    mdToolbarBold: "Bold",
+    mdToolbarBoldAria: "Bold (Ctrl+B)",
+    mdToolbarItalic: "Italic",
+    mdToolbarItalicAria: "Italic (Ctrl+I)",
+    mdToolbarStrikethrough: "Strikethrough",
+    mdToolbarStrikethroughAria: "Strikethrough",
+    mdToolbarHeading1: "Heading 1",
+    mdToolbarHeading2: "Heading 2",
+    mdToolbarHeading3: "Heading 3",
+    mdToolbarLink: "Link",
+    mdToolbarLinkAria: "Insert or edit link (Ctrl+K)",
+    mdToolbarInlineCode: "Inline code",
+    mdToolbarCodeBlock: "Code block",
+    mdToolbarBulletList: "Bullet list",
+    mdToolbarNumberedList: "Numbered list",
+    mdToolbarQuote: "Quote",
+    mdToolbarCopyHtml: "Copy as HTML",
+    mdToolbarCopyHtmlCopied: "HTML copied",
+    mdToolbarStats: "{words} words · {chars} characters",
+    mdToolbarAnchorCopied: "Heading link copied",
+    mdToolbarAnchorAria: "Copy link to this heading",
 
     // SvgViewer
     svgLabel: "SVG",
@@ -2071,6 +2115,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useI18n() { return useContext(I18nContext); }
+
 
 
 
