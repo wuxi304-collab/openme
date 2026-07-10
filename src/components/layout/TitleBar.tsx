@@ -24,7 +24,11 @@ export default function TitleBar() {
       <div className="titlebar-brand no-drag">
         <img className="brand-token" src="./openme-logo-64.png" alt="" aria-hidden="true" /><span>OPENME</span>
         <span className="titlebar-separator" aria-hidden="true" /><span className="titlebar-context">{t("appName")}</span>
-      </div>
+            <span className="titlebar-publisher" aria-label={t("aboutPublisherTagline")} title={t("aboutPublisherTagline")}>
+              <span className="titlebar-publisher-dot" aria-hidden="true" />
+              <span className="titlebar-publisher-name">{t("aboutPublisherName")}</span>
+            </span>
+          </div>
       <div className="titlebar-level" aria-label={t("world")}><span className="level-pip" aria-hidden="true" />{t("world")}</div>
       <div className="window-controls no-drag">
         <button
