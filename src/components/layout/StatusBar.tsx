@@ -230,7 +230,7 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
   };
 
   return (
-    <footer className="status-bar">
+    <footer className="status-bar" role="contentinfo" aria-label={t("statusBarAria")}>
       {activeTab?.isLoading && (
         <div className="status-progress" role="progressbar" aria-label={t("statusLoadingAria")} />
       )}
@@ -306,7 +306,14 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
           </span>
         )}
         {sizeLabel && <span className="status-meta">{sizeLabel}</span>}
-        {lines > 0 && <span className="status-meta">{`${lines.toLocaleString()} ${t("lines")}`}</span>}
+                {lines > 0 && (
+                  <span
+                    className="status-meta status-lines-chip"
+                    aria-label={tf("statusLinesAria", { count: lines.toLocaleString() })}
+                  >
+                    {tf("statusLinesChip", { count: lines.toLocaleString() })}
+                  </span>
+                )}
         {showTextStats && charCount > 0 && (
           <span
             className="status-meta status-char-count"
@@ -340,10 +347,10 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
         <span className="status-meta-text status-line-ending">
           <span
             className="status-meta-subdued"
-            title={encoding ? t("statusEncodingLabel") : undefined}
-            aria-label={encoding ? t("statusEncodingLabel") : undefined}
+                      title={encoding ? t("statusEncodingLabel") : t("statusEncodingDefault")}
+                      aria-label={encoding ? t("statusEncodingLabel") : t("statusEncodingDefault")}
           >
-            {encoding ? t(encodingKey(encoding)) : "UTF-8"}
+                      {encoding ? t(encodingKey(encoding)) : t("statusEncodingDefault")}
           </span>
           <span aria-hidden="true">·</span>
           <span title={t("statusLineEndingLabel")}>{t(statusLineEndingKey(lineEnding))}</span>
@@ -353,10 +360,11 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
           className={`status-theme-pill is-${settings.theme}`}
           onClick={cycleTheme}
           aria-label={t("statusThemeToggleAria")}
-          title={t("statusThemeToggleAria")}
-        >
-          {settings.theme === "dark" ? <MoonIcon /> : <SunIcon />}
-        </button>
+                  aria-pressed={settings.theme === "dark"}
+                  title={t("statusThemeToggleAria")}
+                >
+                  {settings.theme === "dark" ? <MoonIcon /> : <SunIcon />}
+                </button>
       </div>
     </footer>
   );

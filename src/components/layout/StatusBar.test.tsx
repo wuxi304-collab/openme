@@ -320,6 +320,54 @@ describe("StatusBar", () => {
                 });
               });
 
+              // PR #113 — StatusBar footer semantics + lines chip + UTF-8 default + theme aria-pressed
+              describe("StatusBar footer polish (PR #113)", () => {
+                it("exposes role=contentinfo with localised aria-label on the footer", () => {
+                  renderInProviders(<StatusBar activeTab={null} />);
+                  const footer = screen.getByRole("contentinfo", { name: "文件状态栏" });
+                  expect(footer).toBeTruthy();
+                });
+
+                it("renders the lines chip with locale-aware count + aria-label", () => {
+                  renderInProviders(
+                    <StatusBar activeTab={{ name: "a.md", path: "/tmp/a.md", content: "a\nb\nc" }} />,
+                  );
+                  const chip = screen.getByLabelText("3 行");
+                  expect(chip).toBeTruthy();
+                  expect(chip.textContent).toBe("3 行");
+                });
+
+                it("renders lines chip count with locale-grouping (12,345)", () => {
+                  const long = Array.from({ length: 12345 }, () => "x").join("\n");
+                  renderInProviders(
+                    <StatusBar activeTab={{ name: "huge.txt", path: "/tmp/huge.txt", content: long }} />,
+                  );
+                  const chip = screen.getByLabelText("12,345 行");
+                  expect(chip.textContent).toBe("12,345 行");
+                });
+
+                it("renders the UTF-8 default copy via i18n when no content yet", () => {
+                  renderInProviders(<StatusBar activeTab={null} />);
+                  expect(screen.getByText("UTF-8（默认）")).toBeTruthy();
+                });
+
+                it("theme pill toggles aria-pressed to match the current theme", () => {
+                  const { rerender } = renderInProviders(<StatusBar activeTab={null} />);
+                  const themeBtn = screen.getByRole("button", { name: "切换明暗主题" });
+                  // Default locale starts at 'dark'
+                  expect(themeBtn.getAttribute("aria-pressed")).toBe("true");
+                  fireEvent.click(themeBtn);
+                  rerender(
+                    <I18nProvider>
+                      <SettingsProvider>
+                        <StatusBar activeTab={null} />
+                      </SettingsProvider>
+                    </I18nProvider>,
+                  );
+                  expect(themeBtn.getAttribute("aria-pressed")).toBe("false");
+                });
+              });
+
   // PR #95 — Support-level chip in StatusBar surfaces HonestSupportLevel
   // (A+/A/B/C/D/E/F) as a colored letter-only pill that opens the format
   // popover when clicked.
