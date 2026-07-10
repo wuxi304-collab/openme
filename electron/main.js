@@ -52,6 +52,7 @@ let splashWindow = null;
 let hasUnsavedChanges = false;
 let splashClosed = false;
 let mainShown = false;
+let splashAdvanceGuard = false;
 
 // Localized strings pushed from the renderer on mount (and whenever the user
 // switches language). Main process uses these for native dialogs that the OS
@@ -325,18 +326,61 @@ function findCadEngine() {
           }
         }
 
-        function emitSplashProgress(percent, phase) {
+            function emitSplashProgress(percent, phase, sublabel) {
           if (!splashWindow || splashWindow.isDestroyed()) return;
-          try {
-            splashWindow.webContents.send("splash:progress", {
-              percent,
-              phase,
-              lang: uiLang,
-            });
-          } catch {
-            /* ignore — webContents may already be gone */
-          }
-        }
+              const elapsedMs = splashFirstShownAt > 0 ? Date.now() - splashFirstShownAt : 0;
+              try {
+                splashWindow.webContents.send("splash:progress", {
+                  percent,
+                  phase,
+                  lang: uiLang,
+                  sublabel: typeof sublabel === "string" ? sublabel : undefined,
+                  elapsedMs,
+                });
+              } catch {
+                /* ignore — webContents may already be gone */
+              }
+            }
+
+            // Granular sublabel updates without a phase advance — used to show
+            // "loading PDF.js" / "mounting recent files" while the percent stays
+            // pegged to the current phase.
+            function emitSplashSublabel(text) {
+              if (!splashWindow || splashWindow.isDestroyed()) return;
+              if (typeof text !== "string") return;
+              try {
+                splashWindow.webContents.send("splash:sublabel", text);
+              } catch {
+                /* ignore — renderer may be gone */
+              }
+            }
+
+            // Lightweight metric ticker — keeps the elapsed chip fresh every
+            // animation frame without going through the full progress payload.
+            let splashMetricTimer = null;
+            function startSplashMetricTicker() {
+              if (splashMetricTimer || !splashWindow || splashWindow.isDestroyed()) return;
+              const tick = () => {
+                if (!splashWindow || splashWindow.isDestroyed()) {
+                  splashMetricTimer = null;
+                  return;
+                }
+                const elapsedMs = splashFirstShownAt > 0 ? Date.now() - splashFirstShownAt : 0;
+                try {
+                  splashWindow.webContents.send("splash:metric", { elapsedMs });
+                } catch {
+                  /* ignore */
+                }
+                splashMetricTimer = setTimeout(tick, 200);
+              };
+              splashMetricTimer = setTimeout(tick, 200);
+            }
+            function stopSplashMetricTicker() {
+              if (splashMetricTimer) {
+                clearTimeout(splashMetricTimer);
+                splashMetricTimer = null;
+              }
+            }
 
         function emitSplashLangChange() {
           if (!splashWindow || splashWindow.isDestroyed()) return;
@@ -373,14 +417,15 @@ function findCadEngine() {
           // Phase 1 — engine (immediately). User has visual feedback the moment
           // we have a splash surface on screen.
           emitSplashProgress(SPLASH_BOOT_PCT, "splashPhaseBoot");
-          // Phase 2 — interface. After a short dwell, kick off the main window
-          // creation. We schedule createWindow here so the boot phase is always
-          // visible, even on machines where renderer loading is sub-200ms.
-          setTimeout(() => {
-            if (splashClosed) return;
-            emitSplashProgress(SPLASH_RENDERER_PCT, "splashPhaseRenderer");
-          }, SPLASH_PHASE_BOOT_MS);
-        }
+                  startSplashMetricTicker();
+                  // Phase 2 — interface. After a short dwell, kick off the main window
+                  // creation. We schedule createWindow here so the boot phase is always
+                  // visible, even on machines where renderer loading is sub-200ms.
+                  setTimeout(() => {
+                    if (splashClosed) return;
+                    emitSplashProgress(SPLASH_RENDERER_PCT, "splashPhaseRenderer");
+                  }, SPLASH_PHASE_BOOT_MS);
+                }
 
     function hideSplash() {
       if (!splashWindow || splashWindow.isDestroyed()) return;
@@ -413,6 +458,10 @@ function findCadEngine() {
               };
               if (remaining > 0) setTimeout(startFade, remaining);
               else startFade();
+                            // Stop the metric ticker now that we're committing to fade-out.
+                            // The elapsed chip will freeze on its last value as the splash
+                            // animates away.
+                            stopSplashMetricTicker();
             }
 
     function createWindow() {
@@ -506,6 +555,22 @@ function findCadEngine() {
         mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
       }
 
+            // Wire main-window webContents lifecycle events to splash sublabel
+            // updates so the user sees real movement beyond the static timeline.
+            // "did-start-loading" fires when the renderer begins a top-level
+            // navigation (cold start or reload). "did-finish-load" fires when the
+            // page has finished loading all sub-resources.
+            if (!isDev) {
+              mainWindow.webContents.on("did-start-loading", () => {
+                if (splashClosed || !splashWindow || splashWindow.isDestroyed()) return;
+                emitSplashSublabel(uiLang === "en" ? "Loading application bundle…" : "正在加载应用资源…");
+              });
+              mainWindow.webContents.on("did-finish-load", () => {
+                if (splashClosed || !splashWindow || splashWindow.isDestroyed()) return;
+                emitSplashSublabel(uiLang === "en" ? "Application bundle loaded" : "应用资源已加载");
+              });
+            }
+
       mainWindow.on("close", (event) => {
         if (!hasUnsavedChanges) return;
         const choice = dialog.showMessageBoxSync(mainWindow, {
@@ -550,6 +615,23 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
+});
+
+// Renderer-side milestone channel. The renderer pushes fine-grained
+// progress ("settings hydrated", "viewer registry ready", etc.) and we
+// relay it to the splash as a sublabel update. We do NOT advance the
+// percent from here; that's the lifecycle's job. The guard prevents the
+// renderer from running away with sublabel spam during long loads — at
+// most one update per 80ms.
+let lastMilestoneAt = 0;
+ipcMain.on("app:startup-milestone", (event, payload) => {
+  if (splashClosed || !splashWindow || splashWindow.isDestroyed()) return;
+  if (!event.sender || event.sender.isDestroyed()) return;
+  const now = Date.now();
+  if (now - lastMilestoneAt < 80) return;
+  lastMilestoneAt = now;
+  const text = payload && typeof payload.sublabel === "string" ? payload.sublabel : "";
+  emitSplashSublabel(text);
 });
 
 ipcMain.handle("set-ui-strings", (_, strings) => {

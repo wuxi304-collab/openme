@@ -71,7 +71,15 @@ export interface ElectronAPI {
        * or `"dev"` (when running outside Electron via `npm run electron`).
        */
       getInstallMode: () => Promise<"installed" | "portable" | "dev">;
-    }
+            /**
+             * Renderer-side startup progress hook. Pushes a fine-grained sublabel
+             * ("loading viewer registry", "hydrating settings") to the splash
+             * window so the user sees real movement beyond the static phase
+             * timeline. No-op when the splash has already faded. Throttled by
+             * main process to ≥ 80ms between calls.
+             */
+            pushStartupMilestone: (sublabel: string) => void;
+          }
 
   export interface UiStrings {
     dialogSelectFile: string;

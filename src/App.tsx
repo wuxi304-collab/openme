@@ -26,12 +26,31 @@ import { installErrorCapture } from "./utils/errorLog";
 // drag-and-drop handlers.
 type FileWithPath = File & { path?: string };
 
+// Startup milestone helper — relays a localized sublabel to the splash
+// window so the user sees real movement beyond the static phase timeline.
+// Falls back to a no-op when running outside Electron (e.g. browser dev).
+function pushStartupMilestone(text: string): void {
+  try {
+    const api = typeof window !== "undefined" ? window.electronAPI : undefined;
+    if (api && typeof api.pushStartupMilestone === "function") {
+      api.pushStartupMilestone(text);
+    }
+  } catch {
+    /* ignore — best-effort */
+  }
+}
+
 export default function App() {
   const { t, tf } = useI18n();
   const { settings } = useSettings();
   // Install the global capture hooks before anything else runs so we never
   // miss the first window.onerror / unhandledrejection of the session.
   useEffect(() => { installErrorCapture(); }, []);
+  // Splash milestone: React committed first render. Lets the splash know
+  // the renderer is alive even before async data fetches complete.
+  useEffect(() => {
+    pushStartupMilestone(t("splashMilestoneMounted"));
+  }, [t]);
   const [recentFiles, setRecentFiles] = useState<FileInfo[]>([]);
   const [tabs, setTabs] = useState<FileTabState[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
@@ -54,20 +73,22 @@ export default function App() {
   useEffect(() => {
     const load = async () => {
       try {
-        if (typeof window.electronAPI?.loadRecentFiles === "function") {
-          const store = await window.electronAPI.loadRecentFiles();
-          setRecentFiles(store?.files ?? []);
-        } else {
-          // Browser fallback during dev: use empty recent list
+          pushStartupMilestone(t("splashMilestoneRecentFiles"));
+          if (typeof window.electronAPI?.loadRecentFiles === "function") {
+            const store = await window.electronAPI.loadRecentFiles();
+            setRecentFiles(store?.files ?? []);
+          } else {
+            // Browser fallback during dev: use empty recent list
+            setRecentFiles([]);
+          }
+          pushStartupMilestone(t("splashMilestoneReady"));
+        } catch (err) {
+          console.error("loadRecentFiles failed:", err);
           setRecentFiles([]);
         }
-      } catch (err) {
-        console.error("loadRecentFiles failed:", err);
-        setRecentFiles([]);
-      }
-    };
-    void load();
-  }, []);
+      };
+      void load();
+    }, [t]);
 
     // Detect whether we're running as the portable .exe and offer the
     // installed version once per session. The portable build does not

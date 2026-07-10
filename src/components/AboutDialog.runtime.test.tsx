@@ -104,9 +104,13 @@ describe("AboutDialog runtime sections", () => {
     Object.assign(navigator, { clipboard: { writeText } });
     installMockRuntime();
     render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
-    await waitFor(() => expect(screen.getByText(/Copy runtime details/i)).toBeTruthy());
-    const button = screen.getByRole("button", { name: /Copy runtime details/i });
-    await act(async () => { fireEvent.click(button); });
+      // Wait for both async effects (getAppVersion + getRuntimeInfo) to settle
+      // before clicking. Previously we waited for the button label which
+      // exists before the promises resolve, leading to a race where the
+      // click captured empty `version` / `runtime` state.
+      await waitFor(() => expect(screen.getByText("1.2.3")).toBeTruthy());
+      const button = screen.getByRole("button", { name: /Copy runtime details/i });
+      await act(async () => { fireEvent.click(button); });
     expect(writeText).toHaveBeenCalledTimes(1);
     const payload = writeText.mock.calls[0][0] as string;
     expect(payload).toContain("OpenMe Qiwu 1.2.3");
