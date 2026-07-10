@@ -175,6 +175,19 @@ export default function App() {
   const handleOpenDialog = useCallback(async () => { try { const paths = await window.electronAPI.openFileDialog(); if (paths?.length) handleFilePaths(paths); } catch (error) { console.error("Dialog error:", error); } }, [handleFilePaths]);
     const handleCloseAllTabs = useCallback(async () => { if (hasDirtyTabs && settings.confirmTabClose && !(await confirmCloseAll(tabs.filter((tab) => tab.isDirty).length))) return; setTabs([]); setActiveTabId(null); }, [hasDirtyTabs, tabs, confirmCloseAll, settings.confirmTabClose]);
 
+  const handleReorderTabs = useCallback((fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    if (fromIndex < 0 || toIndex < 0) return;
+    setTabs((prev) => {
+      if (fromIndex >= prev.length || toIndex >= prev.length) return prev;
+      const next = prev.slice();
+      const [moved] = next.splice(fromIndex, 1);
+      const insertAt = toIndex > fromIndex ? toIndex - 1 : toIndex;
+      next.splice(Math.max(0, Math.min(insertAt, next.length)), 0, moved);
+      return next;
+    });
+  }, []);
+
   const handleContentChange = useCallback((content: string) => { if (!activeTabId) return; setTabs((prev) => prev.map((t) => t.id === activeTabId ? { ...t, content, isDirty: true } : t)); }, [activeTabId]);
   const handleDrop = useCallback((event: React.DragEvent) => { event.preventDefault(); const paths = Array.from(event.dataTransfer.files).map((file) => (file as FileWithPath).path).filter((path): path is string => typeof path === "string" && path.length > 0); if (paths.length) handleFilePaths(paths); }, [handleFilePaths]);
   const activateRelativeTab = useCallback((direction: 1 | -1) => { if (tabs.length < 2) return; const current = Math.max(0, tabs.findIndex((tab) => tab.id === activeTabId)); setActiveTabId(tabs[(current + direction + tabs.length) % tabs.length].id); }, [tabs, activeTabId]);
@@ -234,7 +247,7 @@ export default function App() {
             <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
                       <a href="#main-content" className="skip-link">{t("skipToContent")}</a>
                       <TitleBar />
-            <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} />
+            <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} onReorder={handleReorderTabs} />
             <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
           <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} totalCount={recentFiles.length} onReveal={handleRevealRecent} onOpenInSystem={handleOpenRecentInSystem} />
           <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>

@@ -688,6 +688,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
 .tabs-scroll { min-width:0; display:flex; align-items:center; gap:4px; overflow-x:auto; scrollbar-width:none; }
 .file-tab { height:30px; max-width:190px; display:flex; align-items:center; border:1px solid transparent; border-radius:7px; color:#89837b; transition:background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
 .file-tab.is-active { color:#f1ece4; background:#292622; border-color:rgba(255,255,255,.08); box-shadow:inset 0 -2px var(--mario-red); }
+.file-tab.is-dragging { opacity:.45; cursor:grabbing; }
+.file-tab.drop-before { box-shadow:inset 2px 0 0 var(--mario-red); }
+.file-tab.drop-after { box-shadow:inset -2px 0 0 var(--mario-red); }
+.file-tab { cursor:grab; }
 .tab-main { height:100%; min-width:0; display:flex; align-items:center; gap:7px; padding:0 4px 0 8px; border:0; background:transparent; color:inherit; cursor:pointer; }
 .tab-main > span { max-width:115px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; font-weight:700; }
 .dirty-dot { width:6px; height:6px; border-radius:50%; background:var(--mario-yellow); }
