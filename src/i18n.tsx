@@ -579,6 +579,13 @@ export const translations: Record<string, Record<string, string>> = {
     zipActionError: "解压失败：{message}",
     zipActionErrorShort: "操作失败",
     zipCloseErrorAria: "关闭错误提示",
+    zipToolbarAria: "压缩包工具栏",
+    zipEntryListAria: "压缩包文件列表",
+    zipEntrySelected: "已选中 {name}",
+    zipEntrySizeAria: "{size} 字节",
+    zipPreviewRegionAria: "文件预览",
+    zipPreviewLoadingAria: "正在读取 {name}",
+    zipSpinnerAria: "正在加载",
 
     // DwgViewer
     dwgToolbarAria: "CAD 工具栏",
@@ -1721,6 +1728,13 @@ export const translations: Record<string, Record<string, string>> = {
     zipActionError: "Extraction failed: {message}",
     zipActionErrorShort: "Action failed",
     zipCloseErrorAria: "Dismiss error",
+    zipToolbarAria: "Archive toolbar",
+    zipEntryListAria: "Archive file list",
+    zipEntrySelected: "Selected: {name}",
+    zipEntrySizeAria: "{size} bytes",
+    zipPreviewRegionAria: "File preview",
+    zipPreviewLoadingAria: "Reading {name}",
+    zipSpinnerAria: "Loading",
 
     // DwgViewer
     dwgToolbarAria: "CAD toolbar",

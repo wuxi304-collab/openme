@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useI18n } from "../../i18n";
 import { describeIpcError, isIpcFailure } from "../../core/ipcError";
 import ViewerError from "../ViewerError";
 import "../ViewerError.css";
+import "./ZipViewer.css";
 
 interface ZipEntry {
   name: string;
@@ -15,16 +16,22 @@ interface Props {
   zipPath: string;
 }
 
+const PREVIEWABLE = new Set([
+  "txt", "md", "json", "js", "ts", "html", "css", "xml", "yml", "yaml",
+  "ini", "log", "py", "rs", "go", "java", "c", "cpp", "h", "sql",
+  "sh", "bat", "ps1", "env", "toml", "cfg", "conf", "properties",
+]);
+
 function formatSize(bytes: number): string {
   if (bytes === 0) return "0 B";
   const units = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
 function getFileName(path: string): string {
   const parts = path.split(/[/\\]/);
-  return parts[parts.length - 1];
+  return parts[parts.length - 1] || path;
 }
 
 function getFileExt(name: string): string {
@@ -33,7 +40,196 @@ function getFileExt(name: string): string {
   return name.slice(lastDot + 1).toLowerCase();
 }
 
-const PREVIEWABLE = new Set(["txt", "md", "json", "js", "ts", "html", "css", "xml", "yml", "yaml", "ini", "log", "py", "rs", "go", "java", "c", "cpp", "h", "sql", "sh", "bat", "ps1", "env", "toml", "cfg", "conf", "properties"]);
+function Spinner({ ariaLabel }: { ariaLabel: string }) {
+  return (
+    <div
+      className="zip-spinner"
+      role="status"
+      aria-label={ariaLabel}
+      aria-live="polite"
+    >
+      <span className="zip-spinner-ring" aria-hidden="true" />
+    </div>
+  );
+}
+
+interface ZipHeaderProps {
+  fileCount: number;
+  dirCount: number;
+  unzipping: boolean;
+  onUnzip: () => void;
+  t: (k: string) => string;
+  tf: (k: string, p?: Record<string, string | number>) => string;
+}
+
+function ZipHeader({ fileCount, dirCount, unzipping, onUnzip, t, tf }: ZipHeaderProps) {
+  return (
+    <div className="zip-header" role="toolbar" aria-label={t("zipToolbarAria")}>
+      <div className="zip-header-meta">
+        <span className="zip-header-badge">ZIP</span>
+        <span className="zip-header-count">
+          {tf("zipCount", { files: fileCount, dirs: dirCount })}
+        </span>
+      </div>
+      <button
+        type="button"
+        className="zip-unzip-button"
+        onClick={onUnzip}
+        disabled={unzipping}
+      >
+        {unzipping ? t("zipUnzipping") : t("zipUnzip")}
+      </button>
+    </div>
+  );
+}
+
+interface EntryListProps {
+  entries: ZipEntry[];
+  selectedEntry: string | null;
+  onSelect: (name: string) => void;
+  t: (k: string) => string;
+  tf: (k: string, p?: Record<string, string | number>) => string;
+}
+
+function EntryList({ entries, selectedEntry, onSelect, t, tf }: EntryListProps) {
+  if (entries.length === 0) {
+    return (
+      <div className="zip-empty">
+        <p>{t("zipEmpty")}</p>
+      </div>
+    );
+  }
+  return (
+    <ul
+      className="zip-entry-list"
+      role="listbox"
+      aria-label={t("zipEntryListAria")}
+      aria-activedescendant={selectedEntry ?? undefined}
+    >
+      {entries.map((entry) => {
+        const isSelected = selectedEntry === entry.name;
+        const ext = getFileExt(entry.name);
+        const isPreviewable = PREVIEWABLE.has(ext);
+        return (
+          <li key={entry.name} role="presentation">
+            <button
+              id={`zip-entry-${entry.name}`}
+              type="button"
+              role="option"
+              aria-selected={isSelected}
+              className={`zip-entry-button${isSelected ? " is-selected" : ""}`}
+              onClick={() => onSelect(entry.name)}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={isPreviewable ? "var(--accent)" : "var(--text-muted)"}
+                strokeWidth="1.5"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              <div className="zip-entry-text">
+                <p className="zip-entry-name">{getFileName(entry.name) || entry.name}</p>
+                <p className="zip-entry-path">{entry.name}</p>
+              </div>
+              {entry.size > 0 && (
+                <span
+                  className="zip-entry-size"
+                  aria-label={tf("zipEntrySizeAria", { size: entry.size })}
+                >
+                  {formatSize(entry.size)}
+                </span>
+              )}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+interface PreviewPanelProps {
+  selectedEntry: string | null;
+  previewContent: string | null;
+  previewLoading: boolean;
+  t: (k: string) => string;
+  tf: (k: string, p?: Record<string, string | number>) => string;
+}
+
+function PreviewPanel({
+  selectedEntry,
+  previewContent,
+  previewLoading,
+  t,
+  tf,
+}: PreviewPanelProps) {
+  if (!selectedEntry) {
+    return (
+      <div className="zip-preview-prompt" role="region" aria-label={t("zipPreviewRegionAria")}>
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--text-muted)"
+          strokeWidth="1.2"
+          opacity="0.5"
+          aria-hidden="true"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+        <p>{t("zipPreviewPrompt")}</p>
+      </div>
+    );
+  }
+
+  if (previewLoading) {
+    return (
+      <div
+        className="zip-preview-loading"
+        role="region"
+        aria-label={t("zipPreviewRegionAria")}
+        aria-busy="true"
+      >
+        <Spinner ariaLabel={tf("zipPreviewLoadingAria", { name: getFileName(selectedEntry) })} />
+      </div>
+    );
+  }
+
+  if (previewContent === null) {
+    return (
+      <div className="zip-preview-unsupported" role="region" aria-label={t("zipPreviewRegionAria")}>
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--text-muted)"
+          strokeWidth="1.5"
+          aria-hidden="true"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+        <p>{t("zipPreviewUnsupported")}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="zip-preview-region" role="region" aria-label={t("zipPreviewRegionAria")}>
+      <div className="zip-preview-header">
+        <span>{tf("zipPreviewHeader", { name: getFileName(selectedEntry) })}</span>
+      </div>
+      <pre className="zip-preview-content">{previewContent.slice(0, 50000)}</pre>
+    </div>
+  );
+}
 
 export default function ZipViewer({ zipPath }: Props) {
   const { t, tf } = useI18n();
@@ -57,196 +253,130 @@ export default function ZipViewer({ zipPath }: Props) {
           setDirectoryCount(archiveEntries.filter((entry) => entry.isDir).length);
           setEntries(archiveEntries.filter((entry) => !entry.isDir).sort((a, b) => a.name.localeCompare(b.name)));
           setLoading(false);
-              } else if (isIpcFailure(res)) {
-                setError(describeIpcError(t, res));
+        } else if (isIpcFailure(res)) {
+          setError(describeIpcError(t, res));
           setLoading(false);
-              } else {
-                setError(res.message ?? t("zipLoadError"));
-                setLoading(false);
-              }
-            })
-      .catch((e) => { setError(e instanceof Error ? e.message : String(e)); setLoading(false); });
+        } else {
+          setError(res.message ?? t("zipLoadError"));
+          setLoading(false);
+        }
+      })
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : String(e));
+        setLoading(false);
+      });
   }, [zipPath, t]);
 
-  const handleSelectEntry = async (entryName: string) => {
-    setSelectedEntry(entryName);
-    const ext = getFileExt(entryName);
-    if (!PREVIEWABLE.has(ext)) { setPreviewContent(null); return; }
-    setPreviewLoading(true);
-    try {
-      const res = await window.electronAPI.readZipEntry(zipPath, entryName);
-      if (res.success) {
-        const binary = atob(res.data ?? "");
-        setPreviewContent(binary);
-            } else if (isIpcFailure(res)) {
-              setPreviewContent(tf("zipReadError", { message: describeIpcError(t, res) }));
-            } else {
-              setPreviewContent(tf("zipReadError", { message: res.message ?? "" }));
-            }
-    } catch {
-      setPreviewContent(t("zipReadErrorShort"));
-    }
-    finally { setPreviewLoading(false); }
-  };
+  const handleSelectEntry = useCallback(
+    async (entryName: string) => {
+      setSelectedEntry(entryName);
+      const ext = getFileExt(entryName);
+      if (!PREVIEWABLE.has(ext)) {
+        setPreviewContent(null);
+        return;
+      }
+      setPreviewLoading(true);
+      try {
+        const res = await window.electronAPI.readZipEntry(zipPath, entryName);
+        if (res.success) {
+          const binary = atob(res.data ?? "");
+          setPreviewContent(binary);
+        } else if (isIpcFailure(res)) {
+          setPreviewContent(tf("zipReadError", { message: describeIpcError(t, res) }));
+        } else {
+          setPreviewContent(tf("zipReadError", { message: res.message ?? "" }));
+        }
+      } catch {
+        setPreviewContent(t("zipReadErrorShort"));
+      } finally {
+        setPreviewLoading(false);
+      }
+    },
+    [zipPath, t, tf]
+  );
 
-  const handleUnzip = async () => {
+  const handleUnzip = useCallback(async () => {
     setUnzipping(true);
     setActionError(null);
     try {
       const targetDir = await window.electronAPI.selectFolderDialog();
-      if (!targetDir) { setUnzipping(false); return; }
+      if (!targetDir) {
+        setUnzipping(false);
+        return;
+      }
       const res = await window.electronAPI.unzipFile(zipPath, targetDir);
       if (res.success) {
         const folderName = getFileName(zipPath).replace(/\.[^.]+$/, "");
         const finalDir = targetDir + (targetDir.endsWith("\\") || targetDir.endsWith("/") ? "" : "\\") + folderName;
         await window.electronAPI.openInSystem(finalDir);
-            } else if (isIpcFailure(res)) {
-              setActionError(tf("zipActionError", { message: describeIpcError(t, res) }));
-            } else {
-              setActionError(tf("zipActionError", { message: res.message ?? "" }));
-            }
+      } else if (isIpcFailure(res)) {
+        setActionError(tf("zipActionError", { message: describeIpcError(t, res) }));
+      } else {
+        setActionError(tf("zipActionError", { message: res.message ?? "" }));
+      }
     } catch (e) {
       const message = e instanceof Error ? e.message : "";
       setActionError(tf("zipActionError", { message }));
+    } finally {
+      setUnzipping(false);
     }
-    finally { setUnzipping(false); }
-  };
+  }, [zipPath, t, tf]);
 
-  const dirCount = directoryCount;
   const fileCount = entries.length;
+  const dirCount = directoryCount;
+
+  const list = useMemo(
+    () => ({ entries, selectedEntry, onSelect: handleSelectEntry }),
+    [entries, selectedEntry, handleSelectEntry]
+  );
 
   if (loading) {
     return (
-      <div className="flex flex-col h-full rounded-lg border" style={{ borderColor: "var(--border-default)", background: "var(--bg-base)" }}>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#56d4dd", borderTopColor: "transparent" }} />
-            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{t("zipLoading")}</p>
-          </div>
-        </div>
+      <div className="zip-viewer zip-viewer-loading">
+        <Spinner ariaLabel={t("zipLoading")} />
       </div>
     );
   }
 
   if (error) {
-      return (
-        <div className="flex flex-col h-full rounded-lg border" style={{ borderColor: "var(--border-default)", background: "var(--bg-base)" }}>
-          <ViewerError title={t("zipLoadError")} message={error} />
-        </div>
-      );
-    }
+    return (
+      <div className="zip-viewer zip-viewer-error">
+        <ViewerError title={t("zipLoadError")} message={error} />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full rounded-lg border overflow-hidden" style={{ borderColor: "var(--border-default)", background: "var(--bg-base)" }}>
-      <div className="flex items-center justify-between px-3 py-1.5 border-b flex-shrink-0" style={{ borderColor: "var(--border-muted)", background: "var(--bg-surface)" }}>
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "var(--text-muted)" }}>ZIP</span>
-          <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{tf("zipCount", { files: fileCount, dirs: dirCount })}</span>
-        </div>
-        <button
-          onClick={handleUnzip}
-          disabled={unzipping}
-          className="flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-medium transition-opacity disabled:opacity-50"
-          style={{ background: "#56d4dd", color: "#fff" }}
-        >
-          {unzipping ? t("zipUnzipping") : t("zipUnzip")}
-        </button>
-      </div>
-
+    <div className="zip-viewer">
+      <ZipHeader
+        fileCount={fileCount}
+        dirCount={dirCount}
+        unzipping={unzipping}
+        onUnzip={handleUnzip}
+        t={t}
+        tf={tf}
+      />
       {actionError && (
-              <ViewerError
-                variant="inline"
-                title={t("zipActionErrorShort")}
-                message={actionError}
-                onClose={() => setActionError(null)}
-                closeLabel={t("zipCloseErrorAria")}
-              />
-            )}
-      <div className="flex flex-1 min-h-0">
-        {/* File list */}
-        <div className="flex-1 overflow-auto border-r" style={{ borderColor: "var(--border-muted)" }}>
-          {entries.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{t("zipEmpty")}</p>
-            </div>
-          ) : (
-            <ul>
-              {entries.map((entry) => {
-                const isSelected = selectedEntry === entry.name;
-                const ext = getFileExt(entry.name);
-                const isPreviewable = PREVIEWABLE.has(ext);
-                return (
-                  <li key={entry.name}>
-                    <button
-                      onClick={() => handleSelectEntry(entry.name)}
-                      className="w-full text-left px-3 py-2 flex items-center gap-2 transition-colors"
-                      style={{
-                        background: isSelected ? "var(--accent-glow)" : "transparent",
-                      }}
-                      onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-                      onMouseLeave={(e) => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isPreviewable ? "#58a6ff" : "#6e7681"} strokeWidth="1.5">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                      </svg>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] truncate" style={{ color: isSelected ? "var(--text-primary)" : "var(--text-secondary)" }}>{getFileName(entry.name) || entry.name}</p>
-                        <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{entry.name}</p>
-                      </div>
-                      {entry.size > 0 && (
-                        <span className="text-[10px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>{formatSize(entry.size)}</span>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+        <ViewerError
+          variant="inline"
+          title={t("zipActionErrorShort")}
+          message={actionError}
+          onClose={() => setActionError(null)}
+          closeLabel={t("zipCloseErrorAria")}
+        />
+      )}
+      <div className="zip-body">
+        <div className="zip-entry-pane">
+          <EntryList entries={list.entries} selectedEntry={list.selectedEntry} onSelect={list.onSelect} t={t} tf={tf} />
         </div>
-
-        {/* Preview panel */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {selectedEntry ? (
-            previewLoading ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }} />
-              </div>
-            ) : previewContent !== null ? (
-              <div className="flex flex-col h-full">
-                <div className="px-3 py-1.5 border-b flex-shrink-0" style={{ borderColor: "var(--border-muted)", background: "var(--bg-surface)" }}>
-                  <span className="text-[10px] uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{tf("zipPreviewHeader", { name: getFileName(selectedEntry) })}</span>
-                </div>
-                <pre
-                  className="flex-1 overflow-auto p-3 text-[11px] leading-relaxed"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    color: "var(--text-secondary)",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-all",
-                  }}
-                >
-                  {previewContent.slice(0, 50000)}
-                </pre>
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center gap-2">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
-                <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{t("zipPreviewUnsupported")}</p>
-              </div>
-            )
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center gap-2">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.2" opacity="0.5">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
-              <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{t("zipPreviewPrompt")}</p>
-            </div>
-          )}
+        <div className="zip-preview-pane">
+          <PreviewPanel
+            selectedEntry={selectedEntry}
+            previewContent={previewContent}
+            previewLoading={previewLoading}
+            t={t}
+            tf={tf}
+          />
         </div>
       </div>
     </div>
