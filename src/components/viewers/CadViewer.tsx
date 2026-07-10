@@ -6,6 +6,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { useI18n } from "../../i18n";
 import ViewerError from "../ViewerError";
 import "../ViewerError.css";
+import "./CadViewer.css";
 
 interface Props {
   base64Data: string;
@@ -225,34 +226,44 @@ export default function CadViewer({ base64Data, filePath }: Props) {
   }, [base64Data, ext, loaderType, t, tf]);
 
   return (
-    <div className="flex flex-col h-full rounded-lg border overflow-hidden" style={{ borderColor: "var(--border-default)", background: "var(--bg-base)" }}>
-      <div className="flex items-center justify-between px-3 py-1.5 border-b flex-shrink-0" style={{ borderColor: "var(--border-muted)", background: "var(--bg-surface)" }}>
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "var(--text-muted)" }}>{t("cad3dHeader")}</span>
-          {info && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}>{info}</span>}
+      <div className="cad3d-shell">
+        <div className="cad3d-header" role="status" aria-live="polite">
+          <div className="cad3d-header-left">
+            <span className="cad3d-header-kicker">{t("cad3dHeader")}</span>
+            {info && <span className="cad3d-info-chip">{info}</span>}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{t("cad3dHint")}</span>
+          <div className="cad3d-header-right">
+            <span className="cad3d-hint" aria-hidden="true">{t("cad3dHint")}</span>
         </div>
-      </div>
-      <div className="flex-1 relative min-h-0">
-        <canvas ref={canvasRef} className="w-full h-full" style={{ display: "block" }} />
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(13,17,23,0.7)" }}>
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }} />
-              <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{t("cad3dLoading")}</p>
+          <span className="sr-only">{t("cad3dHintAria")}</span>
+        </div>
+        <div className="cad3d-stage-wrap">
+          <canvas
+            ref={canvasRef}
+            className="cad3d-canvas"
+            role="img"
+            aria-label={t("cad3dStageAria")}
+            aria-busy={loading || undefined}
+            aria-describedby="cad3d-kbd-hint"
+            tabIndex={0}
+          />
+          <span id="cad3d-kbd-hint" className="sr-only">{t("cad3dKeyboardHint")}</span>
+          {loading && (
+            <div className="cad3d-loading-overlay" role="status" aria-live="polite" aria-label={t("cad3dLoadingAria")}>
+              <div className="cad3d-loading-card">
+                <div className="cad3d-spinner" aria-hidden="true" />
+                <p className="cad3d-loading-text">{t("cad3dLoading")}</p>
+              </div>
             </div>
-          </div>
-        )}
-        {error && (
-                  <ViewerError
-                    title={t("cad3dErrorTitle")}
-                    message={error}
-                    action={{ label: t("cad3dOpenInSystem"), onClick: () => window.electronAPI.openInSystem(filePath) }}
-                  />
-                )}
+          )}
+          {error && (
+                    <ViewerError
+                      title={t("cad3dErrorTitle")}
+                      message={error}
+                      action={{ label: t("cad3dOpenInSystem"), onClick: () => window.electronAPI.openInSystem(filePath) }}
+                    />
+                  )}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
