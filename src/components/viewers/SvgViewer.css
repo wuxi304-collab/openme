@@ -1,0 +1,113 @@
+/*
+ * SvgViewer polish — zoom preset menu, focus ring on the stage,
+ * screen-reader live region, reduced-motion override.
+ *
+ * The viewer has long used inline styles for the toolbar buttons;
+ * this stylesheet only adds the new layers.
+ */
+
+.svg-stage {
+  position: relative;
+  outline: none;
+}
+
+.svg-stage:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent, #e60012);
+}
+
+/* Zoom preset dropdown — same disclosure pattern as ImageViewer. */
+.svg-zoom-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.svg-zoom-menu .svg-zoom-summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: background var(--dur-press) var(--ease-out),
+              border-color var(--dur-press) var(--ease-out);
+}
+
+.svg-zoom-menu .svg-zoom-summary::-webkit-details-marker {
+  display: none;
+}
+
+.svg-zoom-menu .svg-zoom-summary::after {
+  content: "▾";
+  margin-left: 4px;
+  font-size: 9px;
+  opacity: 0.6;
+}
+
+.svg-zoom-menu .svg-zoom-summary:hover,
+.svg-zoom-menu[open] .svg-zoom-summary {
+  background: var(--bg-hover);
+  border-color: var(--border-muted);
+}
+
+.svg-zoom-menu .svg-zoom-summary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent, #e60012);
+}
+
+.svg-zoom-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 110px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  z-index: 8;
+  animation: svg-zoom-menu-in 120ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+@keyframes svg-zoom-menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.svg-zoom-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 4px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background var(--dur-press) var(--ease-out);
+}
+
+.svg-zoom-item:hover {
+  background: var(--bg-hover);
+}
+
+.svg-zoom-item:focus-visible {
+  outline: none;
+  background: rgba(230, 0, 18, 0.12);
+  color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svg-zoom-list {
+    animation: none;
+  }
+  .svg-stage {
+    transition: none;
+  }
+}
