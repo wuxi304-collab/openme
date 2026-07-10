@@ -615,6 +615,8 @@ export const translations: Record<string, Record<string, string>> = {
     dwgLoadFailed: "DWG 加载失败",
     dwgCommandFailed: "命令执行失败",
     dwgOpenInSystem: "用系统程序打开",
+    dwgCanvasAria: "DWG 画布",
+    dwgParsingOverlayAria: "正在解析图纸",
 
     // CadViewer (3D)
     cad3dHeader: "3D 预览",
@@ -656,6 +658,9 @@ export const translations: Record<string, Record<string, string>> = {
     cadAssistantRiskReadOnly: "只读",
     cadAssistantApply: "应用修改（引擎待接入）",
     cadAssistantApplyHint: "安装 CAD 引擎后启用",
+    cadAssistantPlanAria: "修改计划",
+    cadAssistantFormAria: "提问表单",
+    cadAssistantSubmittingAria: "正在分析图纸",
 
     // OpenMeRouteCard
     routeDirectOpen: "OpenMe 直开",
@@ -1764,6 +1769,8 @@ export const translations: Record<string, Record<string, string>> = {
     dwgLoadFailed: "DWG load failed",
     dwgCommandFailed: "Command failed",
     dwgOpenInSystem: "Open in system",
+    dwgCanvasAria: "DWG canvas",
+    dwgParsingOverlayAria: "Parsing drawing",
 
     // CadViewer (3D)
     cad3dHeader: "3D preview",
@@ -1805,6 +1812,9 @@ export const translations: Record<string, Record<string, string>> = {
     cadAssistantRiskReadOnly: "Read only",
     cadAssistantApply: "Apply modifications (engine pending)",
     cadAssistantApplyHint: "Enabled after the CAD engine is connected",
+    cadAssistantPlanAria: "Modification plan",
+    cadAssistantFormAria: "Question form",
+    cadAssistantSubmittingAria: "Analyzing drawing",
 
     // OpenMeRouteCard
     routeDirectOpen: "OpenMe Direct Open",
