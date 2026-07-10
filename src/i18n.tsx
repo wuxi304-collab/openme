@@ -266,6 +266,16 @@ export const translations: Record<string, Record<string, string>> = {
     imageZoomOut: "缩小",
     imageRotateCcw: "逆时针旋转",
     imageRotateCw: "顺时针旋转",
+    imageReset: "重置视图",
+    imageOneToOne: "1:1 实际尺寸",
+    imageKeyboardHint: "快捷键：+/- 缩放 · 0 重置 · R 旋转 · F 适应 · 1 实际尺寸",
+    imageKeyboardHintShort: "键盘快捷键",
+    imageZoomMenuAria: "缩放预设",
+    imageZoomPreset: "缩放 {percent}%",
+    imageZoomAnnounce: "当前缩放 {percent}%，{fit}",
+    imageZoomAnnounceFit: "已适应窗口",
+    imageZoomAnnounceActual: "实际尺寸",
+    imageFitStateBadge: "已适应",
 
     // JsonViewer
     jsonSyntaxError: "JSON 语法错误",
@@ -1314,6 +1324,16 @@ export const translations: Record<string, Record<string, string>> = {
     imageZoomOut: "Zoom out",
     imageRotateCcw: "Rotate counter-clockwise",
     imageRotateCw: "Rotate clockwise",
+    imageReset: "Reset view",
+    imageOneToOne: "1:1 actual size",
+    imageKeyboardHint: "Shortcuts: +/- zoom · 0 reset · R rotate · F fit · 1 actual size",
+    imageKeyboardHintShort: "Keyboard shortcuts",
+    imageZoomMenuAria: "Zoom presets",
+    imageZoomPreset: "Zoom {percent}%",
+    imageZoomAnnounce: "Now at {percent}%, {fit}",
+    imageZoomAnnounceFit: "fit to window",
+    imageZoomAnnounceActual: "actual size",
+    imageFitStateBadge: "Fit",
 
     // JsonViewer
     jsonSyntaxError: "JSON syntax error",
