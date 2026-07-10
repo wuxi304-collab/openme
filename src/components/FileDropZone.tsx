@@ -64,63 +64,69 @@ export default function FileDropZone({ onFileDrop, onOpenDialog }: Props) {
     <section
       role="region"
       aria-label={t("dropZoneAria")}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-      className="flex flex-col items-center justify-center flex-1 rounded-xl border-2 border-dashed transition-all duration-200 select-none"
-      style={{
-        borderColor: dragging ? "var(--accent)" : "var(--border-default)",
-        background: dragging ? "var(--accent-glow)" : "transparent",
-      }}
-    >
-      <div className="flex flex-col items-center gap-5 text-center px-8">
-        <div
-          aria-hidden="true"
-          className="w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300"
-          style={{
-            background: dragging ? "var(--accent-dim)" : "var(--bg-surface)",
-            border: `1px solid ${dragging ? "var(--accent)" : "var(--border-default)"}`,
-            transform: dragging ? "scale(1.08)" : "scale(1)",
-          }}
-        >
-          <svg
-            width="36"
-            height="36"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke={color}
-            strokeWidth="1.5"
-            className="transition-colors duration-200"
+        aria-describedby="file-drop-zone-hint"
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        className="flex flex-col items-center justify-center flex-1 rounded-xl border-2 border-dashed transition-all duration-200 select-none"
+        style={{
+          borderColor: dragging ? "var(--accent)" : "var(--border-default)",
+          background: dragging ? "var(--accent-glow)" : "transparent",
+        }}
+      >
+        <div className="flex flex-col items-center gap-5 text-center px-8">
+          <div
             aria-hidden="true"
+            className="w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300"
+            style={{
+              background: dragging ? "var(--accent-dim)" : "var(--bg-surface)",
+              border: `1px solid ${dragging ? "var(--accent)" : "var(--border-default)"}`,
+              transform: dragging ? "scale(1.08)" : "scale(1)",
+            }}
           >
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="12" y1="18" x2="12" y2="12" />
-            <polyline points="9 15 12 12 15 15" />
-          </svg>
-        </div>
-        <div className="space-y-1">
-          <p
-            className="text-[15px] font-semibold transition-colors duration-200"
-            style={{ color }}
+            <svg
+              width="36"
+              height="36"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={color}
+              strokeWidth="1.5"
+              className="transition-colors duration-200"
+              aria-hidden="true"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="12" y1="18" x2="12" y2="12" />
+              <polyline points="9 15 12 12 15 15" />
+            </svg>
+          </div>
+          <div className="space-y-1">
+            <p
+              className="text-[15px] font-semibold transition-colors duration-200"
+              style={{ color }}
+            >
+              {dragging ? t("dropRelease") : t("dropHere")}
+            </p>
+            <p
+              id="file-drop-zone-hint"
+              className="text-[12px]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {t("dropHint")}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={openWithPicker}
+            aria-describedby="file-drop-zone-hint"
+            className="px-4 py-2 rounded-lg text-[12px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--accent)]"
+            style={{
+              background: "var(--accent)",
+              color: "var(--bg-app)",
+            }}
           >
-            {dragging ? t("dropRelease") : t("dropHere")}
-          </p>
-          <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
-            {t("dropHint")}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={openWithPicker}
-          className="px-4 py-2 rounded-lg text-[12px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--accent)]"
-          style={{
-            background: "var(--accent)",
-            color: "var(--bg-app)",
-          }}
-        >
-          {t("browseFiles")}
-        </button>
+            {t("browseFiles")}
+          </button>
         <input
           ref={inputRef}
           type="file"
