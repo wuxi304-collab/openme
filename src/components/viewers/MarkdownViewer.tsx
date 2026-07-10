@@ -203,38 +203,43 @@ export default function MarkdownViewer({ content, onChange }: Props) {
 
   return (
     <div className="md-viewer">
-      <div className="md-toolbar" role="toolbar" aria-label={t("mdToolbarAria")}>
+      <div className="md-toolbar" role="toolbar" aria-label={t("mdToolbarAria")} aria-describedby="md-toolbar-kbd-hint">
+        <span id="md-toolbar-kbd-hint" className="sr-only">
+          {t("mdToolbarKbdHint")}
+        </span>
         <div className="md-toolbar-group" role="group" aria-label={t("mdToolbarAria")}>
           <button
             type="button"
             className="md-toolbar-btn"
             aria-label={t("mdToolbarBoldAria")}
-            title={t("mdToolbarBoldAria")}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={handleWrap("**", "**", "bold text")}
-          >
-            <strong>B</strong>
-          </button>
-          <button
-            type="button"
-            className="md-toolbar-btn"
-            aria-label={t("mdToolbarItalicAria")}
-            title={t("mdToolbarItalicAria")}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={handleWrap("*", "*", "italic text")}
-          >
-            <em>I</em>
-          </button>
-          <button
-            type="button"
-            className="md-toolbar-btn"
-            aria-label={t("mdToolbarStrikethroughAria")}
-            title={t("mdToolbarStrikethroughAria")}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={handleWrap("~~", "~~", "strikethrough")}
-          >
-            <s>S</s>
-          </button>
+                      aria-keyshortcuts="Control+B"
+                      title={t("mdToolbarBoldAria")}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={handleWrap("**", "**", "bold text")}
+                    >
+                      <span className="md-toolbar-glyph md-toolbar-glyph-bold" aria-hidden="true">B</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="md-toolbar-btn"
+                      aria-label={t("mdToolbarItalicAria")}
+                      aria-keyshortcuts="Control+I"
+                      title={t("mdToolbarItalicAria")}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={handleWrap("*", "*", "italic text")}
+                    >
+                      <span className="md-toolbar-glyph md-toolbar-glyph-italic" aria-hidden="true">I</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="md-toolbar-btn"
+                      aria-label={t("mdToolbarStrikethroughAria")}
+                      title={t("mdToolbarStrikethroughAria")}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={handleWrap("~~", "~~", "strikethrough")}
+                    >
+                      <span className="md-toolbar-glyph md-toolbar-glyph-strike" aria-hidden="true">S</span>
+                    </button>
           <span className="md-toolbar-sep" aria-hidden="true" />
           <button
             type="button"
@@ -271,63 +276,64 @@ export default function MarkdownViewer({ content, onChange }: Props) {
             type="button"
             className="md-toolbar-btn"
             aria-label={t("mdToolbarLinkAria")}
-            title={t("mdToolbarLinkAria")}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={handleLink}
-          >
-            🔗
-          </button>
-          <button
-            type="button"
-            className="md-toolbar-btn"
-            aria-label={t("mdToolbarInlineCode")}
-            title={t("mdToolbarInlineCode")}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={handleWrap("`", "`", "code")}
-          >
-            {"</>"}
-          </button>
-          <button
-            type="button"
-            className="md-toolbar-btn"
-            aria-label={t("mdToolbarCodeBlock")}
-            title={t("mdToolbarCodeBlock")}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={handleWrap("\n```\n", "\n```\n", "code block")}
-          >
-            {"{ }"}
-          </button>
-          <span className="md-toolbar-sep" aria-hidden="true" />
-          <button
-            type="button"
-            className="md-toolbar-btn"
-            aria-label={t("mdToolbarBulletList")}
-            title={t("mdToolbarBulletList")}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={handleList("- ")}
-          >
-            •
-          </button>
-          <button
-            type="button"
-            className="md-toolbar-btn"
-            aria-label={t("mdToolbarNumberedList")}
-            title={t("mdToolbarNumberedList")}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={handleList("1. ")}
-          >
-            1.
-          </button>
-          <button
-            type="button"
-            className="md-toolbar-btn"
-            aria-label={t("mdToolbarQuote")}
-            title={t("mdToolbarQuote")}
-            onMouseDown={(e) => e.preventDefault()}
-                      onClick={handleWrap("> ", "", "quote")}
-          >
-            ❝
-          </button>
+                      aria-keyshortcuts="Control+K"
+                      title={t("mdToolbarLinkAria")}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={handleLink}
+                    >
+                      <span className="md-toolbar-glyph" aria-hidden="true">🔗</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="md-toolbar-btn"
+                      aria-label={t("mdToolbarInlineCode")}
+                      title={t("mdToolbarInlineCode")}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={handleWrap("`", "`", "code")}
+                    >
+                      <span className="md-toolbar-glyph" aria-hidden="true">&lt;/&gt;</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="md-toolbar-btn"
+                      aria-label={t("mdToolbarCodeBlock")}
+                      title={t("mdToolbarCodeBlock")}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={handleWrap("\n```\n", "\n```\n", "code block")}
+                    >
+                      <span className="md-toolbar-glyph" aria-hidden="true">{"{ }"}</span>
+                    </button>
+                    <span className="md-toolbar-sep" aria-hidden="true" />
+                    <button
+                      type="button"
+                      className="md-toolbar-btn"
+                      aria-label={t("mdToolbarBulletList")}
+                      title={t("mdToolbarBulletList")}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={handleList("- ")}
+                    >
+                      <span className="md-toolbar-glyph" aria-hidden="true">•</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="md-toolbar-btn"
+                      aria-label={t("mdToolbarNumberedList")}
+                      title={t("mdToolbarNumberedList")}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={handleList("1. ")}
+                    >
+                      <span className="md-toolbar-glyph" aria-hidden="true">1.</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="md-toolbar-btn"
+                      aria-label={t("mdToolbarQuote")}
+                      title={t("mdToolbarQuote")}
+                      onMouseDown={(e) => e.preventDefault()}
+                                onClick={handleWrap("> ", "", "quote")}
+                    >
+                      <span className="md-toolbar-glyph" aria-hidden="true">❝</span>
+                    </button>
         </div>
         <span className="md-toolbar-stats" aria-live="polite">
           {tf("mdToolbarStats", { words: stats.words, chars: stats.chars })}

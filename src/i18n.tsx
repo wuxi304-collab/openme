@@ -336,6 +336,7 @@ export const translations: Record<string, Record<string, string>> = {
     mdToolbarStats: "{words} 词 · {chars} 字符",
     mdToolbarAnchorCopied: "已复制标题链接",
     mdToolbarAnchorAria: "复制此标题的链接",
+    mdToolbarKbdHint: "Ctrl+B 加粗 · Ctrl+I 斜体 · Ctrl+K 链接",
 
     // SvgViewer
     svgLabel: "SVG",
@@ -1494,6 +1495,7 @@ export const translations: Record<string, Record<string, string>> = {
     mdToolbarStats: "{words} words · {chars} characters",
     mdToolbarAnchorCopied: "Heading link copied",
     mdToolbarAnchorAria: "Copy link to this heading",
+    mdToolbarKbdHint: "Ctrl+B bold · Ctrl+I italic · Ctrl+K link",
 
     // SvgViewer
     svgLabel: "SVG",

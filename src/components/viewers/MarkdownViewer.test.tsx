@@ -336,4 +336,31 @@ describe("MarkdownViewer toolbar (PR #88)", () => {
     fireEvent.click(screen.getByLabelText("Italic (Ctrl+I)"));
     expect(ta.value).toBe("hello *brave new* world");
   });
+
+    // PR #112 — toolbar a11y polish
+    it("exposes aria-keyshortcuts on Bold / Italic / Link buttons", () => {
+      renderInProviders(<MarkdownViewer content="" />);
+      expect(screen.getByLabelText("Bold (Ctrl+B)").getAttribute("aria-keyshortcuts")).toBe("Control+B");
+      expect(screen.getByLabelText("Italic (Ctrl+I)").getAttribute("aria-keyshortcuts")).toBe("Control+I");
+      expect(screen.getByLabelText("Insert or edit link (Ctrl+K)").getAttribute("aria-keyshortcuts")).toBe("Control+K");
+    });
+
+    it("hides glyph icons from screen readers via aria-hidden", () => {
+      renderInProviders(<MarkdownViewer content="" />);
+      const boldBtn = screen.getByLabelText("Bold (Ctrl+B)");
+      const glyph = boldBtn.querySelector('[aria-hidden="true"]');
+      expect(glyph).toBeTruthy();
+      expect(glyph?.textContent).toBe("B");
+    });
+
+    it("describes the toolbar with keyboard-shortcut hint for AT users", () => {
+      renderInProviders(<MarkdownViewer content="" />);
+      const toolbar = screen.getByRole("toolbar", { name: "Markdown formatting toolbar" });
+      const describedById = toolbar.getAttribute("aria-describedby");
+      expect(describedById).toBeTruthy();
+      const hint = document.getElementById(describedById!);
+      expect(hint?.textContent).toContain("Ctrl+B");
+      expect(hint?.textContent).toContain("Ctrl+I");
+      expect(hint?.textContent).toContain("Ctrl+K");
+    });
 });

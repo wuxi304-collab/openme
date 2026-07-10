@@ -195,3 +195,29 @@
     transition: none;
   }
 }
+/* Glyphs — replace raw `<strong>B</strong>` markup with neutral spans.
+   Screen readers ignore these (aria-hidden="true") and rely on the
+   button's aria-label; the visual styling lives here. */
+.md-toolbar-glyph {
+  display: inline-block;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 12px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.md-toolbar-glyph-bold {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.md-toolbar-glyph-italic {
+  font-style: italic;
+  font-family: var(--font-serif, Georgia, serif);
+  font-weight: 600;
+}
+
+.md-toolbar-glyph-strike {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
