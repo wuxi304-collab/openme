@@ -10,6 +10,10 @@ const SPLASH_KEYS = [
   "splashPhaseReady",
   "splashVersion",
   "splashHint",
+  "splashMilestoneMounted",
+  "splashMilestoneRecentFiles",
+  "splashMilestoneViewerRegistry",
+  "splashMilestoneReady",
   "aboutPublisherName",
 ];
 
@@ -42,4 +46,22 @@ describe("splash i18n keys", () => {
       expect(set.size).toBe(phases.length);
     }
   });
-});
+
+    it("milestone keys are distinct from phase labels", () => {
+      const phases = new Set([
+        translations.zh.splashPhaseBoot,
+        translations.zh.splashPhaseRenderer,
+        translations.zh.splashPhaseAssets,
+        translations.zh.splashPhaseReady,
+      ]);
+      const milestones = [
+        translations.zh.splashMilestoneMounted,
+        translations.zh.splashMilestoneRecentFiles,
+        translations.zh.splashMilestoneViewerRegistry,
+        translations.zh.splashMilestoneReady,
+      ];
+      for (const m of milestones) {
+        expect(phases.has(m)).toBe(false);
+      }
+    });
+  });

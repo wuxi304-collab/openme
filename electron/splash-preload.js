@@ -7,6 +7,8 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 const PROGRESS_CHANNEL = "splash:progress";
+const SUBLABEL_CHANNEL = "splash:sublabel";
+const METRIC_CHANNEL = "splash:metric";
 const INIT_CHANNEL = "splash:init";
 const LANG_CHANNEL = "splash:lang";
 const FADE_CHANNEL = "splash:fade";
@@ -24,6 +26,18 @@ contextBridge.exposeInMainWorld("openmeSplash", {
     const listener = (_event, payload) => handler(payload);
     ipcRenderer.on(PROGRESS_CHANNEL, listener);
     return () => ipcRenderer.removeListener(PROGRESS_CHANNEL, listener);
+  },
+  onSublabel(handler) {
+    if (typeof handler !== "function") return () => undefined;
+    const listener = (_event, payload) => handler(payload);
+    ipcRenderer.on(SUBLABEL_CHANNEL, listener);
+    return () => ipcRenderer.removeListener(SUBLABEL_CHANNEL, listener);
+  },
+  onMetric(handler) {
+    if (typeof handler !== "function") return () => undefined;
+    const listener = (_event, payload) => handler(payload);
+    ipcRenderer.on(METRIC_CHANNEL, listener);
+    return () => ipcRenderer.removeListener(METRIC_CHANNEL, listener);
   },
   onLangChange(handler) {
     if (typeof handler !== "function") return () => undefined;

@@ -55,7 +55,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   planCadChange: (input) => ipcRenderer.invoke("plan-cad-change", input),
   saveErrorLog: (payload, defaultName) => ipcRenderer.invoke("save-error-log", payload, defaultName),
     getInstallMode: () => ipcRenderer.invoke("app:install-mode"),
-  });
+    pushStartupMilestone: (sublabel) => ipcRenderer.send("app:startup-milestone", { sublabel: typeof sublabel === "string" ? sublabel : "" }),
+    });
 
 
 

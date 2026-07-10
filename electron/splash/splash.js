@@ -1,15 +1,8 @@
 /* OpenMe splash renderer.
  *
- * Listens for `splash:progress` events from main process and updates:
- *   - progress bar fill (0..100)
- *   - phase dot animation trigger (CSS keyframes; we just toggle a class
- *     to re-arm it)
- *   - phase text label (i18n key resolved against the splash dict)
- *   - "swapping" fade for a smooth transition
- *
- * The dict is intentionally small and duplicated here rather than loading
- * the full renderer i18n bundle — the splash must render before any
- * user-side script runs.
+ * Listens for splash progress / sublabel / metric / fade events from the
+ * main process and updates the progress bar, phase text, sublabel,
+ * elapsed time, and triggers a smooth fade-out.
  */
 (function () {
   "use strict";
@@ -37,90 +30,128 @@
     },
   };
 
-  function resolveLang(raw) {
-    if (typeof raw === "string" && (raw === "en" || raw === "zh")) return raw;
-    return "zh";
-  }
-
-  function applyI18n(lang) {
-    const table = dict[lang] || dict.zh;
-    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
-    document.querySelectorAll("[data-i18n]").forEach((el) => {
-      const key = el.getAttribute("data-i18n");
-      const val = table[key];
-      if (typeof val === "string") el.textContent = val;
-    });
-  }
-
-  function setVersion(version) {
-    const el = document.getElementById("splash-version");
-    if (el && typeof version === "string" && version.length > 0) {
-      el.textContent = `v${version}`;
-    }
-  }
-
-  function setProgress(pct) {
-    const fill = document.getElementById("splash-progress-fill");
-    if (!fill) return;
-    const clamped = Math.max(0, Math.min(100, Math.round(pct)));
-    fill.style.width = clamped + "%";
-  }
-
-  function setPhase(key, lang) {
-    const text = document.getElementById("splash-phase-text");
-    const dot = document.getElementById("splash-phase-dot");
-    if (!text || !dot) return;
-    const table = dict[lang] || dict.zh;
-    const label = table[key] || table.splashPhaseBoot;
-    text.classList.add("is-swapping");
-    window.setTimeout(() => {
-      text.textContent = label;
-      text.classList.remove("is-swapping");
-    }, 140);
-    // Re-arm the dot pulse by toggling the animation
-    dot.style.animation = "none";
-    /* eslint-disable-next-line no-unused-expressions */
-    dot.offsetHeight;
-    dot.style.animation = "";
-  }
-
-    function fadeOut() {
-      const root = document.querySelector(".splash");
-      if (!root) return;
-      root.classList.add("is-fading");
+    function resolveLang(raw) {
+      if (raw === "en" || raw === "zh") return raw;
+      return "zh";
     }
 
-  /* Public API exposed to main via preload contextBridge. */
+    function applyI18n(lang) {
+      const table = dict[lang] || dict.zh;
+      document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+      document.querySelectorAll("[data-i18n]").forEach(function (el) {
+        const key = el.getAttribute("data-i18n");
+        const val = table[key];
+        if (typeof val === "string") el.textContent = val;
+      });
+    }
+
+    function setVersion(version) {
+      const el = document.getElementById("splash-version");
+      if (el && typeof version === "string" && version.length > 0) {
+        el.textContent = "v" + version;
+      }
+    }
+
+    function setProgress(pct) {
+      const fill = document.getElementById("splash-progress-fill");
+      if (!fill) return;
+      const clamped = Math.max(0, Math.min(100, Math.round(pct)));
+      fill.style.width = clamped + "%";
+    }
+
+    function setPhase(key, lang) {
+      const text = document.getElementById("splash-phase-text");
+      const dot = document.getElementById("splash-phase-dot");
+      if (!text || !dot) return;
+      const table = dict[lang] || dict.zh;
+      const label = table[key] || table.splashPhaseBoot;
+      text.classList.add("is-swapping");
+      window.setTimeout(function () {
+        text.textContent = label;
+        text.classList.remove("is-swapping");
+      }, 140);
+      dot.style.animation = "none";
+      void dot.offsetHeight;
+      dot.style.animation = "";
+    }
+
+    function setSublabel(text) {
+      const el = document.getElementById("splash-sublabel");
+      if (!el) return;
+      const trimmed = typeof text === "string" ? text.trim() : "";
+      if (trimmed.length === 0) {
+        el.textContent = "";
+        el.classList.remove("is-visible");
+      } else {
+        el.textContent = trimmed;
+        el.classList.add("is-visible");
+      }
+    }
+
+    function setElapsed(elapsedMs) {
+      const el = document.getElementById("splash-elapsed");
+      if (!el || typeof elapsedMs !== "number" || elapsedMs < 0) return;
+      const totalSeconds = elapsedMs / 1000;
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = (totalSeconds - minutes * 60).toFixed(1);
+      el.textContent = minutes > 0 ? minutes + ":" + seconds.padStart(4, "0") : seconds + "s";
+  }
+
+  function fadeOut() {
+    const root = document.querySelector(".splash");
+    if (!root) return;
+    root.classList.add("is-fading");
+  }
+
   const api = {
-    setProgress,
-    setPhase,
-    setVersion,
-    applyI18n,
-      fadeOut,
-    };
+    setProgress: setProgress,
+    setPhase: setPhase,
+    setSublabel: setSublabel,
+    setElapsed: setElapsed,
+    setVersion: setVersion,
+    applyI18n: applyI18n,
+    fadeOut: fadeOut,
+  };
 
   window.splash = api;
 
-  // Receive events from main process via the contextBridge surface
   if (window.openmeSplash) {
     const bridge = window.openmeSplash;
     if (typeof bridge.onProgress === "function") {
-      bridge.onProgress(({ percent, phase, lang }) => {
-        if (typeof percent === "number") setProgress(percent);
-        if (typeof phase === "string" && typeof lang === "string") setPhase(phase, lang);
+      bridge.onProgress(function (payload) {
+        if (payload && typeof payload.percent === "number") setProgress(payload.percent);
+        if (payload && typeof payload.phase === "string" && typeof payload.lang === "string") {
+          setPhase(payload.phase, payload.lang);
+        }
+        if (payload && typeof payload.sublabel === "string") setSublabel(payload.sublabel);
+        if (payload && typeof payload.elapsedMs === "number") setElapsed(payload.elapsedMs);
       });
     }
     if (typeof bridge.onInit === "function") {
-      bridge.onInit(({ lang, version }) => {
-        applyI18n(resolveLang(lang));
-        setVersion(version);
+      bridge.onInit(function (payload) {
+        if (payload && typeof payload.lang === "string") applyI18n(resolveLang(payload.lang));
+        if (payload && typeof payload.version === "string") setVersion(payload.version);
       });
     }
     if (typeof bridge.onLangChange === "function") {
-      bridge.onLangChange((lang) => applyI18n(resolveLang(lang)));
+      bridge.onLangChange(function (lang) {
+        applyI18n(resolveLang(lang));
+      });
     }
-        if (typeof bridge.onFade === "function") {
-          bridge.onFade(() => fadeOut());
-        }
-      }
-    })();
+    if (typeof bridge.onSublabel === "function") {
+      bridge.onSublabel(function (text) {
+        setSublabel(text);
+      });
+    }
+    if (typeof bridge.onMetric === "function") {
+      bridge.onMetric(function (payload) {
+        if (payload && typeof payload.elapsedMs === "number") setElapsed(payload.elapsedMs);
+      });
+    }
+    if (typeof bridge.onFade === "function") {
+      bridge.onFade(function () {
+        fadeOut();
+      });
+    }
+  }
+})();
