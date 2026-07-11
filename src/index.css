@@ -1466,14 +1466,16 @@ main:focus { outline: none; }
 }
 .shortcuts-overlay-close:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
 .shortcuts-overlay-body { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; padding:18px; overflow:auto; }
-.shortcuts-group { display:flex; flex-direction:column; gap:8px; }
-.shortcuts-group-title { margin:0 0 2px; color:#d9aa35; font:600 11px/1 var(--font-ui); letter-spacing:.06em; text-transform:uppercase; }
-.shortcuts-group-table { width:100%; border-collapse:collapse; }
-.shortcuts-group-table tr { border-bottom:1px solid #ffffff0d; }
-.shortcuts-group-table tr:last-child { border-bottom:0; }
-.shortcuts-group-table th { padding:8px 12px 8px 0; text-align:left; vertical-align:middle; }
-.shortcuts-group-table th kbd { display:inline-block; padding:3px 7px; border:1px solid #4a463e; border-bottom-width:2px; border-radius:5px; color:#e5b83f; background:#211f1b; font:700 10px/1 var(--font-mono); }
-.shortcuts-group-table td { padding:8px 0; color:#d5cfc4; font-size:12px; }
+.shortcuts-group { display:flex; flex-direction:column; gap:8px; min-width:0; }
+.shortcuts-group-title { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 2px; color:#d9aa35; font:600 11px/1 var(--font-ui); letter-spacing:.06em; text-transform:uppercase; }
+.shortcuts-group-name { letter-spacing:inherit; text-transform:inherit; }
+.shortcuts-group-count { display:inline-flex; align-items:center; padding:2px 7px; border-radius:999px; color:#a9a39a; background:#ffffff08; font:600 10px/1 var(--font-ui); letter-spacing:0; text-transform:none; }
+.shortcuts-group-list { display:flex; flex-direction:column; gap:2px; padding:0; margin:0; list-style:none; }
+.shortcuts-row { display:flex; align-items:center; gap:12px; padding:6px 0; border-bottom:1px solid #ffffff0d; }
+.shortcuts-row:last-child { border-bottom:0; }
+.shortcuts-kbd { display:inline-flex; align-items:center; justify-content:center; min-width:24px; padding:3px 7px; border:1px solid #4a463e; border-bottom-width:2px; border-radius:5px; color:#e5b83f; background:#211f1b; font:700 10px/1 var(--font-mono); flex:none; }
+.shortcuts-kbd-single { min-width:22px; padding:2px 6px; border-radius:6px; color:#f5f1ea; background:#332f25; }
+.shortcuts-row-label { color:#d5cfc4; font-size:12px; line-height:1.4; min-width:0; }
 .shortcuts-overlay-footer { padding:11px 18px; border-top:1px solid #ffffff12; color:#79736a; font-size:11px; text-align:center; }
 @media (prefers-reduced-motion:reduce) { .shortcuts-overlay-backdrop { animation:none; } .shortcuts-overlay { animation:none; } }
 @keyframes shortcuts-fade { from { opacity:0; } }
