@@ -75,9 +75,11 @@
   transition: background var(--dur-fast, 120ms) var(--ease-out, ease);
 }
 
-.viewer-error-close:hover {
-  background: var(--bg-hover, rgba(148, 163, 184, 0.16));
-  color: var(--text-primary);
+@media (hover: hover) and (pointer: fine) {
+  .viewer-error-close:hover {
+    background: var(--bg-hover, rgba(148, 163, 184, 0.16));
+    color: var(--text-primary);
+  }
 }
 
 .viewer-error-close:focus-visible {
@@ -94,9 +96,11 @@
   color: #ffd5ce;
 }
 
-.viewer-error.is-inline .viewer-error-close:hover {
-  background: rgba(255, 209, 200, 0.16);
-  color: #ffe5e0;
+@media (hover: hover) and (pointer: fine) {
+  .viewer-error.is-inline .viewer-error-close:hover {
+    background: rgba(255, 209, 200, 0.16);
+    color: #ffe5e0;
+  }
 }
 
 .viewer-error-head {
