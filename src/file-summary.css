@@ -134,10 +134,12 @@
   transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
-.viewer-error-boundary-actions button:hover,
-.app-error-boundary-actions button:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.32);
+@media (hover: hover) and (pointer: fine) {
+  .viewer-error-boundary-actions button:hover,
+  .app-error-boundary-actions button:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.32);
+  }
 }
 
 .viewer-error-boundary-actions button:active,
@@ -157,9 +159,11 @@
   color: #fff;
 }
 
-.app-error-boundary-actions button.primary:hover {
-  background: #d9293f;
-  border-color: #d9293f;
+@media (hover: hover) and (pointer: fine) {
+  .app-error-boundary-actions button.primary:hover {
+    background: #d9293f;
+    border-color: #d9293f;
+  }
 }
 
 .file-summary-header strong {
@@ -473,9 +477,11 @@
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
 }
 
-.summary-suggested-app:hover {
-  border-color: rgba(248, 201, 43, 0.32);
-  background: rgba(248, 201, 43, 0.05);
+@media (hover: hover) and (pointer: fine) {
+  .summary-suggested-app:hover {
+    border-color: rgba(248, 201, 43, 0.32);
+    background: rgba(248, 201, 43, 0.05);
+  }
 }
 
 .summary-suggested-app-head {
@@ -513,9 +519,11 @@
   transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
-.summary-suggested-app-button:hover {
-  background: rgba(248, 201, 43, 0.22);
-  border-color: rgba(248, 201, 43, 0.85);
+@media (hover: hover) and (pointer: fine) {
+  .summary-suggested-app-button:hover {
+    background: rgba(248, 201, 43, 0.22);
+    border-color: rgba(248, 201, 43, 0.85);
+  }
 }
 
 .summary-suggested-app-button:active {
@@ -612,10 +620,12 @@
   transition: color 120ms var(--ease-out), background 120ms var(--ease-out), border-color 120ms var(--ease-out);
 }
 
-.summary-metadata-copy:hover:not(:disabled) {
-  color: #C91F37;
-  border-color: rgba(201, 31, 55, 0.42);
-  background: rgba(201, 31, 55, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .summary-metadata-copy:hover:not(:disabled) {
+    color: #C91F37;
+    border-color: rgba(201, 31, 55, 0.42);
+    background: rgba(201, 31, 55, 0.08);
+  }
 }
 
 .summary-metadata-copy:focus-visible {
@@ -656,10 +666,12 @@
   transition: color 120ms var(--ease-out), background 120ms var(--ease-out), border-color 120ms var(--ease-out);
 }
 
-.summary-metadata-button:hover {
-  color: #C91F37;
-  border-color: rgba(201, 31, 55, 0.42);
-  background: rgba(201, 31, 55, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .summary-metadata-button:hover {
+    color: #C91F37;
+    border-color: rgba(201, 31, 55, 0.42);
+    background: rgba(201, 31, 55, 0.08);
+  }
 }
 
 .summary-metadata-button:focus-visible {
@@ -682,8 +694,10 @@
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
-.status-support-badge.is-button:hover {
-  background: rgba(255, 255, 255, 0.06);
+@media (hover: hover) and (pointer: fine) {
+  .status-support-badge.is-button:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
 }
 
 .status-support-badge.is-button:active {
@@ -970,9 +984,11 @@
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
-.status-format-popover-close:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.95);
+@media (hover: hover) and (pointer: fine) {
+  .status-format-popover-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.95);
+  }
 }
 
 .status-format-popover-close:focus-visible {
