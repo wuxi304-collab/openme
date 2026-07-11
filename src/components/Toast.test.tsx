@@ -125,7 +125,13 @@ describe("ToastStack", () => {
         <I18nProvider><ToastStack toasts={[entry]} onDismiss={onDismiss} /></I18nProvider>
       );
       expect(onDismiss).not.toHaveBeenCalled();
+      // TTL fires after 1000ms — but we now fade out for 180ms before
+      // calling onDismiss so the leave animation can play.
       vi.advanceTimersByTime(999);
+      expect(onDismiss).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(onDismiss).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(179);
       expect(onDismiss).not.toHaveBeenCalled();
       vi.advanceTimersByTime(1);
       expect(onDismiss).toHaveBeenCalledWith(entry.id);
