@@ -133,8 +133,10 @@ html, body, #root { height: 100%; overflow: hidden; }
   .splash-dot-pulse,
   .splash-glow-pulse,
     .status-progress-slide,
-    .recent-context-menu-in { animation: none; }
-}
+      .recent-context-menu-in,
+      .dot-bounce,
+      .dwg-spin { animation: none; }
+  }
 
 body {
   background: var(--bg-base);
@@ -255,9 +257,14 @@ input, button, textarea { font-family: var(--font-main); }
   100% { background-position:  200% 0; }
 }
 
-.animate-bounce-in { animation: bounce-in 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
-.animate-fade-up   { animation: fade-up   0.3s ease-out both; }
-.animate-slide-in  { animation: slide-in-left 0.22s ease-out both; }
+/* Animation discipline (pocket-ui-polish rule 1):
+ *   - Single-shot enter ≤ 300ms (use --dur-press / --dur-fast / --dur-base / --dur-modal)
+ *   - Modal/overlay enter use --dur-modal
+ *   - Infinite animations MUST pair with a @media (prefers-reduced-motion: reduce)
+ *     companion block (see the belt-and-suspenders list in the global RM block above)
+ *   - Never use scale(0); start at scale(0.9)+opacity:0 minimum
+ *   Contract test: src/animation-discipline.test.ts
+ */
 
 /* ══════════════════════════════════════════════════════
    MARIO BUTTONS — Official Nintendo button style
@@ -1400,7 +1407,7 @@ main:focus { outline: none; }
   color:#9be7a8;
   border-color:rgba(81,207,102,0.42);
   background:rgba(81,207,102,0.12);
-  animation:status-filename-copied-flash 1.6s var(--ease-out);
+  animation:status-filename-copied-flash var(--dur-base) var(--ease-out);
 }
 @keyframes status-filename-copied-flash {
   0% { background:rgba(81,207,102,0.34); border-color:rgba(81,207,102,0.7); }
