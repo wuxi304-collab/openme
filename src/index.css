@@ -1356,10 +1356,13 @@ main:focus { outline: none; }
   cursor:pointer;
   transition:background-color var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out);
 }
-.status-filename-button:hover:not(:disabled) {
-  background:rgba(255,255,255,0.05);
-  border-color:#ffffff1f;
-  color:#e8dfd1;
+/* Hover is gated — touch devices tap and don't have a "hover" state. */
+@media (hover: hover) and (pointer: fine) {
+  .status-filename-button:hover:not(:disabled) {
+    background:rgba(255,255,255,0.05);
+    border-color:#ffffff1f;
+    color:#e8dfd1;
+  }
 }
 .status-filename-button:active:not(:disabled) { transform:scale(0.97); }
 .status-filename-button:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
@@ -1378,12 +1381,16 @@ main:focus { outline: none; }
 @media (prefers-reduced-motion:reduce) {
   .status-filename-button.is-copied { animation:none; }
   .status-filename-button:active:not(:disabled) { transform:none; }
+  .status-theme-pill:active { transform:none; }
 }
 .status-meta-text { display:inline-flex; align-items:center; gap:5px; color:#aaa39a; }
 .status-meta-subdued { color:#69635c; }
 .status-line-ending { font-family:var(--font-mono); font-size:9px; }
 .status-theme-pill { display:grid; place-items:center; width:22px; height:22px; padding:0; border:1px solid #ffffff12; border-radius:999px; color:#cbc4b9; background:transparent; cursor:pointer; transition:color var(--dur-fast) var(--ease-out),background-color var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out); }
-.status-theme-pill:hover { color:#fff; background:#ffffff10; border-color:#ffffff26; }
+@media (hover: hover) and (pointer: fine) {
+  .status-theme-pill:hover { color:#fff; background:#ffffff10; border-color:#ffffff26; }
+}
+.status-theme-pill:active { transform:scale(0.92); }
 .status-theme-pill:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
 .status-theme-pill svg { width:12px; height:12px; }
 
