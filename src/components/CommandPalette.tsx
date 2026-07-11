@@ -164,9 +164,25 @@ export default function CommandPalette({ open, commands, onClose }: Props) {
     }
   };
 
+  const selectedCommand = filtered[selected];
+  const selectionAnnouncement = selectedCommand
+    ? tf("paletteSelectionAnnounce", {
+        index: selected + 1,
+        total: filtered.length,
+        label: selectedCommand.label,
+      })
+    : "";
+
   return (
     <div className="command-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section className="command-palette" role="dialog" aria-modal="true" aria-label={t("commandPaletteAria")} onKeyDown={handleKeyDown}>
+      <section
+        className="command-palette"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("commandPaletteAria")}
+        aria-describedby="command-palette-hints"
+        onKeyDown={handleKeyDown}
+      >
         <label className="command-search">
           <span aria-hidden="true">›_</span>
           <span className="sr-only">{t("searchCommandsAria")}</span>
@@ -178,11 +194,27 @@ export default function CommandPalette({ open, commands, onClose }: Props) {
             autoComplete="off"
           />
         </label>
-        <div className="command-list" role="listbox" aria-label={t("availableCommandsAria")}>
+        <div
+          className="command-list"
+          role="listbox"
+          aria-label={t("availableCommandsAria")}
+          aria-activedescendant={selectedCommand ? `command-palette-option-${selectedCommand.id}` : undefined}
+        >
           {filtered.length ? filtered.map((command, index) => {
             const relative = relativeForCommand(command);
+            const isSelected = index === selected;
             return (
-              <button type="button" role="option" aria-selected={index === selected} key={command.id} disabled={command.disabled} className={index === selected ? "is-selected" : ""} onMouseEnter={() => setSelected(index)} onClick={() => execute(command)}>
+              <button
+                type="button"
+                role="option"
+                id={`command-palette-option-${command.id}`}
+                aria-selected={isSelected}
+                key={command.id}
+                disabled={command.disabled}
+                className={isSelected ? "is-selected" : ""}
+                onMouseEnter={() => setSelected(index)}
+                onClick={() => execute(command)}
+              >
                 <span>
                                 <strong>{splitMatches(command.label, query)}</strong>
                                 <small>{splitMatches(command.detail, query)}</small>
@@ -192,13 +224,16 @@ export default function CommandPalette({ open, commands, onClose }: Props) {
               </button>
             );
           }) : (
-            <div className="command-empty">
+            <div className="command-empty" role="presentation">
               <div>{t("paletteEmptyQuery")}</div>
               <small>{tf("paletteFuzzyHint", { example: "sve → save" })}</small>
             </div>
           )}
         </div>
-        <footer>
+        <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {tf("paletteResultsAnnounce", { count: filtered.length })}
+        </div>
+        <footer id="command-palette-hints" role="group" aria-label={t("paletteHintsGroupAria")}>
           <span>{tf("paletteCount", { shown: filtered.length, total: commands.length })}</span>
                   {query.trim().length > 0 && (
                     <span className="command-palette-query-meta">{tf("paletteQueryLength", { count: query.trim().length })}</span>
@@ -208,6 +243,7 @@ export default function CommandPalette({ open, commands, onClose }: Props) {
                   <span>{t("paletteEscHint")}</span>
                 </footer>
       </section>
+      <div className="sr-only" aria-live="polite" aria-atomic="true">{selectionAnnouncement}</div>
     </div>
   );
 }
