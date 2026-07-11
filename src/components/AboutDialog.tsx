@@ -78,6 +78,8 @@ export default function AboutDialog({ open, onClose }: Props) {
     const [copyState, setCopyState] = useState<"" | "version" | "runtime" | "wechat">("");
   const copyTimer = useRef<number | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   // Pull app version + runtime snapshot once when the dialog opens. We
   // guard each call so a missing preload (browser dev mode / jsdom) still
@@ -128,6 +130,57 @@ export default function AboutDialog({ open, onClose }: Props) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  // Focus trap: cycle Tab / Shift+Tab within the dialog card so keyboard
+  // users cannot escape into the page background. Mirrors the Settings dialog.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const card = cardRef.current;
+      if (!card) return;
+      const focusable = card.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const focusableArr = Array.from(focusable);
+      const first = focusableArr[0]!;
+      const last = focusableArr[focusableArr.length - 1]!;
+      const active = document.activeElement as HTMLElement | null;
+      if (event.shiftKey) {
+        if (active === first || !card.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (active === last || !card.contains(active)) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // Capture the trigger element on open so we can restore focus on close.
+  useEffect(() => {
+    if (!open) return;
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+  }, [open]);
+
+  // Restore focus to whichever element was active before opening, once
+  // the dialog has unmounted.
+  useEffect(() => {
+    if (open) return;
+    const target = previouslyFocusedRef.current;
+    if (!target || typeof target.focus !== "function") return;
+    const handle = window.setTimeout(() => {
+      if (document.body.contains(target)) target.focus();
+      previouslyFocusedRef.current = null;
+    }, 0);
+    return () => window.clearTimeout(handle);
+  }, [open]);
 
   // Clear the transient "Copied" indicator after ~1.4s so it returns to
   // its resting state without flicker.
@@ -197,7 +250,7 @@ export default function AboutDialog({ open, onClose }: Props) {
       aria-labelledby="about-dialog-title"
       onClick={handleOverlayClick}
     >
-      <div className="about-dialog-card" onClick={(e) => e.stopPropagation()}>
+      <div className="about-dialog-card" ref={cardRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <header className="about-dialog-header">
           <img className="about-dialog-logo" src="./openme-logo-64.png" alt="" aria-hidden="true" />
           <div className="about-dialog-title-wrap">
