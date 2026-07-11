@@ -18,6 +18,7 @@ export default function SettingsDialog({ open, onClose }: Props) {
   const confirm = useConfirm();
   const overlayRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const [storagePath, setStoragePath] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -135,6 +136,28 @@ export default function SettingsDialog({ open, onClose }: Props) {
     window.addEventListener("keydown", onKey);
   return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  // Capture the trigger element whenever the dialog opens so we can
+  // restore focus on close — keyboard / screen-reader users otherwise
+  // land back at <body> and lose their place in the chrome.
+  useEffect(() => {
+    if (!open) return;
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+  }, [open]);
+
+  // When the dialog closes, restore focus to whichever element was active
+  // before it opened. Defer one frame so the dialog's own cardRef has
+  // unmounted before we re-focus.
+  useEffect(() => {
+    if (open) return;
+    const target = previouslyFocusedRef.current;
+    if (!target || typeof target.focus !== "function") return;
+    const handle = window.setTimeout(() => {
+      if (document.body.contains(target)) target.focus();
+      previouslyFocusedRef.current = null;
+    }, 0);
+    return () => window.clearTimeout(handle);
+  }, [open]);
 
   // Focus the dialog when it opens for keyboard / screen-reader users.
   useEffect(() => {
