@@ -1373,8 +1373,11 @@ main:focus { outline: none; }
 .app-toast.is-paused .app-toast-progress { animation-play-state:paused; }
 .app-toast-overflow { position:relative; align-self:flex-end; padding:4px 10px; border:1px dashed #ffffff20; border-radius:999px; color:#79736a; background:#19181699; font-size:10px; pointer-events:auto; }
 @keyframes toast-in { from { opacity:0; transform:translateY(8px) scale(.97) translateY(calc(var(--stack-index, 0) * -14px)); } }
+@keyframes toast-out { from { opacity:1; transform:translateY(calc(var(--stack-index, 0) * -14px)) scale(1); } to { opacity:0; transform:translateY(calc(var(--stack-index, 0) * -14px + 6px)) scale(.96); } }
 @keyframes toast-ttl { from { transform:scaleX(1); } to { transform:scaleX(0); } }
-@media (prefers-reduced-motion:reduce) { .app-toast { animation:toast-fade var(--dur-fast) var(--ease-out); } .app-toast-progress { animation:none; opacity:.5; } @keyframes toast-fade { from { opacity:0; } } }
+.app-toast.is-exiting { animation: toast-out var(--dur-fast, 200ms) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)) forwards; pointer-events: none; }
+.app-toast-sr-hint { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+@media (prefers-reduced-motion:reduce) { .app-toast { animation:toast-fade var(--dur-fast) var(--ease-out); } .app-toast.is-exiting { animation: toast-out-fade var(--dur-fast) var(--ease-out) forwards; } .app-toast-progress { animation:none; opacity:.5; } @keyframes toast-fade { from { opacity:0; } } @keyframes toast-out-fade { from { opacity:1; } to { opacity:0; } } }
 .status-dirty { display:flex; align-items:center; gap:6px; color:#efc14f; font-weight:750; }.status-dirty i { width:7px; height:7px; border-radius:50%; background:#efc14f; box-shadow:0 0 8px #efc14f88; }.pdf-toolbar { overflow-x:auto; }.pdf-toolbar .viewer-tools { flex:none; }
 
 .status-bar { position:relative; overflow:hidden; }

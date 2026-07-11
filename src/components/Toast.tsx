@@ -85,20 +85,40 @@ interface ItemProps {
 function ToastItem({ entry, stackIndex, onDismiss }: ItemProps) {
   const { t } = useI18n();
   const [paused, setPaused] = useState(false);
+  const [exiting, setExiting] = useState(false);
   // Remaining milliseconds when the timer is currently NOT running.
   // The pause handler subtracts elapsed time before flipping paused,
   // so the resume effect fires the right interval.
   const remainingRef = useRef<number>(entry.ttlMs);
   const startedAtRef = useRef<number>(0);
+  // Hold the second-stage exit timer so cleanup can cancel it cleanly
+  // when paused / unmount races the auto-dismiss fire.
+  const exitTimerRef = useRef<number | null>(null);
+  // Stable description id for sr-only hint so screen readers announce the
+  // hover/focus-pause behaviour on top of the title attribute.
+  const hintId = `app-toast-hint-${entry.id}`;
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || exiting) return;
     startedAtRef.current = performance.now();
     const id = window.setTimeout(() => {
-      onDismiss(entry.id);
+      // Auto-dismiss path: fade out before unmounting so the toast doesn't
+      // just vanish (matches the polished enter animation). User clicks
+      // dismiss immediately for tactile feedback — see handleClose action.
+      setExiting(true);
+      const exitId = window.setTimeout(() => {
+        onDismiss(entry.id);
+      }, 180);
+      exitTimerRef.current = exitId;
     }, remainingRef.current);
-    return () => window.clearTimeout(id);
-  }, [paused, entry.id, onDismiss]);
+    return () => {
+      window.clearTimeout(id);
+      if (exitTimerRef.current !== null) {
+        window.clearTimeout(exitTimerRef.current);
+        exitTimerRef.current = null;
+      }
+    };
+  }, [paused, exiting, entry.id, onDismiss]);
 
   const handlePause = useCallback(() => {
     setPaused((prev) => {
@@ -115,7 +135,7 @@ function ToastItem({ entry, stackIndex, onDismiss }: ItemProps) {
 
   return (
     <div
-      className={`app-toast is-${entry.kind}${paused ? " is-paused" : ""}`}
+      className={`app-toast is-${entry.kind}${paused ? " is-paused" : ""}${exiting ? " is-exiting" : ""}`}
       onMouseEnter={handlePause}
       onMouseLeave={handleResume}
       onFocusCapture={handlePause}
@@ -127,6 +147,7 @@ function ToastItem({ entry, stackIndex, onDismiss }: ItemProps) {
         } as React.CSSProperties
       }
       title={t("toastHoverHint")}
+      aria-describedby={hintId}
     >
       <i aria-hidden="true">
         {entry.kind === "success" ? (
@@ -165,6 +186,9 @@ function ToastItem({ entry, stackIndex, onDismiss }: ItemProps) {
               ×
             </button>
       <div className="app-toast-progress" aria-hidden="true" />
+      <span id={hintId} className="app-toast-sr-hint">
+        {t("toastHoverHint")}
+      </span>
     </div>
   );
 }
