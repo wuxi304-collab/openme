@@ -1,27 +1,18 @@
-/* OpenMe Qiwu splash screen — full-bleed, dark, accent glow.
+/* OpenMe Qiwu splash screen.
  *
- * Splash is the very first surface the user sees. Goals:
- *  - confirm launch immediately (no white flash, no spinner-only loading)
- *  - show what stage the app is at so users don't think it's frozen
- *  - keep the brand consistent with the in-app titlebar publisher pill
+ * Visual goals:
+ *  - Confirm launch immediately (no white flash, no spinner-only loading).
+ *  - Show what stage the app is at so users don't think it's frozen.
+ *  - Match the in-app titlebar brand pill (publisher line).
  *
- * Colors are hardcoded (not CSS vars) because the splash has no theme
- * provider — it must render before any renderer-side code runs.
+ * Motion rules (see tokens.css):
+ *  - Entry animations are < 360ms, ease-out strong curve.
+ *  - Stagger entrance: title -> tagline -> progress -> phase -> meta.
+ *  - Only animate transform + opacity (GPU-friendly).
+ *  - prefers-reduced-motion flattens everything to instant (handled in tokens).
  */
 
-:root {
-  color-scheme: dark;
-  --bg-base: #0e0d0b;
-  --bg-elevated: #1a1814;
-  --border-subtle: rgba(216, 121, 48, 0.20);
-  --text-primary: #f4ebde;
-  --text-secondary: #b8b2a8;
-  --text-muted: #8a8478;
-  --accent: #d87930;
-  --accent-glow: rgba(216, 121, 48, 0.45);
-  --accent-soft: rgba(216, 121, 48, 0.12);
-  --track: rgba(255, 255, 255, 0.08);
-}
+@import url("./tokens.css");
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -33,6 +24,8 @@ html, body {
                "Microsoft YaHei", "Noto Sans CJK SC", Roboto, sans-serif;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 body {
@@ -43,35 +36,52 @@ body {
   -webkit-user-select: none;
 }
 
+/* Root region.
+ * role=status + aria-live=polite tells screen readers that text content
+ * (phase label, version, sublabel) updates without re-asserting the role.
+ * We do NOT set role=dialog because the splash is not interactive — it's
+ * a launch acknowledgement, not a conversation. */
 .splash {
   position: relative;
   width: 420px;
-  height: 320px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 24px;
+
+  /* Card fade-up entry. Cards never scale to 0; start at 0.96. */
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+  animation: splash-enter var(--dur-modal) var(--ease-out) forwards;
 }
 
-/* Soft radial accent glow behind the card */
+@keyframes splash-enter {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+/* Soft radial accent glow behind the card.
+ * Pulsing is fine — it's not gating hover, it's a constant decoration. */
 .splash-glow {
   position: absolute;
   inset: -40px;
-  background: radial-gradient(ellipse at center, var(--accent-glow) 0%, transparent 65%);
+  background: radial-gradient(
+    ellipse at center,
+    var(--accent-glow) 0%,
+    transparent 65%
+  );
   filter: blur(40px);
   pointer-events: none;
   z-index: 0;
-  animation: splash-glow-pulse 4s ease-in-out infinite;
+  animation: splash-glow-pulse 4s var(--ease-in-out) infinite;
+  /* Will-change guards repaint; we only animate opacity + transform here. */
+  will-change: opacity, transform;
 }
 
 @keyframes splash-glow-pulse {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
+  0%, 100% { opacity: 0.6; transform: scale(1);    }
   50%      { opacity: 0.85; transform: scale(1.08); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .splash-glow { animation: none; }
 }
 
 .splash-card {
@@ -90,14 +100,35 @@ body {
   width: 100%;
 }
 
+/* Stagger every direct child of the card by --stagger-step. CSS custom
+ * property indirection (nth-child --> animation-delay) keeps the cascade
+ * readable and avoids hardcoding times. */
+.splash-card > * {
+  opacity: 0;
+  transform: translateY(6px);
+  animation: splash-child-enter var(--dur-base) var(--ease-out) forwards;
+}
+.splash-card > *:nth-child(1) { animation-delay: calc(var(--stagger-step) * 1); }
+.splash-card > *:nth-child(2) { animation-delay: calc(var(--stagger-step) * 2); }
+.splash-card > *:nth-child(3) { animation-delay: calc(var(--stagger-step) * 3); }
+.splash-card > *:nth-child(4) { animation-delay: calc(var(--stagger-step) * 4); }
+.splash-card > *:nth-child(5) { animation-delay: calc(var(--stagger-step) * 5); }
+.splash-card > *:nth-child(6) { animation-delay: calc(var(--stagger-step) * 6); }
+.splash-card > *:nth-child(7) { animation-delay: calc(var(--stagger-step) * 7); }
+
+@keyframes splash-child-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
 .splash-logo {
   width: 56px;
   height: 56px;
   display: grid;
   place-items: center;
   border-radius: 14px;
-  background: linear-gradient(135deg, #e89456 0%, var(--accent) 100%);
-  box-shadow: 0 8px 24px rgba(216, 121, 48, 0.35),
+  background: linear-gradient(135deg, var(--accent-strong) 0%, var(--accent) 100%);
+  box-shadow: 0 8px 24px var(--accent-glow),
               inset 0 -2px 0 rgba(0, 0, 0, 0.25);
   margin-bottom: 2px;
 }
@@ -124,6 +155,7 @@ body {
   line-height: 1.4;
 }
 
+/* Progress track — single declared transition property, never `all`. */
 .splash-progress-track {
   width: 100%;
   height: 4px;
@@ -136,10 +168,11 @@ body {
 .splash-progress-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, var(--accent) 0%, #f1a564 100%);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-strong) 100%);
   border-radius: 999px;
-  transition: width 320ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width var(--dur-fast) var(--ease-out);
   box-shadow: 0 0 12px var(--accent-glow);
+  will-change: width;
 }
 
 .splash-phase {
@@ -150,6 +183,7 @@ body {
   color: var(--text-secondary);
   margin-top: 2px;
   min-height: 18px;
+  width: 100%;
 }
 
 .splash-phase-dot {
@@ -158,38 +192,52 @@ body {
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft);
-  animation: splash-dot-pulse 1.6s ease-in-out infinite;
+  animation: splash-dot-pulse 1.6s var(--ease-in-out) infinite;
+  will-change: transform, opacity;
 }
 
 @keyframes splash-dot-pulse {
   0%, 100% { transform: scale(1);   opacity: 0.85; }
-  50%      { transform: scale(1.2); opacity: 1; }
+  50%      { transform: scale(1.2); opacity: 1;    }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .splash-phase-dot { animation: none; }
-}
-
+/* Meta row — accent line + version pill on the left, publisher on the right.
+ * The accent line is a 1px tall brand-orange rule drawn with a gradient,
+ * 60px wide, centered, sitting 2px above the meta row. It reads as the
+ * "title-bar separator" pattern lifted from the in-app brand. */
 .splash-meta {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   font: 600 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
   margin-top: 4px;
+  position: relative;
+  padding-top: 8px;
 }
 
-.splash-meta > * + *::before {
-  content: "·";
-  margin-right: 10px;
-  color: var(--text-muted);
-  opacity: 0.5;
+.splash-meta::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 60px;
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent) 50%,
+    transparent 100%
+  );
 }
 
 .splash-version {
   color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .splash-publisher {
@@ -206,17 +254,16 @@ body {
   text-align: center;
 }
 
-/* When phase advances, the text swaps in via JS — keep a tiny fade */
+/* Phase text swap: tiny cross-fade. JS toggles .is-swapping during
+ * the ~140ms label change. */
 .splash-phase-text {
-  transition: opacity 180ms ease-out;
+  transition: opacity var(--dur-press) var(--ease-out);
 }
 .splash-phase-text.is-swapping {
   opacity: 0;
 }
 
-/* Elapsed time — appears on the right of the phase row when the splash
- * has been visible for at least 200ms. Monospace numeric so digits don't
- * dance. */
+/* Elapsed time — monospace pill on the right of the phase row. */
 .splash-phase-elapsed {
   margin-left: auto;
   font: 600 10.5px/1 ui-monospace, "SF Mono", Menlo, monospace;
@@ -229,35 +276,32 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Fine-grained sublabel rendered under the phase line. Hidden by default
- * (height collapses) so the card stays compact when there's nothing to
- * show; opacity-faded in when populated. */
+/* Sublabel — hidden by default (transform translateY collapses slot);
+ * opacity-faded + tiny slide when populated by main. Animate only
+ * opacity + transform (emil rule, no max-height/margin-top). */
 .splash-sublabel {
   font-size: 11.5px;
   color: var(--text-muted);
   letter-spacing: 0.02em;
   text-align: center;
-  min-height: 0;
-  max-height: 0;
   opacity: 0;
+  transform: translateY(-2px);
   overflow: hidden;
-  transition: opacity 200ms ease-out, max-height 200ms ease-out, margin-top 200ms ease-out;
+  transition:
+    opacity   var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
 }
 .splash-sublabel.is-visible {
   opacity: 0.95;
-  max-height: 32px;
-  margin-top: -2px;
+  transform: translateY(0);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .splash-sublabel { transition: none; }
-}
-
-/* Pre-destroy fade — main process sends `splash:fade` immediately before
- * tearing the window down. Animating the root to opacity 0 lets the user
- * see the splash blend into the main window instead of vanishing. */
+/* Pre-destroy fade — main process sends splash:fade immediately before
+ * tearing the window down. */
 .splash {
-  transition: opacity 220ms ease-out, transform 220ms ease-out;
+  transition:
+    opacity   var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
   will-change: opacity, transform;
 }
 .splash.is-fading {
@@ -266,7 +310,34 @@ body {
   pointer-events: none;
 }
 
+/* Reduced-motion safety net. tokens.css already flattens durations
+ * to 0ms via custom properties, but we belt-and-suspenders the long
+ * decorative loops here so older UAs without tokens.css still
+ * degrade gracefully. */
 @media (prefers-reduced-motion: reduce) {
-  .splash { transition: none; }
-  .splash.is-fading { transform: none; }
+  .splash {
+    transition: none;
+    animation: none;
+  }
+  .splash-card > * {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .splash-glow {
+    animation: none;
+  }
+  .splash-phase-dot {
+    animation: none;
+  }
+  .splash-sublabel {
+    transition: none;
+  }
+}
+
+/* Fallback: if a user agent does NOT load tokens.css (extremely rare, only
+ * if the file is blocked), give the splash card a sane dark color so it
+ * doesn't bleed white into the OS. */
+@supports not (background: var(--bg-base)) {
+  html, body { background: #1a1814; color: #f4ebde; }
 }

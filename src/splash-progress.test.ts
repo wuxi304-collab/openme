@@ -121,7 +121,7 @@ describe("splash.js renderer wiring", () => {
     const api = (window as unknown as { splash: { applyI18n: (lang: string) => void } }).splash;
     api.applyI18n("ja" as unknown as string);
     const phaseEl = document.querySelector('[data-i18n="splashPhaseBoot"]');
-    expect(phaseEl?.textContent).toBe("正在启动内核");
+        expect(phaseEl?.textContent).toBe("启动中");
   });
 
   it("setVersion prefixes the version with v", () => {
@@ -213,7 +213,7 @@ describe("splash.js renderer wiring", () => {
     const { handlers } = installBridgeStub();
     loadSplashIntoDom();
     handlers.init?.({ version: "0.1.0", lang: "zh" });
-    expect(document.querySelector('[data-i18n="splashPhaseBoot"]')?.textContent).toBe("正在启动内核");
+        expect(document.querySelector('[data-i18n="splashPhaseBoot"]')?.textContent).toBe("启动中");
     handlers.lang?.("en");
     expect(document.querySelector('[data-i18n="splashPhaseBoot"]')?.textContent).toBe("Starting engine");
   });

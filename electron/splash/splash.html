@@ -1,36 +1,36 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;" />
-  <title>OpenMe Qiwu</title>
-  <link rel="stylesheet" href="splash.css" />
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;" />
+    <title>OpenMe Qiwu</title>
+    <link rel="stylesheet" href="splash.css" />
 </head>
 <body>
-  <div class="splash" role="status" aria-live="polite" aria-atomic="true">
-    <div class="splash-glow" aria-hidden="true"></div>
-    <div class="splash-card">
-      <div class="splash-logo">
-        <img src="./logo.svg" alt="" aria-hidden="true" />
-      </div>
-      <h1 class="splash-title" data-i18n="splashTitle">OpenMe Qiwu</h1>
-      <p class="splash-tagline" data-i18n="splashTagline">万能文件打开器 · 钢铁私塾出品</p>
-      <div class="splash-progress-track" aria-hidden="true">
-        <div class="splash-progress-fill" id="splash-progress-fill"></div>
-      </div>
-      <div class="splash-phase">
-        <span class="splash-phase-dot" id="splash-phase-dot" aria-hidden="true"></span>
-        <span class="splash-phase-text" id="splash-phase-text" data-i18n="splashPhaseBoot">正在启动内核</span>
-              <span class="splash-phase-elapsed" id="splash-elapsed" aria-hidden="true">0.0s</span>
+    <div class="splash" role="status" aria-live="polite" aria-atomic="true" aria-labelledby="splash-title">
+        <div class="splash-glow" aria-hidden="true"></div>
+        <div class="splash-card">
+            <div class="splash-logo" aria-hidden="true">
+                <img src="./logo.svg" alt="" />
+            </div>
+            <h1 class="splash-title" id="splash-title" data-i18n="splashTitle">OpenMe Qiwu</h1>
+            <p class="splash-tagline" data-i18n="splashTagline">万能文件打开器 · 钢铁私塾出品</p>
+            <div class="splash-progress-track" aria-hidden="true">
+                <div class="splash-progress-fill" id="splash-progress-fill"></div>
+            </div>
+            <div class="splash-phase">
+                <span class="splash-phase-dot" id="splash-phase-dot" aria-hidden="true"></span>
+                <span class="splash-phase-text" id="splash-phase-text" data-i18n="splashPhaseBoot">正在启动内核</span>
+                <span class="splash-phase-elapsed" id="splash-elapsed" aria-hidden="true">0.0s</span>
             </div>
             <div class="splash-sublabel" id="splash-sublabel" aria-hidden="true"></div>
             <div class="splash-meta">
-              <span class="splash-version" id="splash-version">v0.1.0</span>
-              <span class="splash-publisher" data-i18n="aboutPublisherName">钢铁私塾</span>
+                <span class="splash-version" id="splash-version">v1.0.0</span>
+                <span class="splash-publisher" data-i18n="aboutPublisherName">钢铁私塾</span>
             </div>
+        </div>
+        <p class="splash-hint" data-i18n="splashHint">首次启动需要几秒钟，请稍候</p>
     </div>
-    <p class="splash-hint" data-i18n="splashHint">首次启动需要几秒钟，请稍候</p>
-  </div>
-  <script src="splash.js"></script>
+    <script src="splash.js"></script>
 </body>
-</html
+</html>
