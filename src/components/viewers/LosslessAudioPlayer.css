@@ -313,8 +313,10 @@
                 transform 80ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
                 border-color 120ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
   }
-  .ll-btn:hover:not(:disabled) { background: #243056; border-color: #ffffff30; }
-  .ll-btn:active:not(:disabled) { transform: scale(0.96); }
+  @media (hover: hover) and (pointer: fine) {
+    .ll-btn:hover:not(:disabled) { background: #243056; border-color: #ffffff30; }
+  }
+    .ll-btn:active:not(:disabled) { transform: scale(0.96); }
 .ll-btn:disabled { opacity: 0.35; cursor: default; }
 .ll-btn.is-primary {
   background: linear-gradient(135deg, #5da9ff, #6a3ec4);
@@ -322,7 +324,9 @@
   min-width: 48px;
   font-size: 16px;
 }
-.ll-btn.is-primary:hover { filter: brightness(1.1); }
+@media (hover: hover) and (pointer: fine) {
+  .ll-btn.is-primary:hover { filter: brightness(1.1); }
+}
 .ll-btn.is-active {
   background: #f5c94f;
   color: #1a1004;
@@ -440,7 +444,9 @@
   text-align: left;
   font: inherit;
 }
-.ll-queue-open:hover { color: #fff; }
+@media (hover: hover) and (pointer: fine) {
+  .ll-queue-open:hover { color: #fff; }
+}
 .ll-queue-item.is-current .ll-queue-open { color: #fff; }
 .ll-queue-num {
   width: 28px;
@@ -594,4 +600,8 @@
   @media (prefers-reduced-motion: reduce) {
     .ll-meter-fill { transition: none; }
     .ll-meter-peak { transition: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ll-btn:active:not(:disabled) { transform: none; }
   }

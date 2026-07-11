@@ -83,8 +83,10 @@
   transition: opacity 160ms var(--ease-out, ease);
 }
 
-.zip-unzip-button:hover:not(:disabled) {
-  opacity: 0.85;
+@media (hover: hover) and (pointer: fine) {
+  .zip-unzip-button:hover:not(:disabled) {
+    opacity: 0.85;
+  }
 }
 
 .zip-unzip-button:disabled {
@@ -159,7 +161,11 @@
   transition: background-color 120ms var(--ease-out, ease);
 }
 
-.zip-entry-button:hover,
+@media (hover: hover) and (pointer: fine) {
+  .zip-entry-button:hover {
+    background: var(--bg-hover);
+  }
+}
 .zip-entry-button:focus-visible {
   background: var(--bg-hover);
   outline: none;

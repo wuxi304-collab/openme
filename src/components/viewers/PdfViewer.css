@@ -56,8 +56,10 @@
   transition: background-color 160ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
-.pdf-viewer-shell .pdf-search button:hover:not(:disabled) {
-  background: var(--bg-surface);
+@media (hover: hover) and (pointer: fine) {
+  .pdf-viewer-shell .pdf-search button:hover:not(:disabled) {
+    background: var(--bg-surface);
+  }
 }
 
 .pdf-viewer-shell .pdf-search button:focus-visible {
@@ -99,9 +101,11 @@
     border-color 160ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
-.pdf-viewer-shell .viewer-tools button:hover:not(:disabled),
-.pdf-viewer-shell .viewer-tools select:hover {
-  background: var(--bg-surface);
+@media (hover: hover) and (pointer: fine) {
+  .pdf-viewer-shell .viewer-tools button:hover:not(:disabled),
+  .pdf-viewer-shell .viewer-tools select:hover {
+    background: var(--bg-surface);
+  }
 }
 
 .pdf-viewer-shell .viewer-tools button.is-active {

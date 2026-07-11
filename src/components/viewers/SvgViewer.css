@@ -46,10 +46,15 @@
   opacity: 0.6;
 }
 
-.svg-zoom-menu .svg-zoom-summary:hover,
 .svg-zoom-menu[open] .svg-zoom-summary {
   background: var(--bg-hover);
   border-color: var(--border-muted);
+}
+@media (hover: hover) and (pointer: fine) {
+  .svg-zoom-menu .svg-zoom-summary:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-muted);
+  }
 }
 
 .svg-zoom-menu .svg-zoom-summary:focus-visible {
@@ -93,8 +98,10 @@
   transition: background var(--dur-press) var(--ease-out);
 }
 
-.svg-zoom-item:hover {
-  background: var(--bg-hover);
+@media (hover: hover) and (pointer: fine) {
+  .svg-zoom-item:hover {
+    background: var(--bg-hover);
+  }
 }
 
 .svg-zoom-item:focus-visible {

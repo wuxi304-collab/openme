@@ -77,9 +77,11 @@
   line-height: 1;
 }
 
-.csv-viewer-root .csv-search-clear:hover {
-  background: var(--bg-surface);
-  color: var(--text-primary);
+@media (hover: hover) and (pointer: fine) {
+  .csv-viewer-root .csv-search-clear:hover {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+  }
 }
 
 .csv-viewer-root .csv-search-clear:focus-visible {
@@ -157,8 +159,10 @@
   background: var(--bg-surface);
 }
 
-.csv-viewer-root .csv-table tbody tr:hover {
-  background: rgba(230, 0, 18, 0.05);
+@media (hover: hover) and (pointer: fine) {
+  .csv-viewer-root .csv-table tbody tr:hover {
+    background: rgba(230, 0, 18, 0.05);
+  }
 }
 
 .csv-viewer-root .csv-table td {
@@ -203,9 +207,11 @@
     border-color 160ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
-.csv-viewer-root .csv-pagination button:hover:not(:disabled) {
-  background: var(--bg-surface);
-  border-color: var(--accent);
+@media (hover: hover) and (pointer: fine) {
+  .csv-viewer-root .csv-pagination button:hover:not(:disabled) {
+    background: var(--bg-surface);
+    border-color: var(--accent);
+  }
 }
 
 .csv-viewer-root .csv-pagination button:focus-visible {

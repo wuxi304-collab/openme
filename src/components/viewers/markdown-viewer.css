@@ -72,9 +72,11 @@
   user-select: none;
 }
 
-.md-toolbar-btn:hover:not(:disabled) {
-  background: var(--bg-hover, rgba(0, 0, 0, 0.05));
-  color: var(--text-primary, #1f2937);
+@media (hover: hover) and (pointer: fine) {
+  .md-toolbar-btn:hover:not(:disabled) {
+    background: var(--bg-hover, rgba(0, 0, 0, 0.05));
+    color: var(--text-primary, #1f2937);
+  }
 }
 
 .md-toolbar-btn:active:not(:disabled) {
@@ -123,9 +125,11 @@
     transform var(--dur-press, 100ms) var(--ease-out, ease);
 }
 
-.md-mode-btn:hover:not(:disabled) {
-  background: var(--bg-hover, rgba(0, 0, 0, 0.04));
-  color: var(--text-primary, #1f2937);
+@media (hover: hover) and (pointer: fine) {
+  .md-mode-btn:hover:not(:disabled) {
+    background: var(--bg-hover, rgba(0, 0, 0, 0.04));
+    color: var(--text-primary, #1f2937);
+  }
 }
 
 .md-mode-btn.is-active {
@@ -193,6 +197,9 @@
   .md-toolbar-btn,
   .md-mode-btn {
     transition: none;
+  }
+  .md-toolbar-btn:active:not(:disabled) {
+    transform: none;
   }
 }
 /* Glyphs — replace raw `<strong>B</strong>` markup with neutral spans.

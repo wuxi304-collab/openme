@@ -25,9 +25,11 @@
   transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 
-.code-editor-toolbar-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-primary, #E8EDF2);
+@media (hover: hover) and (pointer: fine) {
+  .code-editor-toolbar-btn:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary, #E8EDF2);
+  }
 }
 
 .code-editor-toolbar-btn:focus-visible {
@@ -42,8 +44,10 @@
   border-color: rgba(253, 216, 53, 0.4);
 }
 
-.code-editor-toolbar-btn.is-active:hover {
-  background: rgba(253, 216, 53, 0.22);
+@media (hover: hover) and (pointer: fine) {
+  .code-editor-toolbar-btn.is-active:hover {
+    background: rgba(253, 216, 53, 0.22);
+  }
 }
 
 .code-editor-toolbar-btn-ghost {
@@ -51,9 +55,11 @@
   color: var(--text-muted, #6B7280);
 }
 
-.code-editor-toolbar-btn-ghost:hover {
-  color: var(--text-primary, #E8EDF2);
-  border-color: rgba(255, 255, 255, 0.2);
+@media (hover: hover) and (pointer: fine) {
+  .code-editor-toolbar-btn-ghost:hover {
+    color: var(--text-primary, #E8EDF2);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
 }
 
 .code-editor-toolbar-hint {
