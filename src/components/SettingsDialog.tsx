@@ -21,6 +21,7 @@ export default function SettingsDialog({ open, onClose }: Props) {
   const [storagePath, setStoragePath] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+      const resettingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleExport = useCallback(async () => {
     if (!window.electronAPI?.exportSettingsToFile) {
@@ -82,7 +83,14 @@ export default function SettingsDialog({ open, onClose }: Props) {
         });
         if (!ok) return;
         reset();
-      }, [confirm, reset, t]);
+              // Briefly flash the radio pills so the user sees the values snap back.
+              const card = cardRef.current;
+              if (card) {
+                if (resettingTimerRef.current) clearTimeout(resettingTimerRef.current);
+                card.classList.add("is-resetting");
+                resettingTimerRef.current = setTimeout(() => card.classList.remove("is-resetting"), 720);
+              }
+            }, [confirm, reset, t]);
 
       const handleRevealStorage = useCallback(() => {
         const api = window.electronAPI;
@@ -177,8 +185,9 @@ export default function SettingsDialog({ open, onClose }: Props) {
   useEffect(() => {
       return () => {
         if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
-      };
-    }, []);
+          if (resettingTimerRef.current) clearTimeout(resettingTimerRef.current);
+        };
+      }, []);
 
   // Focus trap: cycle Tab / Shift+Tab within the dialog card so keyboard
   // users can't escape into the page background.
@@ -426,11 +435,12 @@ export default function SettingsDialog({ open, onClose }: Props) {
                               className="settings-dialog-secondary settings-storage-path-action"
                               onClick={handleCopyStoragePath}
                               disabled={!storagePath}
-                              aria-label={t("settingsStoragePathCopyAria")}
-                              title={t("settingsStoragePathCopyAria")}
-                            >
-                              {copied ? t("settingsStoragePathCopied") : t("settingsStoragePathCopy")}
-                            </button>
+                                                          data-copied={copied ? "true" : "false"}
+                                                          aria-label={t("settingsStoragePathCopyAria")}
+                                                          title={t("settingsStoragePathCopyAria")}
+                                                        >
+                                                          {copied ? t("settingsStoragePathCopied") : t("settingsStoragePathCopy")}
+                                                        </button>
                             <button
                               type="button"
                               className="settings-dialog-secondary settings-storage-path-action"
