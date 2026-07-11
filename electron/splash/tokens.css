@@ -1,0 +1,69 @@
+/* OpenMe Qiwu splash — motion & brand tokens.
+ *
+ * Tokens are loaded before splash.css so they win the cascade. Motion
+ * timings come from emil-design-eng (cubic-bezier(0.23, 1, 0.32, 1)
+ * strong ease-out, etc); brand colors come from the in-app palette so
+ * the title-bar pill and the splash publisher line agree.
+ *
+ * Splash is a no-React no-preload surface, so it cannot import the
+ * main app's tokens.css — keep this file self-contained.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Motion — emil-design-eng strong curves + four-tier duration scale */
+  --ease-out:     cubic-bezier(0.23, 1,   0.32, 1);  /* entry / exit, UI主力 */
+  --ease-in-out:  cubic-bezier(0.77, 0,   0.175, 1); /* on-screen move */
+  --ease-drawer:  cubic-bezier(0.32, 0.72, 0,    1); /* leave-of-absence card */
+  --dur-press:    140ms;
+  --dur-fast:     200ms;
+  --dur-base:     280ms;
+  --dur-modal:    360ms;
+
+  /* Splash brand — overrides allowed via @media (prefers-color-scheme: light) below. */
+  --bg-base:       #0d0c0a;
+  --bg-elevated:   #1a1814;
+  --border-subtle: rgba(216, 121, 48, 0.20);
+  --text-primary:   #f4ebde;
+  --text-secondary: #b8b2a8;
+  --text-muted:     #8a8478;
+  --accent:        #d87930;
+  --accent-strong: #e89456;
+  --accent-glow:   rgba(216, 121, 48, 0.45);
+  --accent-soft:   rgba(216, 121, 48, 0.12);
+  --track:         rgba(255, 255, 255, 0.08);
+
+  /* Stagger step — sits on the card so each child inherits the same offset. */
+  --stagger-step: 80ms;
+
+  /* Focus ring — accent with 3:1 against --bg-elevated. */
+  --focus-ring:   0 0 0 2px var(--bg-base), 0 0 0 4px var(--accent-strong);
+}
+
+/* Light scheme (rare for splash, but harmless to support) — flips tokens to
+ * a paper/ink palette. The accent (China-red orange) is preserved because
+ * the brand line uses it. */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-base:       #f6f1e8;
+    --bg-elevated:   #ffffff;
+    --border-subtle: rgba(155, 61, 19, 0.18);
+    --text-primary:   #2b2723;
+    --text-secondary: #5b5347;
+    --text-muted:     #8a8478;
+    --accent-glow:   rgba(216, 121, 48, 0.22);
+    --accent-soft:   rgba(216, 121, 48, 0.08);
+    --track:         rgba(0, 0, 0, 0.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-press: 0ms;
+    --dur-fast:  0ms;
+    --dur-base:  0ms;
+    --dur-modal: 0ms;
+    --stagger-step: 0ms;
+  }
+}
