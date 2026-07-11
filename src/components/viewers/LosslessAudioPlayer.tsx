@@ -204,15 +204,15 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
     else el.pause();
   }, []);
   const seek = useCallback((time: number) => {
-    const el = audioRef.current;
-    if (!el) return;
-    el.currentTime = Math.max(0, Math.min(time, el.duration || time));
-  }, []);
-  const seekBy = useCallback((delta: number) => {
-    const el = audioRef.current;
-    if (!el) return;
-    el.currentTime = Math.max(0, Math.min((el.currentTime || 0) + delta, el.duration || Infinity));
-  }, []);
+      const el = audioRef.current;
+      if (!el) return;
+      el.currentTime = Math.max(0, Math.min(time, el.duration || time));
+    }, []);
+    const seekBy = useCallback((delta: number) => {
+      const el = audioRef.current;
+      if (!el) return;
+      el.currentTime = Math.max(0, Math.min((el.currentTime || 0) + delta, el.duration || Infinity));
+    }, []);
 
   const playIndex = useCallback((index: number) => {
     const item = queue[index];
@@ -333,6 +333,72 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
     ? { leftPct: (abLoop.a / totalDuration) * 100, rightPct: (abLoop.b / totalDuration) * 100 }
     : null;
 
+  // ---- Drag-to-seek ----
+  // The progress bar supports clicking *and* dragging the thumb (or
+  // anywhere on the track). We capture the pointer on the bar, then track
+  // pointermove/up on `window` so the drag survives the cursor leaving
+  // the bar bounds. While dragging we display `dragTime` instead of
+  // `currentTime` so the thumb/jump doesn't fight the audio element's
+  // own `timeupdate` (which on some platforms lags 100-200ms).
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragTime, setDragTime] = useState<number | null>(null);
+  const dragOriginRef = useRef<{ rect: DOMRect } | null>(null);
+  const wasPlayingBeforeDragRef = useRef(false);
+
+  const computeSeekTime = useCallback((clientX: number, rect: DOMRect) => {
+    const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    return ratio * (totalDuration ?? 0);
+  }, [totalDuration]);
+
+  const beginSeek = useCallback((clientX: number, target: HTMLDivElement) => {
+    if (!totalDuration) return;
+    const rect = target.getBoundingClientRect();
+    const t = computeSeekTime(clientX, rect);
+    const el = audioRef.current;
+    wasPlayingBeforeDragRef.current = !!(el && !el.paused);
+    if (el && !el.paused) el.pause();
+    dragOriginRef.current = { rect };
+    setDragTime(t);
+    setIsDragging(true);
+    if (el) el.currentTime = t;
+  }, [totalDuration, computeSeekTime]);
+
+  const continueSeek = useCallback((clientX: number) => {
+    const origin = dragOriginRef.current;
+    if (!origin) return;
+    const t = computeSeekTime(clientX, origin.rect);
+    setDragTime(t);
+    const el = audioRef.current;
+    if (el) el.currentTime = t;
+  }, [computeSeekTime]);
+
+  const endSeek = useCallback(() => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    setDragTime(null);
+    dragOriginRef.current = null;
+    if (wasPlayingBeforeDragRef.current) {
+      audioRef.current?.play().catch(() => undefined);
+    }
+  }, [isDragging]);
+
+  // Listen for pointerup on window so the drag survives the cursor leaving
+  // the bar bounds. Without this, dragging past the right edge drops the
+  // event before the audio can update.
+  useEffect(() => {
+    if (!isDragging) return undefined;
+    const onMove = (e: PointerEvent) => continueSeek(e.clientX);
+    const onUp = () => endSeek();
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, [isDragging, continueSeek, endSeek]);
+
   const cover = meta?.cover?.data ?? null;
 
   return (
@@ -385,42 +451,41 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
         </div>
 
         <div className="ll-progress">
-          <div className="ll-times">
-            <span>{formatDuration(currentTime)}</span>
-            <span>{formatRemaining(currentTime, totalDuration)}</span>
-          </div>
-          <div
-            className="ll-bar"
-            role="slider"
-            tabIndex={0}
-            aria-valuemin={0}
-            aria-valuemax={totalDuration ?? 0}
-            aria-valuenow={currentTime}
-            aria-valuetext={tf("losslessProgressAria", { current: formatDuration(currentTime), total: formatDuration(totalDuration) })}
-            onClick={(e) => {
-              const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-              const ratio = (e.clientX - rect.left) / rect.width;
-              if (totalDuration) seek(ratio * totalDuration);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowLeft")  { e.preventDefault(); seekBy(-5); }
-              if (e.key === "ArrowRight") { e.preventDefault(); seekBy(+5); }
-              if (e.key === "Home")       { e.preventDefault(); seek(0); }
-              if (e.key === "End")        { e.preventDefault(); if (totalDuration) seek(totalDuration); }
-            }}
-          >
-            <div className="ll-bar-track" />
-            {abProgress ? (
-              <>
-                <div className="ll-bar-ab" style={{ left: `${abProgress.leftPct}%`, width: `${Math.max(0, abProgress.rightPct - abProgress.leftPct)}%` }} />
-                <div className="ll-bar-ab-tick" style={{ left: `${abProgress.leftPct}%` }} aria-label={t("losslessAbPointA")} />
-                <div className="ll-bar-ab-tick" style={{ left: `${abProgress.rightPct}%` }} aria-label={t("losslessAbPointB")} />
-              </>
-            ) : null}
-            <div className="ll-bar-fill" style={{ width: `${progress}%` }} />
-            <div className="ll-bar-thumb" style={{ left: `${progress}%` }} />
-          </div>
-        </div>
+                  <div className="ll-times">
+                    <span>{formatDuration(isDragging && dragTime != null ? dragTime : currentTime)}</span>
+                    <span>{formatRemaining(isDragging && dragTime != null ? dragTime : currentTime, totalDuration)}</span>
+                  </div>
+                  <div
+                    className={`ll-bar${isDragging ? " is-dragging" : ""}`}
+                    role="slider"
+                    tabIndex={0}
+                    aria-valuemin={0}
+                    aria-valuemax={totalDuration ?? 0}
+                    aria-valuenow={currentTime}
+                    aria-valuetext={tf("losslessProgressAria", { current: formatDuration(currentTime), total: formatDuration(totalDuration) })}
+                    onPointerDown={(e) => {
+                      if (e.button !== 0) return; // left mouse only
+                      beginSeek(e.clientX, e.currentTarget);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowLeft")  { e.preventDefault(); seekBy(-5); }
+                      if (e.key === "ArrowRight") { e.preventDefault(); seekBy(+5); }
+                      if (e.key === "Home")       { e.preventDefault(); seek(0); }
+                      if (e.key === "End")        { e.preventDefault(); if (totalDuration) seek(totalDuration); }
+                    }}
+                  >
+                    <div className="ll-bar-track" />
+                    {abProgress ? (
+                      <>
+                        <div className="ll-bar-ab" style={{ left: `${abProgress.leftPct}%`, width: `${Math.max(0, abProgress.rightPct - abProgress.leftPct)}%` }} />
+                        <div className="ll-bar-ab-tick" style={{ left: `${abProgress.leftPct}%` }} aria-label={t("losslessAbPointA")} />
+                        <div className="ll-bar-ab-tick" style={{ left: `${abProgress.rightPct}%` }} aria-label={t("losslessAbPointB")} />
+                      </>
+                    ) : null}
+                    <div className="ll-bar-fill" style={{ width: `${(isDragging && dragTime != null && totalDuration ? (dragTime / totalDuration) * 100 : progress)}%` }} />
+                    <div className="ll-bar-thumb" style={{ left: `${(isDragging && dragTime != null && totalDuration ? (dragTime / totalDuration) * 100 : progress)}%` }} />
+                  </div>
+                </div>
 
                   <div className="ll-meter-slot">
                     <AudioMeterBars frame={meterFrame} floorDb={-60} channels={channels} />

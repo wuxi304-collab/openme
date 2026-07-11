@@ -238,6 +238,12 @@
   background: transparent;
   touch-action: none;
 }
+@media (hover: hover) and (pointer: fine) {
+  .ll-bar:hover { cursor: grab; }
+}
+.ll-bar.is-dragging { cursor: grabbing; }
+.ll-bar.is-dragging .ll-bar-fill,
+.ll-bar.is-dragging .ll-bar-thumb { transition: none; }
 .ll-bar:focus-visible { outline: 2px solid #5da9ff; outline-offset: 4px; border-radius: 4px; }
 .ll-bar-track {
   position: absolute;
