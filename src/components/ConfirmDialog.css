@@ -100,10 +100,12 @@
   color: var(--text-secondary, #b6bccb);
 }
 
-.confirm-dialog-cancel:hover {
-  background: var(--bg-surface, rgba(255, 255, 255, 0.04));
-  border-color: var(--border-default, rgba(255, 255, 255, 0.12));
-  color: var(--text-primary);
+@media (hover: hover) and (pointer: fine) {
+  .confirm-dialog-cancel:hover {
+    background: var(--bg-surface, rgba(255, 255, 255, 0.04));
+    border-color: var(--border-default, rgba(255, 255, 255, 0.12));
+    color: var(--text-primary);
+  }
 }
 
 .confirm-dialog-cancel:active {
@@ -122,9 +124,11 @@
   font-weight: 600;
 }
 
-.confirm-dialog-confirm:hover {
-  background: color-mix(in srgb, var(--accent, #6cd1ff) 88%, white);
-  border-color: color-mix(in srgb, var(--accent, #6cd1ff) 88%, white);
+@media (hover: hover) and (pointer: fine) {
+  .confirm-dialog-confirm:hover {
+    background: color-mix(in srgb, var(--accent, #6cd1ff) 88%, white);
+    border-color: color-mix(in srgb, var(--accent, #6cd1ff) 88%, white);
+  }
 }
 
 .confirm-dialog-confirm:active {
@@ -144,9 +148,11 @@
   color: #2a100d;
 }
 
-.confirm-dialog-confirm.is-danger:hover {
-  background: color-mix(in srgb, var(--color-danger, #ef6a58) 88%, white);
-  border-color: color-mix(in srgb, var(--color-danger, #ef6a58) 88%, white);
+@media (hover: hover) and (pointer: fine) {
+  .confirm-dialog-confirm.is-danger:hover {
+    background: color-mix(in srgb, var(--color-danger, #ef6a58) 88%, white);
+    border-color: color-mix(in srgb, var(--color-danger, #ef6a58) 88%, white);
+  }
 }
 
 .confirm-dialog-confirm.is-danger:focus-visible {

@@ -100,9 +100,11 @@
   transition: color 120ms ease-out, background-color 120ms ease-out, transform 120ms ease-out;
 }
 
-.about-dialog-close:hover {
-  color: var(--text-primary);
-  background: var(--bg-hover);
+@media (hover: hover) and (pointer: fine) {
+  .about-dialog-close:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
 }
 
 .about-dialog-close:active {
@@ -188,9 +190,11 @@
   transition: color 120ms ease-out, background-color 120ms ease-out, transform 120ms ease-out;
 }
 
-.about-dialog-copy:hover {
-  color: var(--text-primary);
-  background: var(--bg-hover);
+@media (hover: hover) and (pointer: fine) {
+  .about-dialog-copy:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
 }
 
 .about-dialog-copy:active {
@@ -255,9 +259,11 @@
   transition: color 120ms ease-out, background-color 120ms ease-out, transform 120ms ease-out;
 }
 
-.about-dialog-link:hover {
-  color: var(--text-primary);
-  background: var(--bg-hover);
+@media (hover: hover) and (pointer: fine) {
+  .about-dialog-link:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
 }
 
 .about-dialog-link:active {
@@ -303,9 +309,11 @@
   transition: color 120ms ease-out, background-color 120ms ease-out, border-color 120ms ease-out, transform 120ms ease-out;
 }
 
-.about-dialog-copy-button:hover {
-  color: var(--text-primary);
-  background: var(--bg-hover);
+@media (hover: hover) and (pointer: fine) {
+  .about-dialog-copy-button:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
 }
 
 .about-dialog-copy-button:active {
@@ -393,8 +401,10 @@
   transition: filter 120ms ease-out, transform 120ms ease-out;
 }
 
-.about-dialog-primary:hover {
-  filter: brightness(1.08);
+@media (hover: hover) and (pointer: fine) {
+  .about-dialog-primary:hover {
+    filter: brightness(1.08);
+  }
 }
 
 .about-dialog-primary:active {
@@ -421,9 +431,11 @@
   transition: color 120ms ease-out, background-color 120ms ease-out, transform 120ms ease-out;
 }
 
-.about-info-button:hover {
-  color: var(--text-primary);
-  background: var(--bg-hover);
+@media (hover: hover) and (pointer: fine) {
+  .about-info-button:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
 }
 
 .about-info-button:active {
@@ -511,4 +523,15 @@
   flex: 1;
   min-width: 140px;
   text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-dialog-close:active,
+  .about-dialog-copy:active,
+  .about-dialog-link:active,
+  .about-dialog-copy-button:active,
+  .about-dialog-primary:active,
+  .about-info-button:active {
+    transform: none;
+  }
 }
