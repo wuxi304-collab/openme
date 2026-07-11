@@ -644,6 +644,11 @@ export const translations: Record<string, Record<string, string>> = {
     dwgOpenInSystem: "用系统程序打开",
     dwgCanvasAria: "DWG 画布",
     dwgParsingOverlayAria: "正在解析图纸",
+    dwgNativeCanvasAria: "DWG 工程预览画布；可拖动平移，鼠标滚轮缩放",
+    dwgFitSvgAria: "适应窗口",
+    dwgZoomInAria: "放大",
+    dwgZoomOutAria: "缩小",
+    dwgResetViewAria: "重置视图",
 
     // CadViewer (3D)
     cad3dHeader: "3D 预览",
@@ -1834,6 +1839,11 @@ export const translations: Record<string, Record<string, string>> = {
     dwgOpenInSystem: "Open in system",
     dwgCanvasAria: "DWG canvas",
     dwgParsingOverlayAria: "Parsing drawing",
+    dwgNativeCanvasAria: "DWG engineering preview canvas — drag to pan, scroll wheel to zoom",
+    dwgFitSvgAria: "Fit to window",
+    dwgZoomInAria: "Zoom in",
+    dwgZoomOutAria: "Zoom out",
+    dwgResetViewAria: "Reset view",
 
     // CadViewer (3D)
     cad3dHeader: "3D preview",

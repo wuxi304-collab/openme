@@ -1,0 +1,109 @@
+/* DwgViewer — engineering preview of DWG/DXF via ACadSharp + LibreDWG fallback.
+   The native mode renders a static SVG; we make it interactive with CSS
+   transform pan + zoom on top of <img>. The compat mode hosts the
+   @mlightcad/cad-simple-viewer canvas (separate styles in vendor). */
+
+.dwg-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  color: var(--text-primary, #e8ecf3);
+  background: var(--bg-surface-2, #1a1d23);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Toolbar */
+.dwg-toolbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-base, #0f1115);
+  border-bottom: 1px solid var(--border-muted, #ffffff10);
+  font-size: 11px;
+}
+.dwg-toolbar button {
+  padding: 4px 8px;
+  background: var(--bg-surface, #20232b);
+  border: 1px solid var(--border-muted, #ffffff14);
+  border-radius: 4px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.dwg-toolbar button:hover:not(:disabled) {
+  background: var(--bg-surface-2, #2a2e38);
+}
+.dwg-toolbar button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.dwg-toolbar button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dwg-toolbar button:focus-visible {
+  outline: 2px solid #5da9ff;
+  outline-offset: 1px;
+}
+.dwg-tool-separator {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background: var(--border-muted, #ffffff14);
+  margin: 0 4px;
+}
+
+/* Compat canvas host (LibreDWG web viewer). */
+.dwg-canvas-host {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.dwg-canvas-host.is-hidden {
+  display: none;
+}
+
+/* Native SVG canvas — interactive panning surface. */
+.dwg-native-canvas {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  background:
+    linear-gradient(45deg, var(--bg-surface, #20232b) 25%, transparent 25%, transparent 75%, var(--bg-surface, #20232b) 75%) 0 0 / 16px 16px,
+    linear-gradient(45deg, var(--bg-surface, #20232b) 25%, transparent 25%, transparent 75%, var(--bg-surface, #20232b) 75%) 8px 8px / 16px 16px,
+    var(--bg-base, #0f1115);
+}
+.dwg-native-canvas.is-panning { cursor: grabbing; }
+.dwg-native-canvas.is-panning img { transition: none; }
+.dwg-native-canvas:focus-visible {
+  outline: 2px solid #5da9ff;
+  outline-offset: -2px;
+}
+.dwg-native-canvas img {
+  position: absolute;
+  top: 0; left: 0;
+  transform-origin: 0 0;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none; /* pointer events belong to the host, not the image */
+  max-width: none;
+  max-height: none;
+  will-change: transform;
+  transition: transform 100ms ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dwg-native-canvas:hover { cursor: grab; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dwg-native-canvas img,
+  .dwg-toolbar button { transition: none; }
+  .dwg-toolbar button:active:not(:disabled) { transform: none; }
+}
