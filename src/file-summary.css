@@ -847,10 +847,11 @@
   transition: background-color var(--dur-fast) var(--ease-out);
 }
 
-.status-format-popover-app-button:hover {
-  background: rgba(248, 201, 43, 0.22);
+@media (hover: hover) and (pointer: fine) {
+  .status-format-popover-app-button:hover {
+    background: rgba(248, 201, 43, 0.22);
+  }
 }
-
 .status-format-popover-app-button:active {
   transform: scale(0.97);
 }
@@ -912,11 +913,12 @@
   transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 
-.status-format-popover-action:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.22);
+@media (hover: hover) and (pointer: fine) {
+  .status-format-popover-action:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.22);
+  }
 }
-
 .status-format-popover-action:active {
   transform: scale(0.97);
 }
@@ -938,9 +940,14 @@
   color: #f8c92b;
 }
 
-.status-format-popover-action-primary:hover {
-  background: rgba(248, 201, 43, 0.22);
-  border-color: rgba(248, 201, 43, 0.62);
+@media (hover: hover) and (pointer: fine) {
+  .status-format-popover-action-primary:hover {
+    background: rgba(248, 201, 43, 0.22);
+    border-color: rgba(248, 201, 43, 0.62);
+  }
+}
+.status-format-popover-action-primary:active {
+  transform: scale(0.97);
 }
 
 .status-format-popover-close {
@@ -976,5 +983,10 @@
 @media (prefers-reduced-motion: reduce) {
   .status-format-popover {
     animation: none;
+  }
+  .status-format-popover-app-button:active,
+  .status-format-popover-action:active,
+  .status-format-popover-action-primary:active {
+    transform: none;
   }
 }
