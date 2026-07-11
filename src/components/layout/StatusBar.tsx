@@ -3,6 +3,7 @@ import type { HonestSupportLevel, FileOpenStrategy, FileRiskLevel } from "../../
 import { getFileFormatByPath } from "../../file-registry";
 import { useI18n } from "../../i18n";
 import { useSettings } from "../../settings";
+import { useToast } from "../useToast";
 import { SunIcon, MoonIcon } from "../icons/TitleBarIcons";
 import StatusBarFormatPopover from "./StatusBarFormatPopover";
 
@@ -152,6 +153,7 @@ function statusLineEndingKey(kind: "lf" | "crlf" | "mixed" | "none"): string {
 export default function StatusBar({ activeTab, activePosition, totalTabs, onOpenInSystem }: Props) {
   const { t, tf } = useI18n();
   const { settings, update } = useSettings();
+  const { pushToast } = useToast();
   const lines = activeTab?.content !== undefined ? activeTab.content.split("\n").length : 0;
   const sizeLabel = typeof activeTab?.size === "number" ? formatBytes(activeTab.size, t("unknownSize")) : null;
   // Use Array.from for code-point-correct CJK counting (otherwise a
@@ -173,8 +175,9 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
   const showStrategyChip = activeTab?.openStrategy === "external" || activeTab?.openStrategy === "restricted";
   const [formatPopoverOpen, setFormatPopoverOpen] = useState(false);
     const [copiedPath, setCopiedPath] = useState(false);
-    const supportBadgeRef = useRef<HTMLButtonElement | null>(null);
-    const filenameRef = useRef<HTMLButtonElement | null>(null);
+      const [copyAnnouncement, setCopyAnnouncement] = useState("");
+      const supportBadgeRef = useRef<HTMLButtonElement | null>(null);
+      const filenameRef = useRef<HTMLButtonElement | null>(null);
     const extensionFromPath = (() => {
       if (!activeTab?.path) return "";
       const lastDot = activeTab.path.lastIndexOf(".");
@@ -206,28 +209,40 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
   const handleCopyPath = async () => {
     const path = activeTab?.path;
     if (!path) return;
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(path);
-      } else {
-        // Fallback for non-secure contexts: temp textarea + execCommand
-        const textarea = document.createElement("textarea");
-        textarea.value = path;
-        textarea.setAttribute("readonly", "");
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        textarea.style.pointerEvents = "none";
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-      }
-      setCopiedPath(true);
-      window.setTimeout(() => setCopiedPath(false), 1600);
+      let ok = false;
+      try {
+        if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(path);
+          ok = true;
+        } else {
+          // Fallback for non-secure contexts: temp textarea + execCommand
+          const textarea = document.createElement("textarea");
+          textarea.value = path;
+          textarea.setAttribute("readonly", "");
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          textarea.style.pointerEvents = "none";
+          document.body.appendChild(textarea);
+          textarea.select();
+          ok = document.execCommand("copy");
+          document.body.removeChild(textarea);
+        }
     } catch {
-      // Silently swallow — user can always see the path in the title attribute.
+        ok = false;
     }
-  };
+      if (ok) {
+        setCopiedPath(true);
+        setCopyAnnouncement(t("statusCopyAnnounceSuccess"));
+        window.setTimeout(() => {
+          setCopiedPath(false);
+          setCopyAnnouncement("");
+        }, 1600);
+      } else {
+        pushToast("error", t("statusFilenameCopyFailed"));
+        setCopyAnnouncement(t("statusCopyAnnounceFailure"));
+        window.setTimeout(() => setCopyAnnouncement(""), 1600);
+      }
+    };
 
   return (
     <footer className="status-bar" role="contentinfo" aria-label={t("statusBarAria")}>
@@ -342,7 +357,7 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
             {tf("statusTabPosition", { position: activePosition!, total: totalTabs! })}
           </span>
         )}
-        {activeTab?.isDirty && <span className="status-pill">{t("saveShortcut")}</span>}
+        {activeTab?.isDirty && <span className="status-pill" aria-hidden="true">{t("saveShortcut")}</span>}
         <span className="status-meta-text">{t("localFirst")}</span>
         <span className="status-meta-text status-line-ending">
           <span
@@ -359,16 +374,19 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
           type="button"
           className={`status-theme-pill is-${settings.theme}`}
           onClick={cycleTheme}
-          aria-label={t("statusThemeToggleAria")}
+                  aria-label={settings.theme === "dark" ? t("statusThemeToggleToLight") : t("statusThemeToggleToDark")}
                   aria-pressed={settings.theme === "dark"}
-                  title={t("statusThemeToggleAria")}
+                          title={settings.theme === "dark" ? t("statusThemeToggleToLight") : t("statusThemeToggleToDark")}
                 >
                   {settings.theme === "dark" ? <MoonIcon /> : <SunIcon />}
                 </button>
       </div>
-    </footer>
-  );
-}
+              <div className="status-sr-announcer" role="status" aria-live="polite">
+                {copyAnnouncement}
+              </div>
+            </footer>
+          );
+        }
 
 // Map HonestSupportLevel (A+/A/B/C/D/E/F) to the i18n key that holds the
 // longer human-readable description surfaced in the chip's title/aria text.

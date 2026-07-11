@@ -7,6 +7,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import StatusBar from "./StatusBar";
 import { I18nProvider } from "../../i18n";
 import { SettingsProvider } from "../../settings";
+import { ToastProvider } from "../useToast";
 
 afterEach(() => {
   cleanup();
@@ -26,7 +27,11 @@ beforeEach(() => {
 function renderInProviders(ui: React.ReactElement) {
   return render(
     <I18nProvider>
-      <SettingsProvider>{ui}</SettingsProvider>
+      <SettingsProvider>
+        <ToastProvider value={{ pushToast: () => undefined }}>
+          {ui}
+        </ToastProvider>
+      </SettingsProvider>
     </I18nProvider>
   );
 }

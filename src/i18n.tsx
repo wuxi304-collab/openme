@@ -101,6 +101,12 @@ export const translations: Record<string, Record<string, string>> = {
     statusFilenameCopy: "复制文件路径",
     statusFilenameCopied: "路径已复制",
     statusFilenameCopyHint: "点击复制文件路径到剪贴板",
+    statusFilenameCopyFailed: "复制失败，请手动选取文本",
+            // PR #132 — StatusBar transient polish (theme toggle state-aware aria + copy error)
+    statusThemeToggleToLight: "切换到浅色主题",
+    statusThemeToggleToDark: "切换到深色主题",
+    statusCopyAnnounceSuccess: "已复制到剪贴板",
+    statusCopyAnnounceFailure: "复制失败",
         livesAria: "本地处理",
     // PR #79 — Toast hover-pause hint
     toastHoverHint: "悬停以暂停自动关闭",
@@ -1267,6 +1273,12 @@ export const translations: Record<string, Record<string, string>> = {
     statusFilenameCopy: "Copy file path",
     statusFilenameCopied: "Path copied",
     statusFilenameCopyHint: "Click to copy file path to clipboard",
+    statusFilenameCopyFailed: "Copy failed — please select the text manually",
+        // PR #132 — StatusBar transient polish (theme toggle state-aware aria + copy error)
+    statusThemeToggleToLight: "Switch to light theme",
+    statusThemeToggleToDark: "Switch to dark theme",
+    statusCopyAnnounceSuccess: "Copied to clipboard",
+    statusCopyAnnounceFailure: "Copy failed",
         livesAria: "Local processing",
     // PR #79 — Toast hover-pause hint
     toastHoverHint: "Hover to pause auto-dismiss",
@@ -2502,6 +2514,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useI18n() { return useContext(I18nContext); }
+
 
 
 
