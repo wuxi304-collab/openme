@@ -608,6 +608,11 @@ export const translations: Record<string, Record<string, string>> = {
     zipPreviewRegionAria: "文件预览",
     zipPreviewLoadingAria: "正在读取 {name}",
     zipSpinnerAria: "正在加载",
+    zipPreviewEmpty: "文件为空",
+    zipPreviewNested: "{name} 是压缩包中的压缩包，目前不支持递归预览。请先解压外层压缩包。",
+    zipPreviewKindImage: "图片",
+    zipPreviewKindPdf: "PDF",
+    zipPreviewPdfUnsupported: "当前无法在此预览 {name}",
 
     // DwgViewer
     dwgToolbarAria: "CAD 工具栏",
@@ -1793,6 +1798,11 @@ export const translations: Record<string, Record<string, string>> = {
     zipPreviewRegionAria: "File preview",
     zipPreviewLoadingAria: "Reading {name}",
     zipSpinnerAria: "Loading",
+    zipPreviewEmpty: "This file is empty",
+    zipPreviewNested: "{name} is a nested archive. Recursive preview is not supported — please unzip the outer archive first.",
+    zipPreviewKindImage: "Image",
+    zipPreviewKindPdf: "PDF",
+    zipPreviewPdfUnsupported: "Can't preview {name} here",
 
     // DwgViewer
     dwgToolbarAria: "CAD toolbar",
