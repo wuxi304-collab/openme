@@ -41,6 +41,26 @@ function pushStartupMilestone(text: string): void {
 }
 
 export default function App() {
+  return (
+    <I18nProvider>
+      <SettingsProvider>
+        <ConfirmProvider>
+          <ThemeProvider>
+            <AppShell />
+          </ThemeProvider>
+        </ConfirmProvider>
+      </SettingsProvider>
+    </I18nProvider>
+  );
+}
+
+// All hooks (useI18n, useSettings, useCloseTabConfirm, useCloseAllConfirm,
+// useConfirm etc.) must run *inside* their provider subtree. Putting the
+// entire app body in an inner `AppShell` component lets us declare the
+// provider chain once in `App` while keeping every hook call correctly
+// nested. Without this split, hooks fire before the JSX wraps them and
+// React 18 silently bails with an empty <div id="root"/>.
+function AppShell() {
   const { t, tf } = useI18n();
   const { settings } = useSettings();
   // Install the global capture hooks before anything else runs so we never
@@ -294,58 +314,50 @@ export default function App() {
   }, [handleSaveCurrent, handleOpenDialog, commandOpen, shortcutsOpen, activeTab, handleCloseTab, activateRelativeTab, tabs]);
 
   return (
-    <I18nProvider>
-        <SettingsProvider>
-          <ConfirmProvider>
-          <ThemeProvider>
-            <ToastProvider value={{ pushToast }}>
-            <AppErrorBoundary>
-            <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
-                      <a href="#main-content" className="skip-link">{t("skipToContent")}</a>
-                      <TitleBar />
+      <ToastProvider value={{ pushToast }}>
+        <AppErrorBoundary>
+          <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
+            <a href="#main-content" className="skip-link">{t("skipToContent")}</a>
+            <TitleBar />
             <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} onReorder={handleReorderTabs} />
             <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
-          <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} totalCount={recentFiles.length} onReveal={handleRevealRecent} onOpenInSystem={handleOpenRecentInSystem} />
-          <main id="main-content" role="main" aria-label={t("appMainAria")} tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
-            {tabs.length === 0 ? <EmptyState onOpenDialog={handleOpenDialog} recentFiles={recentFiles} onOpenRecent={(file) => { void openFileInTab(file); }} /> : activeTab ? (
-              <div className="workspace-viewer-grid"><div className="workspace-viewer-main">{activeTab.isLoading ? <LoadingState /> : <ViewerRouter tab={activeTab} onChange={handleContentChange} onRetry={activeTab.sourceFile ? () => { void retryTab(activeTab.id); } : undefined} />}</div><FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} /></div>
-            ) : null}
-          </main>
+              <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} totalCount={recentFiles.length} onReveal={handleRevealRecent} onOpenInSystem={handleOpenRecentInSystem} />
+              <main id="main-content" role="main" aria-label={t("appMainAria")} tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
+                {tabs.length === 0 ? <EmptyState onOpenDialog={handleOpenDialog} recentFiles={recentFiles} onOpenRecent={(file) => { void openFileInTab(file); }} /> : activeTab ? (
+                  <div className="workspace-viewer-grid"><div className="workspace-viewer-main">{activeTab.isLoading ? <LoadingState /> : <ViewerRouter tab={activeTab} onChange={handleContentChange} onRetry={activeTab.sourceFile ? () => { void retryTab(activeTab.id); } : undefined} />}</div><FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} /></div>
+                ) : null}
+              </main>
             </div>
             <StatusBar
-                          activeTab={
-                            activeTab
-                              ? (() => {
-                                  const fmt = activeTab.path ? getFileFormatByPath(activeTab.path) : undefined;
-                                  return {
-                                    name: activeTab.name,
-                                    path: activeTab.path,
-                                    size: activeTab.sourceFile?.size,
-                                    content: activeTab.content ?? undefined,
-                                    isDirty: activeTab.isDirty,
-                                    isLoading: activeTab.isLoading,
-                                    openStrategy: fmt?.openStrategy,
-                                    riskLevel: fmt?.riskLevel,
-                                  };
-                                })()
-                              : null
-                          }
-                          activePosition={activeTab ? tabs.findIndex((tab) => tab.id === activeTab.id) + 1 : undefined}
-                          totalTabs={tabs.length}
-                                                    onOpenInSystem={activeTab?.path ? () => window.electronAPI.openInSystem(activeTab.path) : undefined}
-                                                  />
+              activeTab={
+                activeTab
+                  ? (() => {
+                      const fmt = activeTab.path ? getFileFormatByPath(activeTab.path) : undefined;
+                      return {
+                        name: activeTab.name,
+                        path: activeTab.path,
+                        size: activeTab.sourceFile?.size,
+                        content: activeTab.content ?? undefined,
+                        isDirty: activeTab.isDirty,
+                        isLoading: activeTab.isLoading,
+                        openStrategy: fmt?.openStrategy,
+                        riskLevel: fmt?.riskLevel,
+                      };
+                    })()
+                  : null
+              }
+              activePosition={activeTab ? tabs.findIndex((tab) => tab.id === activeTab.id) + 1 : undefined}
+              totalTabs={tabs.length}
+              onOpenInSystem={activeTab?.path ? () => window.electronAPI.openInSystem(activeTab.path) : undefined}
+            />
             <ToastStack toasts={toasts} onDismiss={dismissToast} />
             <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
-                        <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+            <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
           </div>
-            </AppErrorBoundary>
-            </ToastProvider>
-        </ThemeProvider>
-          </ConfirmProvider>
-                </SettingsProvider>
-              </I18nProvider>
-            );
-          }
+        </AppErrorBoundary>
+      </ToastProvider>
+    );
+  }
 
 export function EmptyState({
   onOpenDialog,
