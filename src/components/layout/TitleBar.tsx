@@ -13,11 +13,25 @@ export default function TitleBar() {
   const { t, lang, setLang } = useI18n();
   const { theme, toggle } = useTheme();
   const [maximized, setMaximized] = useState(false);
+  const [maximizeAnnounce, setMaximizeAnnounce] = useState("");
+  const [themeAnnounce, setThemeAnnounce] = useState("");
   const [aboutOpen, setAboutOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => { if (typeof window.electronAPI?.windowIsMaximized === "function") window.electronAPI.windowIsMaximized().then(setMaximized).catch(() => undefined); }, []);
   const toggleMaximize = async () => {
-    try { await window.electronAPI.windowMaximize(); const state = await window.electronAPI.windowIsMaximized(); setMaximized(state); } catch { }
+    try {
+      await window.electronAPI.windowMaximize();
+      const state = await window.electronAPI.windowIsMaximized();
+      setMaximized(state);
+      setMaximizeAnnounce(state ? t("maximizeAnnouncedMax") : t("maximizeAnnouncedRestore"));
+      window.setTimeout(() => setMaximizeAnnounce(""), 1600);
+    } catch { }
+  };
+  const handleThemeToggle = () => {
+    toggle();
+    const next = theme === "dark" ? "light" : "dark";
+    setThemeAnnounce(next === "dark" ? t("themeAnnouncedDark") : t("themeAnnouncedLight"));
+    window.setTimeout(() => setThemeAnnounce(""), 1600);
   };
   return (
     <header className="app-titlebar" role="banner" aria-label={t("appName")}>
@@ -33,8 +47,9 @@ export default function TitleBar() {
           <div className="window-controls no-drag" role="toolbar" aria-label={t("windowControlsAria")}>
         <button
           type="button"
-          className="about-info-button"
+          className="about-info-button settings-info-button"
                 aria-label={t("settingsInfoButtonAria")}
+                aria-pressed={settingsOpen}
                 title={t("settingsInfoButtonTitle")}
                 onClick={() => setSettingsOpen(true)}
         >
@@ -53,6 +68,7 @@ export default function TitleBar() {
                 type="button"
                 className="about-info-button"
                 aria-label={t("aboutInfoButtonAria")}
+                aria-pressed={aboutOpen}
                 title={t("aboutInfoButtonTitle")}
                 onClick={() => setAboutOpen(true)}
               >
@@ -68,7 +84,16 @@ export default function TitleBar() {
             <option value="en">{t('english')}</option>
           </select>
         </label>
-        <button type="button" className="theme-toggle" title={theme === 'dark' ? t('light') : t('dark')} aria-label={theme === 'dark' ? t('light') : t('dark')} onClick={() => toggle()}>{theme === 'dark' ? <SunIcon /> : <MoonIcon />}</button>
+        <button
+          type="button"
+          className="theme-toggle"
+          aria-pressed={theme === "dark"}
+          title={theme === "dark" ? t("themeToggleToLightAria") : t("themeToggleToDarkAria")}
+          aria-label={theme === "dark" ? t("themeToggleToLightAria") : t("themeToggleToDarkAria")}
+          onClick={handleThemeToggle}
+        >
+          {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+        </button>
         <button type="button" aria-label={t('minimize')} onClick={() => window.electronAPI.windowMinimize()}><svg aria-hidden="true" width="11" height="11" viewBox="0 0 12 12"><path d="M2 8.5h8" /></svg></button>
         <button type="button" aria-label={maximized ? t('restore') : t('maximize')} onClick={toggleMaximize}><svg aria-hidden="true" width="11" height="11" viewBox="0 0 12 12">{maximized ? <><rect x="3" y="2" width="7" height="7" rx="1" /><path d="M8 9v1H2V4h1" /></> : <rect x="2" y="2" width="8" height="8" rx="1" />}</svg></button>
         <button type="button" className="window-close" aria-label={t('close')} onClick={() => window.electronAPI.windowClose()}><svg aria-hidden="true" width="11" height="11" viewBox="0 0 12 12"><path d="m2.5 2.5 7 7m0-7-7 7" /></svg></button>
@@ -77,6 +102,7 @@ export default function TitleBar() {
         {aboutOpen && <AboutDialog open onClose={() => setAboutOpen(false)} />}
         {settingsOpen && <SettingsDialog open onClose={() => setSettingsOpen(false)} />}
       </Suspense>
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{themeAnnounce}{maximizeAnnounce}</div>
     </header>
   );
 }
