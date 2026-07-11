@@ -8,6 +8,7 @@ import StatusBar from "./StatusBar";
 import { I18nProvider } from "../../i18n";
 import { SettingsProvider, useSettings } from "../../settings";
 import { useEffect } from "react";
+import { ToastProvider } from "../useToast";
 
 afterEach(() => {
   cleanup();
@@ -27,7 +28,11 @@ beforeEach(() => {
 function renderInProviders(ui: React.ReactElement) {
   return render(
     <I18nProvider>
-      <SettingsProvider>{ui}</SettingsProvider>
+      <SettingsProvider>
+        <ToastProvider value={{ pushToast: () => undefined }}>
+          {ui}
+        </ToastProvider>
+      </SettingsProvider>
     </I18nProvider>
   );
 }
@@ -63,16 +68,17 @@ describe("StatusBar", () => {
 
   it("renders the theme toggle with a localised label", () => {
     renderInProviders(<StatusBar activeTab={null} />);
-    const btn = screen.getByRole("button", { name: "切换明暗主题" });
-    expect(btn).toBeTruthy();
-  });
+      // PR #132 — aria-label now reflects the *target* state (current is dark, so "Switch to light theme").
+      const btn = screen.getByRole("button", { name: "切换到浅色主题" });
+      expect(btn).toBeTruthy();
+    });
 
-  it("uses English aria-label when lang=en", () => {
-    try { window.localStorage.setItem("openme.lang", "en"); } catch {}
-      renderInProviders(<StatusBar activeTab={{ name: "f.txt", path: "/tmp/f.txt", content: "hello\n" }} />);
-    expect(screen.getByRole("button", { name: "Toggle light or dark theme" })).toBeTruthy();
-      expect(screen.getByLabelText("Copy file path")).toBeTruthy();
-  });
+    it("uses English aria-label when lang=en", () => {
+      try { window.localStorage.setItem("openme.lang", "en"); } catch {}
+        renderInProviders(<StatusBar activeTab={{ name: "f.txt", path: "/tmp/f.txt", content: "hello\n" }} />);
+      expect(screen.getByRole("button", { name: "Switch to light theme" })).toBeTruthy();
+        expect(screen.getByLabelText("Copy file path")).toBeTruthy();
+    });
 
   it("the theme pill cycles dark → light → dark", () => {
     const seen: string[] = [];
@@ -84,11 +90,13 @@ describe("StatusBar", () => {
     render(
       <I18nProvider>
         <SettingsProvider>
-          <Probe />
-          <StatusBar activeTab={null} />
-        </SettingsProvider>
-      </I18nProvider>
-    );
+              <ToastProvider value={{ pushToast: () => undefined }}>
+                <Probe />
+                <StatusBar activeTab={null} />
+              </ToastProvider>
+            </SettingsProvider>
+          </I18nProvider>
+        );
     const btn = screen.getByRole("button", { name: /切换|Toggle/ });
     fireEvent.click(btn);
     fireEvent.click(btn);
@@ -105,10 +113,12 @@ describe("StatusBar", () => {
     rerender(
       <I18nProvider>
         <SettingsProvider>
-          <StatusBar activeTab={{ name: "x", isLoading: false }} />
-        </SettingsProvider>
-      </I18nProvider>
-    );
+              <ToastProvider value={{ pushToast: () => undefined }}>
+                <StatusBar activeTab={{ name: "x", isLoading: false }} />
+              </ToastProvider>
+            </SettingsProvider>
+          </I18nProvider>
+        );
     expect(document.querySelector(".status-progress")).toBeNull();
   });
 
@@ -133,10 +143,12 @@ describe("StatusBar", () => {
       rerender(
         <I18nProvider>
           <SettingsProvider>
-            <StatusBar activeTab={{ name: "a.txt" }} activePosition={2} totalTabs={4} />
-          </SettingsProvider>
-        </I18nProvider>
-      );
+                  <ToastProvider value={{ pushToast: () => undefined }}>
+                    <StatusBar activeTab={{ name: "a.txt" }} activePosition={2} totalTabs={4} />
+                  </ToastProvider>
+                </SettingsProvider>
+              </I18nProvider>
+            );
       expect(screen.getByText("第 2 个，共 4 个")).toBeTruthy();
     });
 
@@ -353,17 +365,20 @@ describe("StatusBar", () => {
 
                 it("theme pill toggles aria-pressed to match the current theme", () => {
                   const { rerender } = renderInProviders(<StatusBar activeTab={null} />);
-                  const themeBtn = screen.getByRole("button", { name: "切换明暗主题" });
+                  // PR #132 — when theme is dark, the button advertises the *target* state ("Switch to light").
+                  const themeBtn = screen.getByRole("button", { name: "切换到浅色主题" });
                   // Default locale starts at 'dark'
                   expect(themeBtn.getAttribute("aria-pressed")).toBe("true");
                   fireEvent.click(themeBtn);
                   rerender(
                     <I18nProvider>
                       <SettingsProvider>
-                        <StatusBar activeTab={null} />
-                      </SettingsProvider>
-                    </I18nProvider>,
-                  );
+                                          <ToastProvider value={{ pushToast: () => undefined }}>
+                                            <StatusBar activeTab={null} />
+                                          </ToastProvider>
+                                        </SettingsProvider>
+                                      </I18nProvider>,
+                                    );
                   expect(themeBtn.getAttribute("aria-pressed")).toBe("false");
                 });
               });

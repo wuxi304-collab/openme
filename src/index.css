@@ -1434,6 +1434,9 @@ main:focus { outline: none; }
 .status-theme-pill:active { transform:scale(0.92); }
 .status-theme-pill:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
 .status-theme-pill svg { width:12px; height:12px; }
+/* PR #132 — visually hidden live region used to announce transient status
+   messages (clip-path keeps it accessible while making it invisible). */
+.status-sr-announcer { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
 
 .command-backdrop { position:fixed; inset:0; z-index:500; display:flex; align-items:flex-start; justify-content:center; padding-top:min(18vh,150px); background:#0505058c; backdrop-filter:blur(5px); animation:command-fade var(--dur-fast) var(--ease-out); }
 .command-palette { width:min(590px,calc(100vw - 40px)); overflow:hidden; border:1px solid #ffffff1f; border-radius:14px; background:#191816f2; box-shadow:0 28px 90px #000b; transform-origin:50% 0; animation:command-in var(--dur-modal) var(--ease-out); }.command-search { height:54px; display:flex; align-items:center; gap:10px; padding:0 15px; border-bottom:1px solid #ffffff12; color:#e5b83f; font:16px var(--font-mono); }.command-search input { flex:1; height:100%; border:0; outline:0; color:#f3eee7; background:transparent; font-size:14px; }
