@@ -49,6 +49,40 @@
   to   { opacity: 1; transform: translateY(0)   scale(1); }
 }
 
+/* Section stagger entrance — same motion tokens as the welcome panel
+ * (PR #119). Cascades the body sections in once the card lands so the
+ * dialog feels intentional rather than dumped.
+ * Only animates opacity + transform (GPU friendly). Honors reduced-motion
+ * via the existing media query at the bottom of this file.
+ */
+@keyframes settings-section-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.settings-dialog-body > .settings-dialog-section {
+  animation: settings-section-in var(--dur-fast, 200ms) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)) both;
+  animation-delay: calc(var(--dur-press, 140ms) + var(--stagger-step, 36ms) * 0);
+}
+.settings-dialog-body > .settings-dialog-section:nth-child(1) {
+  animation-delay: calc(var(--dur-press, 140ms) + var(--stagger-step, 36ms) * 1);
+}
+.settings-dialog-body > .settings-dialog-section:nth-child(2) {
+  animation-delay: calc(var(--dur-press, 140ms) + var(--stagger-step, 36ms) * 2);
+}
+.settings-dialog-body > .settings-dialog-section:nth-child(3) {
+  animation-delay: calc(var(--dur-press, 140ms) + var(--stagger-step, 36ms) * 3);
+}
+.settings-dialog-body > .settings-dialog-section:nth-child(4) {
+  animation-delay: calc(var(--dur-press, 140ms) + var(--stagger-step, 36ms) * 4);
+}
+.settings-dialog-body > .settings-dialog-section:nth-child(5) {
+  animation-delay: calc(var(--dur-press, 140ms) + var(--stagger-step, 36ms) * 5);
+}
+.settings-dialog-body > .settings-dialog-section:nth-child(n + 6) {
+  animation-delay: calc(var(--dur-press, 140ms) + var(--stagger-step, 36ms) * 5);
+}
+
 .settings-dialog-header {
   display: flex;
   align-items: flex-start;
@@ -185,10 +219,15 @@
               color var(--dur-fast, 140ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
-.settings-radio:hover {
-  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
-  border-color: var(--border-default, rgba(255, 255, 255, 0.1));
-  color: var(--text-primary);
+/* Touch devices shouldn't see hover on tap — the radio label still gets
+ * the selected state on tap. Gate the hover lift to fine pointers.
+ */
+@media (hover: hover) and (pointer: fine) {
+  .settings-radio:hover {
+    background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+    border-color: var(--border-default, rgba(255, 255, 255, 0.1));
+    color: var(--text-primary);
+  }
 }
 
 .settings-radio.is-selected {
@@ -210,6 +249,27 @@
 
 .settings-radio input[type="radio"]:focus-visible + .settings-radio-dot {
   box-shadow: 0 0 0 2px var(--bg-elevated, #161a22), 0 0 0 4px var(--accent, #6cd1ff);
+}
+
+/* Reset pulse — the SettingsDialog briefly toggles `is-resetting` on the
+ * card body right after reset() confirms. A short accent-flash on the
+ * radio pills signals "values just snapped back to defaults" without
+ * changing layout. Animates opacity only.
+ */
+@keyframes settings-reset-pulse {
+  0%   { box-shadow: 0 0 0 0   color-mix(in srgb, var(--accent, #6cd1ff) 50%, transparent); }
+  60%  { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #6cd1ff) 22%, transparent); }
+  100% { box-shadow: 0 0 0 0   color-mix(in srgb, var(--accent, #6cd1ff) 0%,   transparent); }
+}
+
+.settings-dialog-card.is-resetting .settings-radio {
+  animation: settings-reset-pulse 700ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)) 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-dialog-card.is-resetting .settings-radio {
+    animation: none;
+  }
 }
 
 .settings-radio-dot {
@@ -390,6 +450,13 @@
   border-color: color-mix(in srgb, var(--accent, #6cd1ff) 45%, var(--border-subtle, rgba(255, 255, 255, 0.06)));
 }
 
+/* Gate the storage path value hover — touch users tap, no hover. */
+@media (hover: hover) and (pointer: fine) {
+  .settings-storage-path-value[title]:hover {
+    border-color: color-mix(in srgb, var(--accent, #6cd1ff) 45%, var(--border-subtle, rgba(255, 255, 255, 0.06)));
+  }
+}
+
 .settings-storage-path-actions {
   display: inline-flex;
   gap: 6px;
@@ -406,6 +473,15 @@
   cursor: not-allowed;
 }
 
+/* Copied state — the button text briefly swaps to "Copied". Add a 1.5s
+ * accent border tint via a data-attribute so the success feels
+ * confirmed, not just textual.
+ */
+.settings-storage-path-action[data-copied="true"] {
+  border-color: color-mix(in srgb, var(--accent, #6cd1ff) 60%, transparent);
+  color: var(--accent, #6cd1ff);
+}
+
 .settings-storage-path-hint {
   margin: 0;
   font-size: 11.5px;
@@ -416,6 +492,8 @@
 @media (prefers-reduced-motion: reduce) {
   .settings-dialog-overlay,
   .settings-dialog-card { animation: none; }
+  .settings-dialog-body > .settings-dialog-section { animation: none; }
+  .settings-dialog-card.is-resetting .settings-radio { animation: none; }
   .settings-dialog-close,
   .settings-dialog-reset,
   .settings-dialog-primary,
