@@ -782,6 +782,25 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
 .floating-coin { position:absolute; width:13px; height:19px; border:3px solid #9b6700; border-radius:50%; background:var(--mario-yellow); box-shadow:inset -3px 0 #e09900; animation:coin-float-quiet 2.4s var(--ease-in-out) infinite; }
 .coin-one { top:24%; left:23%; } .coin-two { top:17%; right:26%; animation-delay:-1.1s; }
 .welcome-panel { width:min(540px, calc(100% - 48px)); position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; padding:38px 46px 34px; color:#24201b; text-align:center; border:1px solid rgba(255,255,255,.75); border-radius:16px; background:rgba(255,250,239,.94); box-shadow:0 24px 70px rgba(19,56,81,.25), 0 2px 0 rgba(255,255,255,.9) inset; backdrop-filter:blur(12px); animation:panel-enter var(--dur-base) var(--ease-out) both; }
+/* Stagger every direct child of the welcome panel so the contents
+ * settle into place after the panel itself lands. Uses --stagger-step
+ * (36ms) and adds a constant offset so the children start *after* the
+ * panel-enter animation has begun — feels like a layered entrance
+ * rather than 6 things racing to appear. */
+.welcome-panel > * { animation: panel-child-enter var(--dur-base) var(--ease-out) both; animation-delay: calc(var(--dur-press) + var(--stagger-step) * 1); }
+.welcome-panel > *:nth-child(2) { animation-delay: calc(var(--dur-press) + var(--stagger-step) * 2); }
+.welcome-panel > *:nth-child(3) { animation-delay: calc(var(--dur-press) + var(--stagger-step) * 3); }
+.welcome-panel > *:nth-child(4) { animation-delay: calc(var(--dur-press) + var(--stagger-step) * 4); }
+.welcome-panel > *:nth-child(5) { animation-delay: calc(var(--dur-press) + var(--stagger-step) * 5); }
+.welcome-panel > *:nth-child(6) { animation-delay: calc(var(--dur-press) + var(--stagger-step) * 6); }
+.welcome-panel > *:nth-child(n+7) { animation-delay: calc(var(--dur-press) + var(--stagger-step) * 7); }
+@keyframes panel-child-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-panel > * { animation: none; opacity: 1; transform: none; }
+}
 .welcome-eyebrow { display:flex; align-items:center; gap:10px; color:#777066; font:800 9px/1 var(--font-mono); letter-spacing:.13em; }
 .eyebrow-line { width:24px; height:1px; background:#c9c0b3; }
 .hero-mark { width:58px; height:58px; margin:20px 0 18px; display:grid; place-items:center; border:3px solid #9d6700; border-radius:9px; color:#704600; background:linear-gradient(145deg,#ffe15a,#f1ad12); box-shadow:0 7px 0 #8a5900, 0 12px 22px rgba(111,70,0,.22), inset 0 2px rgba(255,255,255,.55); transform:rotate(-2deg); }
@@ -803,22 +822,38 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.empty-recent-list .empty-recent-row:nth-child(1) { animation-delay: 0ms; }
-.empty-recent-list .empty-recent-row:nth-child(2) { animation-delay: 36ms; }
-.empty-recent-list .empty-recent-row:nth-child(3) { animation-delay: 72ms; }
-.empty-recent-list .empty-recent-row:nth-child(4) { animation-delay: 108ms; }
-.empty-recent-list .empty-recent-row:nth-child(5) { animation-delay: 144ms; }
-.empty-recent-list .empty-recent-row:nth-child(6) { animation-delay: 180ms; }
-.empty-recent-list .empty-recent-row:nth-child(n+7) { animation-delay: 216ms; }
+.empty-recent-list .empty-recent-row:nth-child(1) { animation-delay: calc(var(--stagger-step) * 0); }
+.empty-recent-list .empty-recent-row:nth-child(2) { animation-delay: calc(var(--stagger-step) * 1); }
+.empty-recent-list .empty-recent-row:nth-child(3) { animation-delay: calc(var(--stagger-step) * 2); }
+.empty-recent-list .empty-recent-row:nth-child(4) { animation-delay: calc(var(--stagger-step) * 3); }
+.empty-recent-list .empty-recent-row:nth-child(5) { animation-delay: calc(var(--stagger-step) * 4); }
+.empty-recent-list .empty-recent-row:nth-child(6) { animation-delay: calc(var(--stagger-step) * 5); }
+.empty-recent-list .empty-recent-row:nth-child(n+7) { animation-delay: calc(var(--stagger-step) * 6); }
 .empty-recent-name { overflow:hidden; flex:1; min-width:0; font-size:12px; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
 .empty-recent-ext { flex:none; padding:2px 6px; color:#6f5840; background:#f4ecdc; border:1px solid #d9d0c3; border-radius:4px; font:700 9px/1 var(--font-mono); }
 .empty-recent-empty { margin:0; color:#8b8378; font-size:11px; font-style:italic; }
 @media (max-width:540px) { .empty-cards { grid-template-columns:1fr; } }
 .hero-open-button { min-height:42px; padding:0 19px; display:flex; align-items:center; gap:8px; border:1px solid #991a17; border-radius:9px; color:white; background:var(--mario-red); box-shadow:0 4px 0 #8f1714, 0 8px 18px rgba(180,35,30,.24); font-size:12px; font-weight:900; cursor:pointer; transition:transform var(--dur-press) var(--ease-out), background-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out); }
 .hero-open-button:active { transform:translateY(2px) scale(.98); box-shadow:0 2px 0 #8f1714; }
-.drop-hint { color:#8b8378; font-size:11px; font-weight:650; }
+.hero-open-button:focus-visible { outline:2px solid #d87930; outline-offset:3px; box-shadow:0 4px 0 #8f1714, 0 8px 18px rgba(180,35,30,.24), 0 0 0 4px rgba(216,121,48,.28); }
+.drop-hint { color:#8b8378; font-size:11px; font-weight:650; display:inline-flex; align-items:center; gap:6px; }
+/* A small ⬇ glyph before the drop hint copy + soft vertical pulse.
+ * Pulses so the user notices *there's a thing to do here*, but stays
+ * well under 320ms so it never nags. Touch-gated so phone users
+ * don't see this on every cold start. */
+.drop-hint::before { content:"↓"; color:#b34b18; font-weight:900; animation:drop-hint-bob 1800ms var(--ease-in-out) infinite; }
+@keyframes drop-hint-bob {
+  0%, 100% { transform: translateY(0); opacity: .65; }
+  50%      { transform: translateY(2px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drop-hint::before { animation: none; transform: none; opacity: .85; }
+}
 .format-row { margin-top:26px; display:flex; flex-wrap:wrap; justify-content:center; gap:6px; }
-.format-row span { padding:4px 8px; color:#7a7267; background:#ede7dc; border:1px solid #d9d0c3; border-radius:5px; font:700 9px/1 var(--font-mono); }
+.format-row span { padding:4px 8px; color:#7a7267; background:#ede7dc; border:1px solid #d9d0c3; border-radius:5px; font:700 9px/1 var(--font-mono); transition:transform var(--dur-press) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .format-row span:hover { transform: translateY(-1px); color:#5a5246; border-color:#c9b896; }
+}
 .workspace-ground { position:absolute; z-index:1; left:0; right:0; bottom:0; height:18%; min-height:76px; border-top:5px solid #477d31; background:linear-gradient(#65a842 0 12px,#9c6036 12px); box-shadow:inset 0 5px rgba(255,255,255,.12); }
 .ground-bricks { position:absolute; inset:12px 0 0; background-image:linear-gradient(90deg,rgba(59,31,19,.25) 2px,transparent 2px),linear-gradient(rgba(59,31,19,.25) 2px,transparent 2px); background-size:48px 28px; }
 .ground-pipe { position:absolute; z-index:2; right:9%; bottom:0; width:52px; height:62px; border:4px solid #286a37; border-bottom:0; background:#4aa85e; box-shadow:inset 8px 0 rgba(255,255,255,.15), inset -8px 0 rgba(20,81,37,.22); }
