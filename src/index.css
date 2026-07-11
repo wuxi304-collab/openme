@@ -1306,22 +1306,30 @@ main:focus { outline: none; }
 .pdf-toolbar { min-height:42px; flex:none; display:flex; align-items:center; gap:12px; padding:6px 10px; border-bottom:1px solid var(--border-muted); background:var(--bg-surface); }
 .pdf-toolbar>.viewer-label { margin-right:auto; }.pdf-search { display:flex; align-items:center; gap:4px; }.pdf-search input { width:180px; height:28px; padding:0 9px; border:1px solid var(--border-default); border-radius:7px; outline:0; color:var(--text-primary); background:var(--bg-elevated); font-size:11px; }.pdf-search input:focus-visible { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-glow); }.pdf-search button { height:28px; padding:0 9px; border:1px solid var(--border-default); border-radius:7px; color:var(--text-secondary); background:var(--bg-elevated); font-size:11px; }.pdf-results { min-height:34px; max-height:74px; flex:none; display:flex; align-items:center; gap:5px; padding:4px 10px; overflow:auto; border-bottom:1px solid var(--border-muted); color:var(--text-muted); background:#121110; font-size:10px; }.pdf-results>span { position:sticky; left:0; z-index:1; padding-right:8px; background:#121110; white-space:nowrap; }.pdf-results button { flex:none; height:24px; padding:0 7px; border:1px solid #3b3832; border-radius:6px; color:#c9c2b8; background:#22201c; }.pdf-results button i { margin-left:4px; color:#e2b43d; font-style:normal; }
 .app-toast-stack { position:fixed; right:18px; bottom:38px; z-index:200; display:flex; flex-direction:column-reverse; gap:8px; pointer-events:none; max-width:420px; }
-.app-toast { position:relative; display:flex; align-items:center; gap:9px; padding:10px 13px 12px; border:1px solid #ffffff18; border-radius:10px; color:#f6f3ee; background:#24211dcc; box-shadow:0 14px 38px #0008; backdrop-filter:blur(12px); font-size:12px; pointer-events:auto; overflow:hidden; animation:toast-in var(--dur-fast) var(--ease-out); transform:translateY(calc(var(--stack-index, 0) * -14px)); transition:transform var(--dur-base) var(--ease-out); }
+.app-toast { position:relative; display:flex; align-items:center; gap:9px; padding:10px 13px 12px; border:1px solid #ffffff18; border-radius:10px; color:#f6f3ee; background:#24211dcc; box-shadow:0 14px 38px #0008; backdrop-filter:blur(12px); font-size:12px; pointer-events:auto; overflow:hidden; animation:toast-in var(--dur-fast) var(--ease-out); transform:translateY(calc(var(--stack-index, 0) * -14px)); transition:transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out); }
+/* When the user hovers OR focuses into a toast, lift it +2px and
+ * brighten the shadow so it pops above the rest of the stack. Uses
+ * (hover: hover) gate so phone touch users don't see the toast stuck
+ * in the lifted state on every cold start. */
+@media (hover: hover) and (pointer: fine) {
+  .app-toast:hover { transform: translateY(calc(var(--stack-index, 0) * -14px - 2px)); box-shadow: 0 18px 48px #000a, 0 0 0 1px #ffffff1a inset; }
+}
+.app-toast:focus-within { transform: translateY(calc(var(--stack-index, 0) * -14px - 2px)); box-shadow: 0 18px 48px #000a, 0 0 0 1px #ffffff1a inset; }
 .app-toast i { width:20px; height:20px; flex:none; display:grid; place-items:center; border-radius:50%; color:#102014; background:#65c978; font-style:normal; font-weight:900; }
 .app-toast.is-error i { color:#2a100d; background:#ef6a58; }
 .app-toast.is-info i { color:#102014; background:#d9aa35; }
 .app-toast-message { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .app-toast-close { flex:none; width:22px; height:22px; display:grid; place-items:center; border:0; border-radius:6px; color:#a9a39a; background:transparent; font-size:14px; line-height:1; cursor:pointer; transition:color var(--dur-fast) var(--ease-out),background-color var(--dur-fast) var(--ease-out); }
-.app-toast-close:hover { color:#fff; background:#ffffff14; }
+@media (hover: hover) and (pointer: fine) { .app-toast-close:hover { color:#fff; background:#ffffff14; } }
 .app-toast-close:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
 .app-toast-progress { position:absolute; left:0; right:0; bottom:0; height:2px; background:linear-gradient(90deg,#65c978,#d9aa35); transform-origin:left; transform:scaleX(1); animation:toast-ttl var(--toast-ttl, 2600ms) linear forwards; pointer-events:none; }
 .app-toast.is-error .app-toast-progress { background:linear-gradient(90deg,#ef6a58,#a9362a); }
 .app-toast.is-info .app-toast-progress { background:linear-gradient(90deg,#d9aa35,#a96f1f); }
 .app-toast-action { flex:none; padding:3px 9px; border:1px solid #ffffff24; border-radius:7px; color:#fff; background:#ffffff14; font-size:11px; font-weight:600; letter-spacing:.02em; cursor:pointer; transition:background-color var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out); }
-.app-toast-action:hover { background:#ffffff24; border-color:#ffffff38; }
+@media (hover: hover) and (pointer: fine) { .app-toast-action:hover { background:#ffffff24; border-color:#ffffff38; } .app-toast-action:active { transform: scale(.96); } }
 .app-toast-action:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
 .app-toast.is-info .app-toast-action { color:#1a1208; background:#d9aa35; border-color:#d9aa35; }
-.app-toast.is-info .app-toast-action:hover { background:#e3b945; border-color:#e3b945; }
+@media (hover: hover) and (pointer: fine) { .app-toast.is-info .app-toast-action:hover { background:#e3b945; border-color:#e3b945; } }
 .app-toast:hover .app-toast-progress,
 .app-toast:focus-within .app-toast-progress,
 .app-toast.is-paused .app-toast-progress { animation-play-state:paused; }
