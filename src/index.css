@@ -637,6 +637,11 @@ input, button, textarea { font-family: var(--font-main); }
 
 body { background: var(--shell-bg); color: var(--shell-text); }
 button, input { touch-action: manipulation; }
+/* Focus-visible discipline — interactive surfaces (button, a, [tabindex])
+ * MUST use :focus-visible so mouse clicks don't leave a permanent ring.
+ * Reserve :focus for form controls (input, textarea) and a11y primitives
+ * (.skip-link, main, [contenteditable]). Enforced by
+ * src/focus-visible-discipline.test.ts. */
 button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yellow); outline-offset: 2px; }
 .sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
 
