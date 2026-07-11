@@ -9,6 +9,7 @@ interface Props {
 interface Entry {
   keys: string;
   labelKey: string;
+  single?: boolean;
 }
 interface Group {
   titleKey: string;
@@ -36,14 +37,14 @@ const SHORTCUT_GROUPS: Group[] = [
     titleKey: "shortcutsGroupApp",
     entries: [
       { keys: "Ctrl K", labelKey: "aboutShortcutPalette" },
-      { keys: "?", labelKey: "shortcutsShowOverlay" },
-      { keys: "Esc", labelKey: "shortcutsCloseOverlay" },
+      { keys: "?", labelKey: "shortcutsShowOverlay", single: true },
+      { keys: "Esc", labelKey: "shortcutsCloseOverlay", single: true },
     ],
   },
 ];
 
 export function ShortcutsOverlay({ open, onClose }: Props) {
-  const { t } = useI18n();
+  const { t, tf } = useI18n();
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
 
@@ -106,18 +107,27 @@ export function ShortcutsOverlay({ open, onClose }: Props) {
         </header>
         <div className="shortcuts-overlay-body">
           {SHORTCUT_GROUPS.map((group) => (
-            <section key={group.titleKey} className="shortcuts-group" aria-label={t(group.titleKey)}>
-              <h3 className="shortcuts-group-title">{t(group.titleKey)}</h3>
-              <table className="shortcuts-group-table">
-                <tbody>
-                  {group.entries.map((entry) => (
-                    <tr key={entry.keys}>
-                      <th><kbd>{entry.keys}</kbd></th>
-                      <td>{t(entry.labelKey)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <section
+              key={group.titleKey}
+              className="shortcuts-group"
+              aria-label={tf("shortcutsGroupAria", { group: t(group.titleKey), count: group.entries.length })}
+            >
+              <h3 className="shortcuts-group-title">
+                <span className="shortcuts-group-name">{t(group.titleKey)}</span>
+                <span className="shortcuts-group-count" aria-hidden="true">
+                  {tf("shortcutsGroupCount", { count: group.entries.length })}
+                </span>
+              </h3>
+              <ul className="shortcuts-group-list" role="list">
+                {group.entries.map((entry) => (
+                  <li key={entry.keys} className="shortcuts-row">
+                    <kbd className={entry.single ? "shortcuts-kbd shortcuts-kbd-single" : "shortcuts-kbd"} aria-label={entry.single ? `${entry.keys} (${t("shortcutsKeysSingle")})` : entry.keys}>
+                      {entry.keys}
+                    </kbd>
+                    <span className="shortcuts-row-label">{t(entry.labelKey)}</span>
+                  </li>
+                ))}
+              </ul>
             </section>
           ))}
         </div>

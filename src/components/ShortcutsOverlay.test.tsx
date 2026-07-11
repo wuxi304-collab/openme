@@ -34,8 +34,8 @@ describe("ShortcutsOverlay", () => {
     const groupTitles = screen.getAllByRole("heading", { level: 3 });
     expect(groupTitles).toHaveLength(3);
     // Each entry has a kbd and a localised label.
-    const kbds = screen.getAllByRole("row");
-    expect(kbds.length).toBeGreaterThanOrEqual(9);
+    const items = screen.getAllByRole("listitem");
+    expect(items.length).toBeGreaterThanOrEqual(9);
     expect(screen.getByText("Ctrl O")).toBeTruthy();
     expect(screen.getByText("Ctrl S")).toBeTruthy();
     expect(screen.getByText("Ctrl K")).toBeTruthy();
@@ -78,7 +78,7 @@ describe("ShortcutsOverlay", () => {
     render(
       <I18nProvider><ShortcutsOverlay open onClose={() => undefined} /></I18nProvider>
     );
-    const titles = screen.getAllByRole("heading", { level: 3 }).map((n) => n.textContent);
+    const titles = Array.from(document.querySelectorAll(".shortcuts-group-name")).map((n) => n.textContent);
     expect(titles).toEqual(["Files", "Tabs", "Application"]);
   });
 
