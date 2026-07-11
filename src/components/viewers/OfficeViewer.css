@@ -54,9 +54,11 @@
     border-color 160ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
-.office-sheet-tabs button:hover {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
+@media (hover: hover) and (pointer: fine) {
+  .office-sheet-tabs button:hover {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+  }
 }
 
 .office-sheet-tabs button.is-active {
@@ -160,8 +162,10 @@
     border-color 120ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
-.office-excel-pagination button:hover:not(:disabled) {
-  background: var(--bg-surface);
+@media (hover: hover) and (pointer: fine) {
+  .office-excel-pagination button:hover:not(:disabled) {
+    background: var(--bg-surface);
+  }
 }
 
 .office-excel-pagination button:focus-visible {

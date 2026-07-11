@@ -248,9 +248,11 @@
   transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
-.openme-route-card-app-button:hover {
-  background: rgba(81, 207, 102, 0.24);
-  border-color: rgba(81, 207, 102, 0.6);
+@media (hover: hover) and (pointer: fine) {
+  .openme-route-card-app-button:hover {
+    background: rgba(81, 207, 102, 0.24);
+    border-color: rgba(81, 207, 102, 0.6);
+  }
 }
 
 .openme-route-card-app-button:active {
@@ -288,9 +290,11 @@
   transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
-.openme-route-card-action:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.32);
+@media (hover: hover) and (pointer: fine) {
+  .openme-route-card-action:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.32);
+  }
 }
 
 .openme-route-card-action:active {
@@ -302,9 +306,11 @@
   border-color: #C91F37;
 }
 
-.openme-route-card-action.primary:hover {
-  background: #d9293f;
-  border-color: #d9293f;
+@media (hover: hover) and (pointer: fine) {
+  .openme-route-card-action.primary:hover {
+    background: #d9293f;
+    border-color: #d9293f;
+  }
 }
 
 .openme-route-card-action:disabled {

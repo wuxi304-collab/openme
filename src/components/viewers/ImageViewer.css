@@ -65,10 +65,15 @@
   opacity: 0.6;
 }
 
-.image-zoom-menu .image-zoom-summary:hover,
 .image-zoom-menu[open] .image-zoom-summary {
   background: var(--bg-hover);
   border-color: var(--border-muted);
+}
+@media (hover: hover) and (pointer: fine) {
+  .image-zoom-menu .image-zoom-summary:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-muted);
+  }
 }
 
 .image-zoom-menu .image-zoom-summary:focus-visible {
@@ -112,8 +117,10 @@
   transition: background var(--dur-press) var(--ease-out);
 }
 
-.image-zoom-item:hover {
-  background: var(--bg-hover);
+@media (hover: hover) and (pointer: fine) {
+  .image-zoom-item:hover {
+    background: var(--bg-hover);
+  }
 }
 
 .image-zoom-item:focus-visible {

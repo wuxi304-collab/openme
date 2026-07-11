@@ -77,8 +77,10 @@
   transition: background-color 120ms var(--ease-out, ease), transform 100ms var(--ease-out, ease);
 }
 
-.hex-search button:hover:not(:disabled) {
-  background: var(--bg-hover, rgba(15, 23, 42, 0.04));
+@media (hover: hover) and (pointer: fine) {
+  .hex-search button:hover:not(:disabled) {
+    background: var(--bg-hover, rgba(15, 23, 42, 0.04));
+  }
 }
 
 .hex-search button:active:not(:disabled) {
@@ -188,8 +190,10 @@
   width: max-content;
 }
 
-.hex-offset-button:hover {
-  color: var(--accent, #e60012);
+@media (hover: hover) and (pointer: fine) {
+  .hex-offset-button:hover {
+    color: var(--accent, #e60012);
+  }
 }
 
 .hex-offset-button:focus-visible {
