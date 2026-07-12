@@ -54,6 +54,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
     return () => ipcRenderer.removeListener("audio-pcm-done", listener);
   },
   listAudioInFolder: (folderPath, options) => ipcRenderer.invoke("list-audio-in-folder", folderPath, options),
+  // Desktop launch wiring — main process forwards `OpenMe.exe <files>` argv
+  // (or second-instance hand-off, or macOS `open-file`) via this channel.
+  // The renderer registers this listener BEFORE opening any tabs.
+  onInitialFiles: (cb) => {
+    const listener = (_e, paths) => cb(Array.isArray(paths) ? paths : []);
+    ipcRenderer.on("openme:initial-files", listener);
+    return () => ipcRenderer.removeListener("openme:initial-files", listener);
+  },
   readEpub: (path) => ipcRenderer.invoke("read-epub", path),
   getCadEngineStatus: () => ipcRenderer.invoke("get-cad-engine-status"),
   inspectCadDocument: (path) => ipcRenderer.invoke("inspect-cad-document", path),

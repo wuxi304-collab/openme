@@ -44,6 +44,10 @@ export interface ElectronAPI {
   getAudioMetadata: (path: string) => Promise<AudioMetadataResult | IpcFailureResult>;
   getAudioFormat: (path: string) => Promise<AudioFormatProbe | IpcFailureResult>;
   listAudioInFolder: (folderPath: string, options?: { recursive?: boolean; limit?: number }) => Promise<ListAudioFolderResult | IpcFailureResult>;
+  /** Desktop launch wiring — main process forwards `OpenMe.exe <files>` argv
+   *  (or second-instance hand-off, or macOS `open-file`) via this channel.
+   *  The renderer registers this listener BEFORE opening any tabs. */
+  onInitialFiles: (cb: (paths: string[]) => void) => () => void;
   /** Universal audio decoder (PR #146) — main process uses ffmpeg-static to
    *  decode the file into f32le PCM and streams chunks back via IPC events.
    *  `decodeAudioPcm` returns once the file is fully streamed. */

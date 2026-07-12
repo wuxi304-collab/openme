@@ -243,6 +243,20 @@ function AppShell() {
         await openFileInTab(fileInfo);
       }
     }, [addToRecent, openFileInTab, t]);
+    // Desktop launch wiring. The main process forwards `OpenMe.exe <files>`
+    // argv (or second-instance hand-off, or macOS Finder `open-file`) to
+    // here once the renderer is ready. We route through the same
+    // handleFilePaths helper used by the menu/dialog startup pipe, so
+    // drag-onto-shortcut behaviour matches open-from-app behaviour.
+    useEffect(() => {
+      if (typeof window === "undefined") return;
+      if (!window.electronAPI || typeof window.electronAPI.onInitialFiles !== "function") return;
+      const unsubscribe = window.electronAPI.onInitialFiles((paths) => {
+        if (!Array.isArray(paths) || paths.length === 0) return;
+        void handleFilePaths(paths);
+      });
+      return unsubscribe;
+    }, [handleFilePaths]);
   const handleSelectFile = useCallback(async (file: FileInfo) => { await openFileInTab(file); }, [openFileInTab]);
   const handleRemoveRecent = useCallback(async (file: FileInfo) => { const updated = recentFiles.filter((item) => item.path !== file.path); setRecentFiles(updated); await window.electronAPI.saveRecentFiles({ files: updated, version: 1 }); pushToast("success", tf("removeFromRecentToast", { name: file.name })); }, [recentFiles, tf, pushToast]);
   const handleRevealRecent = useCallback((file: FileInfo) => { void window.electronAPI.revealInFolder(file.path); }, []);
