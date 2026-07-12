@@ -102,10 +102,7 @@
       "runAfterFinish": true,
       "license": "build/license-en.txt",
       "language": "2052",
-      "languages": [
-        "1033",
-        "2052"
-      ],
+      "multiLanguageInstaller": true,
       "include": "build/installer.nsh",
       "displayLanguageSelector": true
     },
