@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { FileInfo, type FileCategory } from "../../types";
 import { useI18n } from "../../i18n";
 import { detectCategory } from "../../utils/fileTypeDetector";
@@ -34,6 +34,62 @@ export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpe
     : [];
   const visibleSuggestions = packSuggestions.length > 0 ? packSuggestions : inferredSuggestions;
   const [menuState, setMenuState] = useState<{ file: FileInfo; x: number; y: number } | null>(null);
+  const listboxId = useId();
+  const listboxRef = useRef<HTMLDivElement | null>(null);
+  // Track the visually focused row so ArrowUp/Down/Home/End/Enter work
+  // when the user has tabbed into the listbox. We default to the active
+  // file (if any) so the keyboard position follows the user's selection.
+  const [focusedIndex, setFocusedIndex] = useState<number>(() => {
+    if (!selectedPath) return 0;
+    const idx = files.findIndex((file) => file.path === selectedPath);
+    return idx >= 0 ? idx : 0;
+  });
+  // When the file list shrinks (e.g. a recent was removed), clamp the
+  // focused index so it never points past the end of the array.
+  const safeFocusedIndex = Math.min(focusedIndex, Math.max(0, files.length - 1));
+  const focusedFile = files[safeFocusedIndex] ?? null;
+
+  const moveFocus = useCallback((next: number) => {
+    if (!files.length) return;
+    const clamped = (next + files.length) % files.length;
+    setFocusedIndex(clamped);
+    // Focus the corresponding option synchronously. We previously deferred with
+    // requestAnimationFrame to wait for React to commit the new focusedIndex,
+    // but rAF never flushes in jsdom so tests silently broke. Synchronous focus
+    // works in both jsdom and the real browser because the row's tabIndex
+    // (roving tabindex pattern) is already on the option element.
+    const listbox = listboxRef.current;
+    if (!listbox) return;
+    const targetId = `sidebar-option-${listboxId}-${clamped}`;
+    const css = (globalThis as { CSS?: { escape?: (v: string) => string } }).CSS;
+    const escaper = typeof css?.escape === "function"
+      ? (v: string) => css.escape!(v)
+      : (v: string) => v.replace(/([^\w-])/g, "\\$1");
+    const target = listbox.querySelector<HTMLElement>(`#${escaper(targetId)}`);
+    target?.focus();
+  }, [files.length, listboxId]);
+
+  const handleListboxKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (!files.length) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      moveFocus(safeFocusedIndex + 1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      moveFocus(safeFocusedIndex - 1);
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      moveFocus(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      moveFocus(files.length - 1);
+    } else if (event.key === "Enter" || event.key === " ") {
+      if (focusedFile) {
+        event.preventDefault();
+        onSelect(focusedFile);
+      }
+    }
+  }, [files.length, focusedFile, moveFocus, onSelect, safeFocusedIndex]);
 
   const handleContextMenu = useCallback((event: React.MouseEvent<HTMLDivElement>, file: FileInfo) => {
     event.preventDefault();
@@ -89,9 +145,9 @@ export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpe
         <span>{t("recentOpened")}</span>
         <span className="coin-count"><i aria-hidden="true" />{files.length}</span>
       </div>
-      <div className="recent-list" role="list" aria-label={t("sidebarRecentA11y")}>
+      <div className="recent-list" role="listbox" aria-label={t("sidebarRecentA11y")} tabIndex={files.length ? 0 : -1} ref={listboxRef} onKeyDown={handleListboxKeyDown} aria-activedescendant={focusedFile ? `sidebar-option-${listboxId}-${safeFocusedIndex}` : undefined}>
         {files.length === 0 ? (
-          <div className="sidebar-empty">
+                <div className="sidebar-empty" aria-label={t("sidebarEmptyA11y")}>
             <span className="mini-question-block" aria-hidden="true">?</span>
             <strong>{t("noFilesYet")}</strong>
             <span>{t("openFileHint")}</span>
@@ -109,42 +165,51 @@ export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpe
             )}
           </div>
         ) : (
-          files.map((file) => {
+                files.map((file, index) => {
             const active = selectedPath === file.path;
-            return (
-                        <div
-                          className={`recent-row ${active ? "is-active" : ""}`}
-                          key={file.id}
-                          onContextMenu={(event) => handleContextMenu(event, file)}
-                        >
-                          <button
-                            type="button"
-                            className="recent-file"
-                            onClick={() => onSelect(file)}
-                            title={file.path}
-                            aria-current={active ? "true" : undefined}
-                          >
-                            <FileTypeIcon type={detectCategory(file.path)} size={38} extension={file.extension} />
-                            <span className="recent-file-copy">
-                              <strong>{file.name}</strong>
-                              <small>{file.extension || t("fileTypeSuffix")}</small>
-                            </span>
-                            {active && <span className="active-flag" aria-label={t("currentFileFlag")}>●</span>}
-                          </button>
-                          <button
-                            type="button"
-                            className="recent-remove"
-                            aria-label={tf("removeFromRecent", { name: file.name })}
-                            title={t("removeFromListTitle")}
-                            onClick={() => onRemove(file)}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
+                  const focused = index === safeFocusedIndex;
+                  return (
+                              <div
+                                className={`recent-row ${active ? "is-active" : ""}`}
+                                key={file.path || index}
+                                onContextMenu={(event) => handleContextMenu(event, file)}
+                              >
+                                <button
+                                  type="button"
+                                  className="recent-file"
+                                  role="option"
+                                  id={`sidebar-option-${listboxId}-${index}`}
+                                  aria-selected={active}
+                                  tabIndex={focused ? 0 : -1}
+                                  onClick={() => { setFocusedIndex(index); onSelect(file); }}
+                                  onFocus={() => setFocusedIndex(index)}
+                                  title={file.path}
+                                  aria-current={active ? "true" : undefined}
+                                >
+                                  <FileTypeIcon type={detectCategory(file.path)} size={38} extension={file.extension} />
+                                  <span className="recent-file-copy">
+                                    <strong>{file.name}</strong>
+                                    <small>{file.extension || t("fileTypeSuffix")}</small>
+                                  </span>
+                                  {active && <span className="active-flag" aria-label={t("currentFileFlag")}>●</span>}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="recent-remove"
+                                  aria-label={tf("removeFromRecent", { name: file.name })}
+                                  title={t("removeFromListTitle")}
+                                  onClick={() => onRemove(file)}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+                        {focusedFile ? tf("sidebarItemAnnounce", { name: focusedFile.name, position: safeFocusedIndex + 1, total: files.length }) : ""}
+                      </div>
 
                 <RecentFileContextMenu
                   open={menuState !== null}

@@ -758,6 +758,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
 .recent-list .recent-file.is-active,
 .recent-list .recent-file:focus-visible { animation: none; }
 .recent-file:focus-visible { outline:2px solid var(--mario-yellow); outline-offset:-2px; }
+.recent-list:focus-visible { outline:2px solid var(--mario-yellow); outline-offset:-4px; border-radius:6px; }
 .recent-file.is-active { background:#2a2723; border-color:rgba(248,201,43,.18); box-shadow:inset 2px 0 var(--mario-yellow); }
 .recent-file-copy { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
 .recent-file-copy strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#e9e4dc; font-size:12px; font-weight:750; }

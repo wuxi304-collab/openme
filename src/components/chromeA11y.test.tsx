@@ -89,8 +89,11 @@ describe("Sidebar a11y recent list", () => {
         <Sidebar files={files} selectedPath="/tmp/foo.pdf" onSelect={() => undefined} onRemove={() => undefined} onOpenDialog={() => undefined} />
       </Providers>,
     );
-    const buttons = screen.getAllByRole("button");
-    const selected = buttons.find((b) => b.textContent && b.textContent.includes("foo"));
+    // The recent list is now a listbox with role="option" rows (not bare
+    // <button> elements) — this matches the WAI-ARIA listbox pattern and
+    // enables roving-tabindex keyboard navigation between rows.
+    const options = screen.getAllByRole("option");
+    const selected = options.find((b) => b.textContent && b.textContent.includes("foo"));
     expect(selected).toBeTruthy();
     expect(selected && selected.getAttribute("aria-current")).toBe("true");
   });
@@ -101,19 +104,21 @@ describe("Sidebar a11y recent list", () => {
         <Sidebar files={files} selectedPath="/tmp/foo.pdf" onSelect={() => undefined} onRemove={() => undefined} onOpenDialog={() => undefined} />
       </Providers>,
     );
-    const buttons = screen.getAllByRole("button");
-    const other = buttons.find((b) => b.textContent && b.textContent.includes("bar"));
+    const options = screen.getAllByRole("option");
+    const other = options.find((b) => b.textContent && b.textContent.includes("bar"));
     expect(other).toBeTruthy();
     expect(other && other.getAttribute("aria-current")).toBeFalsy();
   });
 
-  it("marks the recent list as role=list with a localized aria-label", () => {
+  it("marks the recent list as role=listbox with a localized aria-label", () => {
     const { container } = render(
       <Providers>
         <Sidebar files={files} selectedPath={null} onSelect={() => undefined} onRemove={() => undefined} onOpenDialog={() => undefined} />
       </Providers>,
     );
-    const list = container.querySelector('[role="list"]');
+    // listbox role enables roving tabindex keyboard navigation; aria-label
+    // gives screen readers a localised name like "Recent files".
+    const list = container.querySelector('[role="listbox"]');
     expect(list).not.toBeNull();
     expect(list && list.getAttribute("aria-label")).toBeTruthy();
   });

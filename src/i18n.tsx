@@ -63,6 +63,8 @@ export const translations: Record<string, Record<string, string>> = {
     sidebarRecentA11y: "最近打开的文件列表",
     sidebarEmptyBrowse: "选择文件",
     sidebarEmptyDropShort: "或者直接把文件拖到这里",
+        sidebarItemAnnounce: "已选中 {name}，第 {position} 个，共 {total} 个",
+        sidebarEmptyA11y: "最近打开列表为空，使用上方打开文件按钮添加",
 
     // Hero / EmptyState
     heroEyebrow: "OPENME WORKSPACE",
@@ -1305,6 +1307,8 @@ export const translations: Record<string, Record<string, string>> = {
     sidebarRecentA11y: "Recently opened files",
     sidebarEmptyBrowse: "Pick files",
     sidebarEmptyDropShort: "Or drop a file here",
+        sidebarItemAnnounce: "Selected {name}, position {position} of {total}",
+        sidebarEmptyA11y: "Recent list is empty. Use the Open file button above to add files.",
 
     // Hero / EmptyState
     heroEyebrow: "OPENME WORKSPACE",
