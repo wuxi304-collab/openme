@@ -206,6 +206,25 @@
   padding: 0 16px;
 }
 
+/* Secondary action — quieter visual treatment so the primary CTA still
+ * reads as the default. Used for "try anyway" / override flows (e.g. the
+ * AudioUnsupported card letting the user force the built-in player even
+ * after the codec probe said no). */
+.viewer-error-actions .btn-mario.is-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .viewer-error-actions .btn-mario.is-secondary:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent);
+    color: var(--text-primary);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .viewer-error-close {
     transition: none;

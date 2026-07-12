@@ -66,6 +66,11 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
   // audio element.  This state is populated by the effect below once
   // the source URL is known.
   const [codecProbe, setCodecProbe] = useState<AudioProbeResult | null>(null);
+    // User-driven override: when the probe says "unsupported" the user can
+    // still try the built-in player anyway (the probe can false-positive on
+    // a cold cache, exotic muxing, or a transient protocol hiccup). When
+    // this flips true we restore the <audio> src and ignore the probe.
+    const [probeOverride, setProbeOverride] = useState(false);
 
   // Transport state.
   const [playing, setPlaying] = useState(false);
@@ -130,6 +135,7 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
     setDuration(null);
     setAbLoop(null);
     setCodecProbe(null);
+        setProbeOverride(false);
 
     // 1) read tags + cover
     window.electronAPI.getAudioMetadata(filePath)
@@ -470,7 +476,7 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
           <div className="ll-cell"><span className="ll-cell-k">{t("losslessDuration")}</span><span className="ll-cell-v">{formatDuration(totalDuration)}</span></div>
         </div>
 
-        {codecProbe?.status === "unsupported" ? (
+        {codecProbe?.status === "unsupported" && !probeOverride ? (
           <AudioUnsupported
             filePath={filePath}
             probe={codecProbe}
@@ -478,8 +484,9 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
             bitDepth={meta?.format.bitsPerSample ?? null}
             sampleRate={meta?.format.sampleRate ?? null}
             channels={meta?.format.channels ?? null}
-          />
-        ) : null}
+                    onTryAnyway={() => setProbeOverride(true)}
+                  />
+                ) : null}
 
         <div className="ll-progress">
                   <div className="ll-times">
@@ -597,7 +604,7 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
 
       <audio
         ref={audioRef}
-        src={codecProbe?.status === "unsupported" ? undefined : (source ?? undefined)}
+              src={codecProbe?.status === "unsupported" && !probeOverride ? undefined : (source ?? undefined)}
         preload="metadata"
         onError={() => setError(t("mediaCodecUnsupported"))}
       >

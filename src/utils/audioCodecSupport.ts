@@ -11,6 +11,14 @@
 // it at the resolved `openme-media://` URL and wait for `loadedmetadata` or
 // `error`. The probe result is cached so it only fires once per file path.
 //
+// Important: the probe `<audio>` is briefly attached to `document.body`
+// while it runs. Chromium refuses to fetch a non-`http(s)` scheme (e.g. our
+// `openme-media://`) from a detached element, so a probe that looked fine in
+// unit tests would silently time out in production and flag every FLAC as
+// unsupported. Attaching the element for the duration of the check keeps the
+// pipeline honest; we detach and clear `src` in `finalize` so the element
+// never lingers in the layout.
+//
 // The reason we don't just defer to Chromium's `error` event on the player's
 // main `<audio>` is that we want a *specific* reason string ("DSD over PCM is
 // not part of Chromium's bundled FFmpeg") to drive the right external-app
@@ -119,44 +127,56 @@ export function probeAudioSupport(
   const result: AudioProbeResult = { status: "probing" };
   probeCache.set(key, result);
 
-  return new Promise<AudioProbeResult>((resolveP) => {
-    const finalize = (next: AudioProbeResult) => {
-      probeCache.set(key, next);
-      resolveP(next);
-      // Quietly tear down — the element is never attached to the DOM.
-      audio.removeAttribute("src");
-      audio.load();
-    };
+    // Chromium only kicks off the fetch when the <audio> element is actually
+    // attached to a document. A detached Audio() looks fine in tests but
+    // never receives `loadedmetadata` for protocol URLs in production — which
+    // caused every FLAC / WAV to silently time out and fall through to the
+    // unsupported card. We append the probe to <body>, run it, then detach.
+    const attachTarget = (typeof document !== "undefined" && document.body) || null;
+    if (attachTarget) attachTarget.appendChild(audio);
 
-    const settled: Partial<AudioProbeResult> = {};
-    audio.preload = "metadata";
-    audio.addEventListener("loadedmetadata", () => {
-      settled.status = "supported";
-      finalize({ ...result, ...settled });
-    });
-    audio.addEventListener("error", () => {
-      settled.status = "unsupported";
-      settled.code = audio.error?.code;
-      settled.reasonKey = deriveReasonKey(extensionOf(filePath), settled.code);
-      settled.extension = extensionOf(filePath);
-      finalize({ ...result, ...settled });
-    });
-    audio.src = sourceUrl;
+    return new Promise<AudioProbeResult>((resolveP) => {
+      const finalize = (next: AudioProbeResult) => {
+        probeCache.set(key, next);
+        resolveP(next);
+        // Quietly tear down — clear src, force load() to release the network
+        // request, then detach so the element doesn't linger in the layout.
+        audio.removeAttribute("src");
+        audio.load();
+        if (attachTarget && audio.parentNode === attachTarget) {
+          attachTarget.removeChild(audio);
+        }
+      };
 
-    // Hard timeout so a stalled fetch never blocks the UI forever.
-    const timeoutMs = options.timeoutMs ?? 4000;
-    setTimeout(() => {
-      if (probeCache.get(key)?.status === "probing") {
-        finalize({
-          status: "unsupported",
-          code: 4,
-          reasonKey: deriveReasonKey(extensionOf(filePath)),
-          extension: extensionOf(filePath),
-        });
-      }
-    }, timeoutMs);
-  });
-}
+      const settled: Partial<AudioProbeResult> = {};
+      audio.preload = "metadata";
+      audio.addEventListener("loadedmetadata", () => {
+        settled.status = "supported";
+        finalize({ ...result, ...settled });
+      });
+      audio.addEventListener("error", () => {
+        settled.status = "unsupported";
+        settled.code = audio.error?.code;
+        settled.reasonKey = deriveReasonKey(extensionOf(filePath), settled.code);
+        settled.extension = extensionOf(filePath);
+        finalize({ ...result, ...settled });
+      });
+      audio.src = sourceUrl;
+
+      // Hard timeout so a stalled fetch never blocks the UI forever.
+      const timeoutMs = options.timeoutMs ?? 2500;
+      setTimeout(() => {
+        if (probeCache.get(key)?.status === "probing") {
+          finalize({
+            status: "unsupported",
+            code: 4,
+            reasonKey: deriveReasonKey(extensionOf(filePath)),
+            extension: extensionOf(filePath),
+          });
+        }
+      }, timeoutMs);
+    });
+  }
 
 export const AUDIO_PROBE_EXTS = [
   ".dsf", ".dff", ".ape", ".wma", ".tak", ".aif", ".aiff", ".alac", ".wv",
