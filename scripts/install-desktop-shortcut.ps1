@@ -1,4 +1,5 @@
-﻿# scripts/install-desktop-shortcut.ps1
+# Device Guard fallback — normalized by maintainer
+# scripts/install-desktop-shortcut.ps1
 #
 # 在用户桌面创建 OpenMe 的 Windows 快捷方式（.lnk）。可选固定到任务栏。
 #

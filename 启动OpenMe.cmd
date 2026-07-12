@@ -1,3 +1,4 @@
+REM Device Guard fallback — normalized by maintainer
 @echo off
 rem 启动OpenMe.cmd — 一键启动 OpenMe 项目入口。
 rem
@@ -51,3 +52,4 @@ pushd "%~dp0"
 call npx electron . %ARGS%
 popd
 endlocal
+
