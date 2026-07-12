@@ -47,33 +47,91 @@ export default function StatusBarFormatPopover({
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const [copyFlash, setCopyFlash] = useState<null | "path">(null);
 
-  // Close on outside click. Capture-phase so we beat any inner stopPropagation.
-  useEffect(() => {
-    if (!anchor) return;
-    const handler = (event: MouseEvent) => {
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-      if (popoverRef.current?.contains(target)) return;
-      if (anchor.contains(target)) return;
+    // Close + restore focus to the trigger. Centralised so outside-click, Escape,
+    // and the close button all behave identically.
+    const closeAndRestoreFocus = () => {
       onClose();
+      // Defer focus so React has a chance to unmount the popover first; otherwise
+      // the focus call lands on a detached node in some browsers.
+      window.setTimeout(() => anchor?.focus(), 0);
     };
-    document.addEventListener("mousedown", handler, true);
-    return () => document.removeEventListener("mousedown", handler, true);
-  }, [anchor, onClose]);
 
-  // Close on Escape, restore focus to the trigger.
-  useEffect(() => {
-    if (!anchor) return;
-    const handler = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-        anchor.focus();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [anchor, onClose]);
+    // Close on outside click. Capture-phase so we beat any inner stopPropagation.
+    useEffect(() => {
+      if (!anchor) return;
+      const handler = (event: MouseEvent) => {
+        const target = event.target;
+        if (!(target instanceof Node)) return;
+        if (popoverRef.current?.contains(target)) return;
+        if (anchor.contains(target)) return;
+        closeAndRestoreFocus();
+      };
+      document.addEventListener("mousedown", handler, true);
+      return () => document.removeEventListener("mousedown", handler, true);
+      // closeAndRestoreFocus intentionally not in deps — it is stable per render
+      // and re-running the effect on every render would re-bind a fresh listener
+      // on every state change.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [anchor, onClose]);
+
+    // Close on Escape, restore focus to the trigger. Capture-phase for consistency
+    // with Sidebar / RecentFileContextMenu keynav patterns.
+    useEffect(() => {
+      if (!anchor) return;
+      const handler = (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeAndRestoreFocus();
+        }
+      };
+      document.addEventListener("keydown", handler, true);
+      return () => document.removeEventListener("keydown", handler, true);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [anchor, onClose]);
+
+    // Auto-focus the first focusable element on mount so keyboard users land
+    // inside the popover. setTimeout(0) so React commits the children first; it
+    // is also jsdom-friendly (rAF does not flush in jsdom).
+    useEffect(() => {
+      if (!popoverRef.current) return;
+      const id = window.setTimeout(() => {
+        const root = popoverRef.current;
+        if (!root) return;
+        const first = root.querySelector<HTMLElement>(
+          'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        );
+        first?.focus();
+      }, 0);
+      return () => window.clearTimeout(id);
+    }, []);
+
+    // Tab/Shift+Tab focus trap: keep keyboard focus inside the popover. Capture-
+    // phase so we can intercept Tab before the browser moves focus into the page.
+    useEffect(() => {
+      const handler = (event: KeyboardEvent) => {
+        if (event.key !== "Tab") return;
+        const root = popoverRef.current;
+        if (!root) return;
+        const focusables = Array.from(
+          root.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter((el) => !el.hasAttribute("aria-hidden"));
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+        if (event.shiftKey && active === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && active === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      };
+      document.addEventListener("keydown", handler, true);
+      return () => document.removeEventListener("keydown", handler, true);
+    }, []);
 
   const suggestedApps = getExternalAppHints(
     extension,
@@ -192,14 +250,11 @@ export default function StatusBarFormatPopover({
       </div>
 
       <button
-        type="button"
-        className="status-format-popover-close"
-        aria-label={t("statusPopoverClose")}
-        onClick={() => {
-          onClose();
-          anchor?.focus();
-        }}
-      >
+              type="button"
+              className="status-format-popover-close"
+              aria-label={t("statusPopoverClose")}
+              onClick={closeAndRestoreFocus}
+            >
         <span aria-hidden="true">{"\u00d7"}</span>
       </button>
     </div>
