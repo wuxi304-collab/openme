@@ -40,8 +40,10 @@ export default function RecentFileContextMenu({
 }: RecentFileContextMenuProps) {
   const { t } = useI18n();
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const restoredFocusRef = useRef<HTMLElement | null>(null);
   const [copyFlash, setCopyFlash] = useState<"" | "ok" | "fail">("");
+  const [focusedIndex, setFocusedIndex] = useState(0);
 
   // Capture focus before mounting so we can restore it when the menu closes.
   useEffect(() => {
@@ -50,15 +52,61 @@ export default function RecentFileContextMenu({
     const active = document.activeElement;
     restoredFocusRef.current = active instanceof HTMLElement ? active : null;
     setCopyFlash("");
+    setFocusedIndex(0);
   }, [open]);
 
-  // Close on Escape; outside-click handled below via mousedown capture.
+  // After the menu mounts on each open, focus the first item so the user can
+  // immediately drive the menu with ArrowUp/Down. Without this, the menu
+  // satisfies role="menu" but is unusable from the keyboard alone.
+  useEffect(() => {
+    if (!open) return undefined;
+    // Defer to next macrotask so React has committed the items; the previous
+    // Sidebar keynav pattern used requestAnimationFrame but jsdom never
+    // flushes rAF, breaking tests. setTimeout(0) always flushes in jsdom.
+    const id = window.setTimeout(() => {
+      itemRefs.current[focusedIndex]?.focus();
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [open, focusedIndex]);
+
+  // Close on Escape; ArrowDown/Up navigate the items; Home/End jump to first/
+  // last. Outside-click handled below via mousedown capture.
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e: KeyboardEvent) => {
+      // Don't double-handle Enter / Space — the menuitems are <button>s and
+      // those keys already activate them via native click handling.
+      const targetInMenu = menuRef.current?.contains(document.activeElement ?? null);
       if (e.key === "Escape") {
         e.stopPropagation();
         onClose();
+        return;
+      }
+      if (!targetInMenu) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setFocusedIndex((prev) => {
+          const next = (prev + 1) % itemRefs.current.length;
+          itemRefs.current[next]?.focus();
+          return next;
+        });
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setFocusedIndex((prev) => {
+          const length = itemRefs.current.length;
+          const next = (prev - 1 + length) % length;
+          itemRefs.current[next]?.focus();
+          return next;
+        });
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        setFocusedIndex(0);
+        itemRefs.current[0]?.focus();
+      } else if (e.key === "End") {
+        e.preventDefault();
+        const last = itemRefs.current.length - 1;
+        setFocusedIndex(last);
+        itemRefs.current[last]?.focus();
       }
     };
     window.addEventListener("keydown", onKey, true);
@@ -131,12 +179,19 @@ export default function RecentFileContextMenu({
       style={{ left: `${left}px`, top: `${top}px` }}
     >
       <ul className="recent-context-menu-list">
-        {items.map((item) => (
+        {items.map((item, index) => (
           <li key={item.key} role="none">
             <button
+              ref={(el) => {
+                itemRefs.current[index] = el;
+              }}
               type="button"
               role="menuitem"
-              className={`recent-context-menu-item${item.destructive ? " is-destructive" : ""}${item.key === "copy" && copyFlash === "ok" ? " is-success" : ""}${item.key === "copy" && copyFlash === "fail" ? " is-error" : ""}`}
+              // Roving tabindex: only the currently focused item is in the
+              // tab sequence, so Tab leaves the menu instead of stepping
+              // through every action.
+              tabIndex={index === focusedIndex ? 0 : -1}
+              className={`recent-context-menu-item${item.destructive ? " is-destructive" : ""}${item.key === "copy" && copyFlash === "ok" ? " is-success" : ""}${item.key === "copy" && copyFlash === "fail" ? " is-error" : ""}${index === focusedIndex ? " is-focused" : ""}`}
               onClick={(event) => {
                 event.stopPropagation();
                 item.onSelect();
@@ -144,6 +199,12 @@ export default function RecentFileContextMenu({
                 // for the feedback flash.
                 if (item.key !== "copy") onClose();
               }}
+              onMouseEnter={(event) => {
+                // Hover moves focus marker so visual state and keyboard state agree
+                setFocusedIndex(index);
+                event.currentTarget.focus({ preventScroll: true });
+              }}
+              onFocus={() => setFocusedIndex(index)}
             >
               <span className="recent-context-menu-item-label">{item.label}</span>
             </button>
