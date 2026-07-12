@@ -13,32 +13,61 @@ type AnyWindow = Window & { webkitAudioContext?: typeof AudioContext };
 // jsdom doesn't ship an AudioContext by default. We mock the minimum the
 // engine touches: createGain / createAnalyser / createBufferSource /
 // createChannelSplitter / close / resume.
+//
+// The mock tracks every `node.connect(target)` call so we can assert
+// that the audio graph actually reaches ctx.destination. (PR #146 had
+// a regression where the wiring left splitter → analysers dangling and
+// the audible path gainNode → analyser → destination was a single point
+// of failure; the test below verifies the new wiring.)
 function installAudioContextMock() {
   const listeners: Array<() => void> = [];
+  // graph: Map<nodeId, Array<{ target: nodeId | "destination", channel?: number }>>
+  const graph = new Map<string, Array<{ target: string; channel?: number }>>();
+  let nodeCounter = 0;
+  function newNodeId(): string { nodeCounter += 1; return `n${nodeCounter}`; }
+  function trackConnect(from: string, to: string, channel?: number): void {
+    let list = graph.get(from);
+    if (!list) { list = []; graph.set(from, list); }
+    list.push({ target: to, channel });
+  }
 
 let mockNow = 0;
+class MockAudioNode {
+  public id: string;
+  constructor() { this.id = newNodeId(); graph.set(this.id, []); }
+  connect(other: any, channel?: number) {
+    if (other === "destination" || (other && other.id === "__ctx_destination__")) {
+      trackConnect(this.id, "__ctx_destination__", channel);
+    } else if (other && typeof other === "object" && "id" in other) {
+      trackConnect(this.id, (other as { id: string }).id, channel);
+    }
+    return other;
+  }
+}
 class MockAudioContext {
   public state: "running" | "suspended" | "closed" = "running";
   // We expose currentTime as a getter so the engine reads the latest value.
   public get currentTime() { return mockNow; }
-  public destination = {} as unknown as AudioDestinationNode;
+  public destination = { id: "__ctx_destination__" } as unknown as AudioDestinationNode;
   createGain(): any {
-    return { gain: { value: 1 }, connect: () => undefined };
+    const node = new MockAudioNode();
+    return Object.assign(node, { gain: { value: 1 } });
   }
   createAnalyser(): any {
-    return { fftSize: 1024, smoothingTimeConstant: 0, connect: () => undefined };
+    const node = new MockAudioNode();
+    return Object.assign(node, { fftSize: 1024, smoothingTimeConstant: 0 });
   }
   createBufferSource(): any {
-    return {
+    const node = new MockAudioNode();
+    return Object.assign(node, {
       buffer: null,
       onended: null as null | (() => void),
-      connect: () => undefined,
       start: () => undefined,
       stop: () => undefined,
-    };
+    });
   }
   createChannelSplitter(_n: number): any {
-    return { connect: () => undefined };
+    return new MockAudioNode();
   }
   createBuffer(channels: number, length: number, sampleRate: number): AudioBuffer {
     const chans: Float32Array[] = [];
@@ -59,9 +88,26 @@ class MockAudioContext {
     (this as unknown as { state: "running" }).state = "running";
     return Promise.resolve();
   }
+  // Helper for tests: does any path from the given node reach destination?
+  reachesDestination(nodeId: string): boolean {
+    const seen = new Set<string>();
+    const stack: string[] = [nodeId];
+    while (stack.length) {
+      const cur = stack.pop()!;
+      if (cur === "__ctx_destination__") return true;
+      if (seen.has(cur)) continue;
+      seen.add(cur);
+      const edges = graph.get(cur) || [];
+      for (const e of edges) stack.push(e.target);
+    }
+    return false;
+  }
 }
 (globalThis as any).AudioContext = MockAudioContext;
 (window as AnyWindow).AudioContext = MockAudioContext as unknown as typeof AudioContext;
+
+  (globalThis as any).__mockAudioGraph = graph;
+  (globalThis as any).__mockAudioContextCtor = MockAudioContext;
 
   // requestAnimationFrame polyfill — flush every tick synchronously when
   // we run `tickNow(0)`. The engine uses rAF for its time-update ticker.
@@ -210,4 +256,43 @@ describe("AudioEngine (PR #146)", () => {
     expect(() => eng.dispose()).not.toThrow();
     expect(eng.getState()).toBe("idle");
   });
+
+    it("audio graph wiring reaches ctx.destination (PR #146 hotfix)", () => {
+      // Regression guard: the previous wiring left the splitter→analysers
+      // chain dangling and relied on gainNode→analyser→destination as the
+      // sole audio path — a single point of failure if the analyser is
+      // muted or its channelCountMode is wrong. The fix routes audio via
+      // splitter → destination and keeps the analyser as a metering-only
+      // tap. Verify that:
+      //   (a) the splitter has a direct edge to ctx.destination, AND
+      //   (b) the BufferSource (after play) can reach destination.
+      const graph = (globalThis as { __mockAudioGraph: Map<string, Array<{ target: string; channel?: number }>> }).__mockAudioGraph;
+      const eng = new AudioEngine();
+      const ctx = new AudioContext();
+      const buf = ctx.createBuffer(2, 48000, 48000);
+      eng.load(buf);
+      eng.play();
+      const ctxAsMock = ctx as unknown as { reachesDestination: (id: string) => boolean };
+      // (a) Find the splitter by topology: 3 outgoing edges (dest + 2 analysers).
+      let splitterId: string | null = null;
+      for (const [id, edges] of graph) {
+        if (edges.length === 3) { splitterId = id; break; }
+      }
+      expect(splitterId).toBeTruthy();
+      // splitter must connect to destination.
+      const destEdges = graph.get(splitterId!)?.filter((e) => e.target === "__ctx_destination__") ?? [];
+      expect(destEdges.length).toBeGreaterThanOrEqual(1);
+      // From splitter we must be able to traverse to destination.
+      expect(ctxAsMock.reachesDestination(splitterId!)).toBe(true);
+      // (b) Source — last node added during play() — must reach destination.
+      const oneEdgeNodes: string[] = [];
+      for (const [id, edges] of graph) {
+        if (edges.length === 1) oneEdgeNodes.push(id);
+      }
+      oneEdgeNodes.sort();
+      const sourceId = oneEdgeNodes[oneEdgeNodes.length - 1];
+      expect(sourceId).toBeTruthy();
+      expect(ctxAsMock.reachesDestination(sourceId!)).toBe(true);
+      eng.dispose();
+    });
 });
