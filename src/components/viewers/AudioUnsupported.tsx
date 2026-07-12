@@ -52,7 +52,7 @@ export default function AudioUnsupported({
     <div className="audio-unsupported">
       <ViewerError
         title={t("mediaUnsupportedTitle")}
-        badge={t("losslessBadgeAudio")}
+        badge={t("mediaBadgeAudio")}
         caption={fileName}
         message={reason}
         action={{ label: t("mediaUnsupportedActionSystem"), onClick: openInSystem }}
