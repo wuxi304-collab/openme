@@ -8,6 +8,7 @@ const { pathToFileURL } = require("url");
 const { readEpub } = require("./epub");
 const { ipcError } = require("./ipcErrors");
 const mm = require("music-metadata");
+const audioFfmpeg = require("./audioFfmpeg");
 
 // Allow managed environments to place Chromium state in an explicitly writable directory.
 if (process.env.OPENME_USER_DATA_DIR) {
@@ -1082,6 +1083,155 @@ ipcMain.handle("get-audio-format", async (_, filePath) => {
     log.error("get-audio-format failed", e);
     return ipcError("AUDIO_METADATA_FAILED", { message: e && e.message ? e.message : String(e) });
   }
+});
+
+// -----------------------------------------------------------------------------
+// Universal audio decoder (ffmpeg-static, raw f32le PCM over IPC).
+//
+// Renderer → main  : "decode-audio-pcm"   { filePath, requestId, options? }
+// main     → rend  : "audio-pcm-meta"     { requestId, ok, sampleRate, channels, durationSec, bitDepth, codec, container, lossless }
+// main     → rend  : "audio-pcm-chunk"    { requestId, seq, bytes: ArrayBuffer }
+// main     → rend  : "audio-pcm-done"     { requestId, ok, totalBytes, error? }
+// renderer → main  : "decode-audio-cancel"  { requestId }
+//
+// Each renderer request gets a unique requestId so multiple tabs can decode
+// in flight simultaneously. The main process keeps a per-id handle so the
+// renderer can cancel a running decode (e.g. user jumped to a new track).
+// -----------------------------------------------------------------------------
+
+const activeAudioDecodes = new Map();
+let audioDecodeSeq = 0;
+
+function nextAudioDecodeRequestId() {
+  audioDecodeSeq = (audioDecodeSeq + 1) >>> 0;
+  return `audec-${Date.now().toString(36)}-${audioDecodeSeq.toString(36)}`;
+}
+
+ipcMain.handle("decode-audio-pcm", async (event, payload) => {
+  const sender = event.sender;
+  const filePath = payload && typeof payload.filePath === "string" ? payload.filePath : "";
+  const requestId = payload && typeof payload.requestId === "string" && payload.requestId
+    ? payload.requestId
+    : nextAudioDecodeRequestId();
+  const options = payload && typeof payload.options === "object" && payload.options ? payload.options : {};
+
+  if (!filePath) {
+    return { ok: false, requestId, error: { code: "BAD_REQUEST", message: "filePath missing" } };
+  }
+
+  // Resolve + validate up-front.
+  let resolved;
+  try {
+    resolved = path.resolve(filePath);
+    if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {
+      return { ok: false, requestId, error: { code: "MEDIA_NOT_FOUND", message: "file not found" } };
+    }
+  } catch (e) {
+    return { ok: false, requestId, error: { code: "MEDIA_NOT_FOUND", message: e.message } };
+  }
+
+  // Pre-parse metadata via music-metadata (fast, no ffmpeg spawn) so the
+  // renderer can paint the badge + duration immediately while the PCM
+  // stream is still arriving.
+  let meta = null;
+  try {
+    const parsed = await mm.parseFile(resolved, { duration: true, skipCovers: true });
+    const f = parsed && parsed.format ? parsed.format : {};
+    meta = {
+      sampleRate: typeof f.sampleRate === "number" ? f.sampleRate : null,
+      channels: typeof f.numberOfChannels === "number" ? f.numberOfChannels : null,
+      bitDepth: typeof f.bitsPerSample === "number" ? f.bitsPerSample : null,
+      durationSec: typeof f.duration === "number" ? f.duration : null,
+      codec: f.codec || null,
+      container: f.container || null,
+      lossless: typeof f.lossless === "boolean" ? f.lossless : null,
+      bitrate: typeof f.bitrate === "number" ? Math.round(f.bitrate) : null,
+    };
+  } catch (e) {
+    log.warn("decode-audio-pcm: music-metadata probe failed (continuing)", e.message);
+  }
+
+  // Kick off the ffmpeg decode.
+  const handle = audioFfmpeg.decodeAudioPcm(resolved, options, (chunk) => {
+    if (sender.isDestroyed()) return;
+    // Send a structured-cloneable ArrayBuffer view across IPC.
+    // chunk is a Uint8Array; we copy the bytes so the underlying buffer
+    // can be recycled safely between spawn ticks.
+    const copy = new Uint8Array(chunk.byteLength);
+    copy.set(chunk);
+    sender.send("audio-pcm-chunk", { requestId, seq: -1, bytes: copy.buffer });
+  });
+
+  if (handle.error) {
+    return { ok: false, requestId, error: handle.error, meta };
+  }
+
+  const { proc } = handle;
+
+  // Send the meta event up front so the renderer can begin allocating
+  // its AudioBuffer right away.
+  try {
+    sender.send("audio-pcm-meta", {
+      requestId,
+      ok: true,
+      meta,
+    });
+  } catch (e) {
+    log.warn("decode-audio-pcm: send meta failed", e.message);
+  }
+
+  activeAudioDecodes.set(requestId, { proc, filePath: resolved, sender });
+
+  // Resolve the invoke() promise once ffmpeg exits so the renderer can
+  // await completion. We don't return the chunks here — those go via
+  // the audio-pcm-chunk / audio-pcm-done events.
+  return new Promise((resolve) => {
+    proc.on("error", (err) => {
+      log.error("audioFfmpeg: proc error", requestId, err);
+      activeAudioDecodes.delete(requestId);
+      try {
+        sender.send("audio-pcm-done", { requestId, ok: false, totalBytes: 0, error: { code: "FFMPEG_RUNTIME_ERROR", message: err.message } });
+      } catch (_) { /* sender destroyed */ }
+      resolve({ ok: false, requestId, error: { code: "FFMPEG_RUNTIME_ERROR", message: err.message } });
+    });
+    proc.on("close", (code, signal) => {
+      activeAudioDecodes.delete(requestId);
+      const totalBytes = handle.totalBytesRef ? handle.totalBytesRef() : 0;
+      if (code === 0) {
+        try { sender.send("audio-pcm-done", { requestId, ok: true, totalBytes }); } catch (_) { /* ignore */ }
+        resolve({ ok: true, requestId, totalBytes });
+      } else {
+        const tail = (handle.stderrTail && handle.stderrTail()) || "";
+        const msg = tail.trim() || `ffmpeg exited with code ${code}${signal ? ` (signal ${signal})` : ""}`;
+        log.warn("audioFfmpeg: proc close non-zero", requestId, code, signal, msg);
+        try { sender.send("audio-pcm-done", { requestId, ok: false, totalBytes, error: { code: "FFMPEG_DECODE_FAILED", message: msg } }); } catch (_) { /* ignore */ }
+        resolve({ ok: false, requestId, totalBytes, error: { code: "FFMPEG_DECODE_FAILED", message: msg } });
+      }
+    });
+  });
+});
+
+ipcMain.on("decode-audio-cancel", (_event, payload) => {
+  const requestId = payload && typeof payload.requestId === "string" ? payload.requestId : "";
+  if (!requestId) return;
+  const handle = activeAudioDecodes.get(requestId);
+  if (!handle) return;
+  try {
+    handle.proc.kill("SIGKILL");
+  } catch (e) {
+    log.warn("decode-audio-cancel: kill failed", requestId, e.message);
+  }
+  activeAudioDecodes.delete(requestId);
+});
+
+ipcMain.handle("get-ffmpeg-info", () => {
+  // Lightweight probe so the renderer can show a "FFmpeg not available"
+  // message without a full decode attempt.
+  const p = audioFfmpeg.resolveFfmpegPath();
+  return {
+    available: Boolean(p),
+    path: p || null,
+  };
 });
 
 // Audio extensions the queue builder recognises. Mirrors the lossless +

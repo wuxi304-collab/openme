@@ -31,6 +31,8 @@ import {
   probeAudioSupport,
   type AudioProbeResult,
 } from "../../utils/audioCodecSupport";
+import { AudioEngine } from "./AudioEngine";
+import { AudioFfmpegDecoder, isFfmpegAvailable, setCachedFfmpegAvailability, type AudioFfmpegProgress } from "../../utils/audioFfmpegDecoder";
 import "../ViewerError.css";
 import "./LosslessAudioPlayer.css";
 
@@ -57,6 +59,9 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
   const { t, tf } = useI18n();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const engineRef = useRef<AudioEngine | null>(null);
+  const decoderRef = useRef<AudioFfmpegDecoder | null>(null);
+  const ffmpegTriedRef = useRef<string | null>(null);
 
   const [meta, setMeta] = useState<AudioMetadataResult | null>(null);
   const [source, setSource] = useState<string | null>(null);
@@ -66,11 +71,25 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
   // audio element.  This state is populated by the effect below once
   // the source URL is known.
   const [codecProbe, setCodecProbe] = useState<AudioProbeResult | null>(null);
-    // User-driven override: when the probe says "unsupported" the user can
-    // still try the built-in player anyway (the probe can false-positive on
-    // a cold cache, exotic muxing, or a transient protocol hiccup). When
-    // this flips true we restore the <audio> src and ignore the probe.
-    const [probeOverride, setProbeOverride] = useState(false);
+  // User-driven override: when the probe says "unsupported" the user can
+  // still try the built-in player anyway (the probe can false-positive on
+  // a cold cache, exotic muxing, or a transient protocol hiccup). When
+  // this flips true we restore the <audio> src and ignore the probe.
+  const [probeOverride, setProbeOverride] = useState(false);
+
+  // FFmpeg decode state. We use ffmpeg-static in the main process to
+  // decode every supported audio format (FLAC, ALAC, AIFF, DSD, APE,
+  // WavPack, TAK, WMA, ...) into raw f32le PCM, then load the resulting
+  // AudioBuffer into an AudioEngine driven by Web Audio. This avoids the
+  // "Chromium can't decode FLAC" failure that we used to surface via the
+  // runtime codec probe.
+  const [ffmpegAvailable] = useState<boolean>(() => {
+    try { return isFfmpegAvailable(); } catch { return false; }
+  });
+  const [decodeState, setDecodeState] = useState<"idle" | "decoding" | "ready" | "error">("idle");
+  const [decodeProgress, setDecodeProgress] = useState<AudioFfmpegProgress | null>(null);
+  const [, setDecodeError] = useState<string | null>(null);
+  const [engineReady, setEngineReady] = useState(false);
 
   // Transport state.
   const [playing, setPlaying] = useState(false);
@@ -123,6 +142,67 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = muted ? 0 : volume;
   }, [volume, muted]);
+
+  // Sync engine volume with state. The engine only exists when FFmpeg
+  // actually produced a usable AudioBuffer, otherwise `<audio>` handles
+  // playback and this effect is a no-op.
+  useEffect(() => {
+    engineRef.current?.setMuted(muted);
+    engineRef.current?.setVolume(volume);
+  }, [volume, muted]);
+
+  // Create the engine and decoder once. The engine is cheap to keep
+  // around (no audio decoding until you call .load()) and avoids the
+  // "audio context suspended on first interaction" dance by lazy-creating
+  // AudioContext on first play.
+  useEffect(() => {
+    let cancelled = false;
+    try {
+      engineRef.current = new AudioEngine();
+      decoderRef.current = new AudioFfmpegDecoder();
+    } catch (err) {
+      console.warn("AudioEngine init failed; falling back to <audio>:", err);
+      engineRef.current = null;
+      decoderRef.current = null;
+    }
+    // Probe ffmpeg availability asynchronously and cache the result so
+    // subsequent files immediately route to the engine (or skip it).
+    if (decoderRef.current) {
+      window.electronAPI?.getFfmpegInfo?.()
+        ?.then((info) => { if (!cancelled) setCachedFfmpegAvailability(Boolean(info?.available)); })
+        ?.catch(() => { if (!cancelled) setCachedFfmpegAvailability(false); });
+    }
+    return () => {
+      cancelled = true;
+      try { decoderRef.current?.dispose(); } catch { /* ignore */ }
+      try { engineRef.current?.dispose(); } catch { /* ignore */ }
+      engineRef.current = null;
+      decoderRef.current = null;
+      setEngineReady(false);
+    };
+  }, []);
+
+  // Wire engine events to React state. The engine emits `timeupdate` at
+  // ~30Hz from its audio-clock, and `statechange` when transport state
+  // changes (idle / loading / ready / playing / paused / ended / error).
+  //
+  // The statechange handler also needs to call `handleAdvance` when the
+  // engine finishes playback, but `handleAdvance` is declared further
+  // down. We bridge through a mutable ref so the registration effect can
+  // run before the handler is defined.
+  const handleAdvanceRef = useRef<((mode: "next" | "prev" | "end") => void) | null>(null);
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    const offTime = engine.on("timeupdate", (t) => setCurrentTime(t));
+    const offState = engine.on("statechange", (s) => {
+      if (s === "ended") handleAdvanceRef.current?.("end");
+      setPlaying(s === "playing");
+      if (s === "ready" || s === "paused" || s === "playing") setEngineReady(true);
+      if (s === "error") setError(t("mediaCodecUnsupported"));
+    });
+    return () => { offTime(); offState(); };
+  }, [t]);
 
   // Load metadata + media URL on filePath change.
   useEffect(() => {
@@ -183,6 +263,67 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
     return () => { disposed = true; };
   }, [filePath, t]);
 
+  // Decode the current file via FFmpeg (main process) and load the result
+  // into the Web Audio engine. This makes the player work for every
+  // format Chromium's bundled codecs don't natively support: FLAC, ALAC,
+  // AIFF, APE, DSD, WavPack, TAK, WMA, etc.
+  useEffect(() => {
+    if (!ffmpegAvailable) return;
+    const decoder = decoderRef.current;
+    const engine = engineRef.current;
+    if (!decoder || !engine) return;
+
+    // Reset engine + per-track decode state.
+    engine.stop();
+    setDecodeState("decoding");
+    setDecodeProgress(null);
+    setDecodeError(null);
+    setEngineReady(false);
+
+    let cancelled = false;
+    ffmpegTriedRef.current = filePath;
+
+    decoder
+      .decode(filePath, {
+        targetSampleRate: 48000,
+        targetChannels: 2,
+        onProgress: (p) => {
+          if (cancelled) return;
+          setDecodeProgress(p);
+        },
+      })
+      .then(async (result) => {
+        if (cancelled) {
+          try { result.audioBuffer?.getChannelData(0); /* ensure exists */ } catch { /* */ }
+          return;
+        }
+        try {
+          await engine.load(result.audioBuffer);
+          if (!cancelled) {
+            setDecodeState("ready");
+            setEngineReady(true);
+            if (result.meta?.durationSec) setDuration(result.meta.durationSec);
+          }
+        } catch (err) {
+          if (!cancelled) {
+            setDecodeState("error");
+            setDecodeError(err instanceof Error ? err.message : String(err));
+          }
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        // FFmpeg failed — fall through to the HTML5 <audio> fallback path.
+        setDecodeState("error");
+        setDecodeError(err instanceof Error ? err.message : String(err));
+      });
+
+    return () => {
+      cancelled = true;
+      decoder.cancel();
+    };
+  }, [filePath, ffmpegAvailable]);
+
   // Wire HTMLAudioElement events to React state.
   useEffect(() => {
     const el = audioRef.current;
@@ -217,28 +358,56 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
   useEffect(() => {
     if (!abLoop) return;
     if (currentTime >= abLoop.b && abLoop.b > abLoop.a) {
-      const el = audioRef.current;
-      if (el) el.currentTime = abLoop.a;
+      if (engineRef.current && engineReady) {
+        engineRef.current.seek(abLoop.a);
+      } else {
+        const el = audioRef.current;
+        if (el) el.currentTime = abLoop.a;
+      }
     }
-  }, [currentTime, abLoop]);
+  }, [currentTime, abLoop, engineReady]);
 
-  const play = useCallback(() => { audioRef.current?.play().catch(() => undefined); }, []);
+  const play = useCallback(() => {
+    if (engineRef.current && engineReady) {
+      try { engineRef.current.play(); } catch { /* ignore */ }
+      return;
+    }
+    audioRef.current?.play().catch(() => undefined);
+  }, [engineReady]);
   const togglePlay = useCallback(() => {
+    const engine = engineRef.current;
+    if (engine && engineReady) {
+      try {
+        if (engine.getState() === "playing") engine.pause();
+        else engine.play();
+      } catch { /* ignore */ }
+      return;
+    }
     const el = audioRef.current;
     if (!el) return;
     if (el.paused) el.play().catch(() => undefined);
     else el.pause();
-  }, []);
+  }, [engineReady]);
   const seek = useCallback((time: number) => {
-      const el = audioRef.current;
-      if (!el) return;
-      el.currentTime = Math.max(0, Math.min(time, el.duration || time));
-    }, []);
-    const seekBy = useCallback((delta: number) => {
-      const el = audioRef.current;
-      if (!el) return;
-      el.currentTime = Math.max(0, Math.min((el.currentTime || 0) + delta, el.duration || Infinity));
-    }, []);
+    if (engineRef.current && engineReady) {
+      try { engineRef.current.seek(time); } catch { /* ignore */ }
+      return;
+    }
+    const el = audioRef.current;
+    if (!el) return;
+    el.currentTime = Math.max(0, Math.min(time, el.duration || time));
+  }, [engineReady]);
+  const seekBy = useCallback((delta: number) => {
+    if (engineRef.current && engineReady) {
+      try {
+        engineRef.current.seek((engineRef.current.currentTime() || 0) + delta);
+      } catch { /* ignore */ }
+      return;
+    }
+    const el = audioRef.current;
+    if (!el) return;
+    el.currentTime = Math.max(0, Math.min((el.currentTime || 0) + delta, el.duration || Infinity));
+  }, [engineReady]);
 
   const playIndex = useCallback((index: number) => {
     const item = queue[index];
@@ -273,6 +442,13 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
     playIndex(next);
   }, [queue, currentIndex, repeatMode, shuffle, seek, play, playIndex]);
 
+  // Keep the statechange effect's handleAdvanceRef pointed at the real
+  // implementation. We do this in a separate effect so the engine events
+  // effect doesn't need handleAdvance in its deps array.
+  useEffect(() => {
+    handleAdvanceRef.current = handleAdvance;
+  }, [handleAdvance]);
+
   // Keyboard shortcuts. Only active when the player root has focus or
   // contains the focused element, so it doesn't fight the global Ctrl+O
   // / Ctrl+S handlers in App.tsx.
@@ -296,15 +472,17 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
 
   const setAbLoopMark = useCallback((point: "a" | "b") => {
     setAbLoop((current) => {
-      const t = audioRef.current?.currentTime ?? 0;
-      if (point === "a") return { a: t, b: current ? Math.max(t + 1, current.b) : t + 30 };
+      const time = engineRef.current && engineReady
+        ? engineRef.current.currentTime()
+        : audioRef.current?.currentTime ?? 0;
+      if (point === "a") return { a: time, b: current ? Math.max(time + 1, current.b) : time + 30 };
       // point === "b"
-      if (!current) return { a: 0, b: t };
-      const a = Math.min(current.a, t);
-      const b = Math.max(current.a + 0.5, t);
+      if (!current) return { a: 0, b: time };
+      const a = Math.min(current.a, time);
+      const b = Math.max(current.a + 0.5, time);
       return { a, b };
     });
-  }, []);
+  }, [engineReady]);
 
   const clearAbLoop = useCallback(() => setAbLoop(null), []);
 
@@ -335,8 +513,17 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
     // Real-time level meter driven by a Web Audio AnalyserNode graph. The
     // hook is fault-tolerant: if AudioContext isn't available (SSR, very old
     // Chromium), it returns a frozen silence frame and the player still works.
+    //
+    // When the FFmpeg + Web Audio engine is providing playback, we hand the
+    // hook the engine's pre-built analyser pair instead of building a
+    // MediaElementSource graph on the HTMLAudioElement fallback.
+    const engineAnalysers = engineReady && engineRef.current
+      ? engineRef.current.getAnalyserPair()
+      : null;
     const { frame: meterFrame } = useAudioMeter({
-      audioRef,
+      audioRef: engineAnalysers ? undefined : audioRef,
+      analyserNodes: engineAnalysers,
+      audioContext: engineReady && engineRef.current ? engineRef.current.getContext() : null,
       playing,
       sourceReady: source != null,
     });
@@ -367,23 +554,37 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
       if (!totalDuration) return;
       const rect = target.getBoundingClientRect();
       const t = computeSeekTime(clientX, rect);
-      const el = audioRef.current;
-      wasPlayingBeforeDragRef.current = !!(el && !el.paused);
-      if (el && !el.paused) el.pause();
+      const engine = engineRef.current;
+      const useEngine = !!(engine && engineReady);
+      wasPlayingBeforeDragRef.current = useEngine
+        ? engine!.getState() === "playing"
+        : !!(audioRef.current && !audioRef.current.paused);
+      if (useEngine) {
+        engine!.pause();
+        engine!.seek(t);
+      } else {
+        const el = audioRef.current;
+        if (el && !el.paused) el.pause();
+        if (el) el.currentTime = t;
+      }
       dragOriginRef.current = { rect };
       setDragTime(t);
       setIsDragging(true);
-      if (el) el.currentTime = t;
-    }, [totalDuration, computeSeekTime]);
+    }, [totalDuration, computeSeekTime, engineReady]);
 
     const continueSeek = useCallback((clientX: number) => {
       const origin = dragOriginRef.current;
       if (!origin) return;
       const t = computeSeekTime(clientX, origin.rect);
       setDragTime(t);
-      const el = audioRef.current;
-      if (el) el.currentTime = t;
-    }, [computeSeekTime]);
+      const engine = engineRef.current;
+      if (engine && engineReady) {
+        engine.seek(t);
+      } else {
+        const el = audioRef.current;
+        if (el) el.currentTime = t;
+      }
+    }, [computeSeekTime, engineReady]);
 
     const endSeek = useCallback(() => {
       if (!isDragging) return;
@@ -391,9 +592,14 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
       setDragTime(null);
       dragOriginRef.current = null;
       if (wasPlayingBeforeDragRef.current) {
-        audioRef.current?.play().catch(() => undefined);
+        const engine = engineRef.current;
+        if (engine && engineReady) {
+          try { engine.play(); } catch { /* ignore */ }
+        } else {
+          audioRef.current?.play().catch(() => undefined);
+        }
       }
-    }, [isDragging]);
+    }, [isDragging, engineReady]);
 
         // Listen for pointerup on window so the drag survives the cursor leaving
         // the bar bounds. Without this, dragging past the right edge drops the
@@ -490,6 +696,21 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
             channels={meta?.format.channels ?? null}
                     onTryAnyway={() => setProbeOverride(true)}
                   />
+                ) : null}
+
+                {/* FFmpeg decode progress (PR #146 universal audio decoder).
+                    Shown while the main process is decoding the file into raw
+                    PCM and streaming it back to the renderer. */}
+                {decodeState === "decoding" ? (
+                  <div className="ll-decode-status" role="status" aria-live="polite">
+                    <span className="ll-decode-spinner" aria-hidden="true" />
+                    <span className="ll-decode-label">{t("losslessDecoding")}</span>
+                    {decodeProgress?.receivedBytes ? (
+                      <span className="ll-decode-bytes">
+                        {(decodeProgress.receivedBytes / 1024 / 1024).toFixed(1)} MB
+                      </span>
+                    ) : null}
+                  </div>
                 ) : null}
 
         <div className="ll-progress">
