@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 
 export type ViewerErrorVariant = "fullpage" | "inline";
@@ -72,6 +73,22 @@ export default function ViewerError({
   className,
 }: Props) {
   const isInline = variant === "inline";
+
+  // Keyboard dismiss: only when onClose is provided. Inline banners and
+  // dismissable fullpage states both honor Escape, matching the close button.
+  // Capture-phase so we beat any parent Escape handlers (OpenMeRouteCard's
+  // retry button etc.).
+  useEffect(() => {
+    if (!onClose) return undefined;
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handler, true);
+    return () => document.removeEventListener("keydown", handler, true);
+  }, [onClose]);
 
   const cardClass = isInline ? "viewer-error is-inline" : "viewer-error";
 

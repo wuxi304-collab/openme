@@ -133,4 +133,31 @@ describe("ViewerError", () => {
     const root = container.querySelector(".viewer-error");
     expect(root?.className).toContain("custom-error");
   });
-});
+
+    it("Escape fires onClose when provided", () => {
+      const onClose = vi.fn();
+      renderError({ title: "Failed", onClose, closeLabel: "Dismiss" });
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it("Escape is a no-op when onClose is not provided", () => {
+      // Render an error without onClose. The document-level handler should not
+      // be installed at all, so firing Escape should not throw or call anything.
+      const { container } = renderError({ title: "Failed" });
+      expect(container.querySelector(".viewer-error-close")).toBeNull();
+      expect(() => fireEvent.keyDown(document, { key: "Escape" })).not.toThrow();
+    });
+
+    it("Escape dismisses inline banners the same as fullpage errors", () => {
+      const onClose = vi.fn();
+      renderError({
+        variant: "inline",
+        title: "Action failed",
+        onClose,
+        closeLabel: "Dismiss",
+      });
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+  });
