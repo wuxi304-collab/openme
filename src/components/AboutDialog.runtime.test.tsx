@@ -80,6 +80,31 @@ describe("AboutDialog runtime sections", () => {
       }
     });
 
+    it("renders the ack purposes through i18n for both locales", async () => {
+      installMockRuntime();
+      // English assertions
+      try { localStorage.setItem("openme.lang", "en"); } catch { /* noop */ }
+      const { unmount } = render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+      let ackList = document.querySelector(".about-dialog-ack-list") as HTMLElement | null;
+      expect(ackList).toBeTruthy();
+      // The names are stable across locales, but the purposes differ:
+      expect(ackList!.textContent).toContain("Desktop runtime");
+      expect(ackList!.textContent).toContain("UI framework");
+      expect(ackList!.textContent).toContain("DWG and 3D rendering");
+      expect(ackList!.textContent).not.toContain("桌面运行时");
+      unmount();
+
+      // Chinese assertions
+      try { localStorage.setItem("openme.lang", "zh"); } catch { /* noop */ }
+      render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+      ackList = document.querySelector(".about-dialog-ack-list") as HTMLElement | null;
+      expect(ackList).toBeTruthy();
+      expect(ackList!.textContent).toContain("桌面运行时");
+      expect(ackList!.textContent).toContain("界面框架");
+      expect(ackList!.textContent).toContain("DWG 与三维渲染");
+      expect(ackList!.textContent).not.toContain("Desktop runtime");
+    });
+
   it("renders the license link with rel=noopener and target=_blank", async () => {
     installMockRuntime();
     render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);

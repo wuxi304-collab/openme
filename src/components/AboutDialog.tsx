@@ -21,17 +21,17 @@ const UNKNOWN = "—";
 // Curated list of open-source libraries the app actually loads at runtime.
 // Keep the list in sync with package.json — the order matches the
 // section sub-title "alphabetical".
-const ACKNOWLEDGEMENTS: ReadonlyArray<{ name: string; purpose: { en: string; zh: string } }> = [
-  { name: "Electron", purpose: { en: "Desktop runtime", zh: "桌面运行时" } },
-  { name: "React", purpose: { en: "UI framework", zh: "界面框架" } },
-  { name: "Monaco Editor", purpose: { en: "Code editor", zh: "代码编辑器" } },
-  { name: "PDF.js", purpose: { en: "PDF rendering", zh: "PDF 渲染" } },
-  { name: "Three.js", purpose: { en: "DWG / 3D rendering", zh: "DWG 与三维渲染" } },
-  { name: "Mammoth", purpose: { en: "DOCX → HTML", zh: "DOCX 转 HTML" } },
-  { name: "SheetJS", purpose: { en: "XLSX parsing", zh: "XLSX 解析" } },
-  { name: "JSZip", purpose: { en: "ZIP archive handling", zh: "ZIP 压缩包处理" } },
-  { name: "EPUB.js", purpose: { en: "EPUB reader", zh: "EPUB 阅读器" } },
-  { name: "opentype.js", purpose: { en: "Font inspection", zh: "字体检查" } },
+const ACKNOWLEDGEMENTS: ReadonlyArray<{ name: string; purposeKey: string }> = [
+  { name: "Electron", purposeKey: "aboutAckPurposeElectron" },
+  { name: "React", purposeKey: "aboutAckPurposeReact" },
+  { name: "Monaco Editor", purposeKey: "aboutAckPurposeMonacoEditor" },
+  { name: "PDF.js", purposeKey: "aboutAckPurposePdfJs" },
+  { name: "Three.js", purposeKey: "aboutAckPurposeThreeJs" },
+  { name: "Mammoth", purposeKey: "aboutAckPurposeMammoth" },
+  { name: "SheetJS", purposeKey: "aboutAckPurposeSheetJs" },
+  { name: "JSZip", purposeKey: "aboutAckPurposeJsZip" },
+  { name: "EPUB.js", purposeKey: "aboutAckPurposeEpubJs" },
+  { name: "opentype.js", purposeKey: "aboutAckPurposeOpentypeJs" },
 ];
 
 // Read electronAPI defensively so a missing preload (browser dev / unit
@@ -381,7 +381,7 @@ export default function AboutDialog({ open, onClose }: Props) {
             {ACKNOWLEDGEMENTS.map((item) => (
               <li key={item.name} className="about-dialog-ack-item">
                 <span className="about-dialog-ack-name">{item.name}</span>
-                <span className="about-dialog-ack-purpose">{lang === "zh" ? item.purpose.zh : item.purpose.en}</span>
+                            <span className="about-dialog-ack-purpose">{t(item.purposeKey)}</span>
               </li>
             ))}
           </ul>
