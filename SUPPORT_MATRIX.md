@@ -14,6 +14,8 @@ Generated matrix command:
 npm run support:matrix
 ```
 
+The generator writes the snapshot to `SUPPORT_MATRIX.generated.md` (committed alongside this file). The snapshot covers every entry in `src/file-registry/formats.ts` and `src/file-registry/expanded-formats.ts` — extensions, categories, support level, and a one-line boundary note. Re-run the command whenever a format's level or boundary changes, then commit the refreshed snapshot in the same PR.
+
 ## Baseline rule
 
 Supporting a file format in OpenMe means the format has a registry entry with:
