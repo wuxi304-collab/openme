@@ -75,3 +75,62 @@ describe("FileDropZone polish (PR #115)", () => {
     expect(screen.getByText("Release to open")).toBeTruthy();
   });
 });
+
+describe("FileDropZone overlay variant (PR #154)", () => {
+  it("renders a fixed-position overlay region with the drop-overlay aria-label", () => {
+    const { container } = render(
+      <I18nProvider>
+        <FileDropZone variant="overlay" onFileDrop={() => undefined} />
+      </I18nProvider>
+    );
+    const region = screen.getByRole("region", { name: "Drop any file to open it in a new tab" });
+    expect(region).toBeTruthy();
+    expect(region.className).toContain("file-drop-overlay");
+    expect(container.querySelector(".file-drop-overlay-card")).toBeTruthy();
+  });
+
+  it("overlay has no browse button or hidden file input", () => {
+    render(
+      <I18nProvider>
+        <FileDropZone variant="overlay" onFileDrop={() => undefined} />
+      </I18nProvider>
+    );
+    // The fill variant has a Browse files button — its absence confirms the
+    // overlay doesn't offer the alternative-action escape hatch.
+    expect(screen.queryByRole("button", { name: /browse/i })).toBeNull();
+    expect(document.querySelector('input[type="file"]')).toBeNull();
+  });
+
+  it("overlay reflects data-dragging attribute and switches copy on dragover", () => {
+    const { container } = render(
+      <I18nProvider>
+        <FileDropZone variant="overlay" onFileDrop={() => undefined} />
+      </I18nProvider>
+    );
+    const region = screen.getByRole("region", { name: "Drop any file to open it in a new tab" });
+    expect(region.getAttribute("data-dragging")).toBe("false");
+    // Idle copy points at the aria-label string ("Drop any file...")
+    expect(screen.getByText("Drop any file to open it in a new tab")).toBeTruthy();
+    fireEvent.dragOver(region);
+    expect(region.getAttribute("data-dragging")).toBe("true");
+    expect(screen.getByText("Release to open")).toBeTruthy();
+    expect(container.querySelector(".file-drop-overlay-card")).toBeTruthy();
+  });
+
+  it("overlay drop fires onFileDrop with extracted paths", () => {
+    const onFileDrop = vi.fn();
+    render(
+      <I18nProvider>
+        <FileDropZone variant="overlay" onFileDrop={onFileDrop} />
+      </I18nProvider>
+    );
+    const region = screen.getByRole("region", { name: "Drop any file to open it in a new tab" });
+    const a = new File(["hi"], "a.txt");
+    const b = new File(["hi"], "b.zip");
+    Object.defineProperty(a, "path", { value: "/tmp/a.txt", configurable: true });
+    Object.defineProperty(b, "path", { value: "/tmp/b.zip", configurable: true });
+    fireEvent.drop(region, { dataTransfer: { files: [a, b] } });
+    expect(onFileDrop).toHaveBeenCalledTimes(1);
+    expect(onFileDrop).toHaveBeenCalledWith(["/tmp/a.txt", "/tmp/b.zip"]);
+  });
+});

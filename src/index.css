@@ -1339,6 +1339,112 @@ main:focus { outline: none; }
 .epub-progress { height:3px; flex:none; overflow:hidden; background:#d6cebf; }.epub-progress i { display:block; width:100%; height:100%; background:#d49c2f; transform-origin:left; transition:transform var(--dur-base) var(--ease-out); }
 
 .pdf-viewer-shell { height:100%; min-height:0; display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--border-default); border-radius:8px; background:var(--bg-base); }
+
+/* --- file drop overlay (PR #154) -----------------------------
+ * Surfaces while the user is dragging files anywhere over the
+ * workspace window. Fixed inset:0 with a backdrop-filter blur +
+ * dim overlay so the underlying chrome is still hinted at, and a
+ * centered card with a dashed border that sharpens + scales 1.04
+ * on drag-over. The card itself is `pointer-events: none` so
+ * dragenter/dragleave on the card never reset the drag counter
+ * that the App uses to keep the overlay mounted. */
+.file-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 460;
+  display: grid;
+  place-items: center;
+  background: #05050566;
+  backdrop-filter: blur(8px) saturate(118%);
+  -webkit-backdrop-filter: blur(8px) saturate(118%);
+  animation: file-drop-overlay-in var(--dur-fast, 200ms) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)) both;
+}
+.file-drop-overlay-card {
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  min-width: 360px;
+  max-width: 480px;
+  padding: 36px 56px;
+  border: 1.5px dashed #ffffff26;
+  border-radius: 22px;
+  background: #16140f99;
+  color: var(--text-strong, #f1ede5);
+  text-align: center;
+  transform: scale(1);
+  transition:
+    transform var(--dur-base, 250ms) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+    border-color var(--dur-base, 250ms) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+    box-shadow var(--dur-base, 250ms) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+    background var(--dur-base, 250ms) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+.file-drop-overlay[data-dragging="true"] .file-drop-overlay-card {
+  transform: scale(1.04);
+  border-color: var(--accent);
+  background: #1a181399;
+  box-shadow: 0 0 38px 4px #e600121a, 0 18px 60px #0008;
+}
+.file-drop-overlay-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  border: 1px solid #ffffff18;
+  background: #ffffff0a;
+  transition: transform var(--dur-base, 250ms) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              border-color var(--dur-base, 250ms) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              background var(--dur-base, 250ms) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+.file-drop-overlay[data-dragging="true"] .file-drop-overlay-icon {
+  transform: scale(1.06);
+  border-color: var(--accent);
+  background: #e6001214;
+}
+.file-drop-overlay-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: color var(--dur-base, 250ms) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+.file-drop-overlay-subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: #a9a39a;
+  line-height: 1.5;
+}
+.file-drop-overlay-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.file-drop-overlay-chips li {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid;
+  letter-spacing: 0.02em;
+}
+@keyframes file-drop-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .file-drop-overlay,
+  .file-drop-overlay-card,
+  .file-drop-overlay-icon,
+  .file-drop-overlay-title {
+    animation: none;
+    transition: none;
+  }
+}
 .pdf-toolbar { min-height:42px; flex:none; display:flex; align-items:center; gap:12px; padding:6px 10px; border-bottom:1px solid var(--border-muted); background:var(--bg-surface); }
 .pdf-toolbar>.viewer-label { margin-right:auto; }.pdf-search { display:flex; align-items:center; gap:4px; }.pdf-search input { width:180px; height:28px; padding:0 9px; border:1px solid var(--border-default); border-radius:7px; outline:0; color:var(--text-primary); background:var(--bg-elevated); font-size:11px; }.pdf-search input:focus-visible { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-glow); }.pdf-search button { height:28px; padding:0 9px; border:1px solid var(--border-default); border-radius:7px; color:var(--text-secondary); background:var(--bg-elevated); font-size:11px; }.pdf-results { min-height:34px; max-height:74px; flex:none; display:flex; align-items:center; gap:5px; padding:4px 10px; overflow:auto; border-bottom:1px solid var(--border-muted); color:var(--text-muted); background:#121110; font-size:10px; }.pdf-results>span { position:sticky; left:0; z-index:1; padding-right:8px; background:#121110; white-space:nowrap; }.pdf-results button { flex:none; height:24px; padding:0 7px; border:1px solid #3b3832; border-radius:6px; color:#c9c2b8; background:#22201c; }.pdf-results button i { margin-left:4px; color:#e2b43d; font-style:normal; }
 .app-toast-stack { position:fixed; right:18px; bottom:38px; z-index:200; display:flex; flex-direction:column-reverse; gap:8px; pointer-events:none; max-width:420px; }

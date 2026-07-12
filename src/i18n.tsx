@@ -222,6 +222,7 @@ export const translations: Record<string, Record<string, string>> = {
     dropZoneAria: "拖入文件或点击下方按钮选择",
     dropZoneSupportedFormatsAria: "支持的格式示例",
     browseFiles: "选择文件",
+    dropOverlayAria: "拖入文件即可在新标签中打开",
 
         // FileMetadata
     fileInfo: "文件信息",
@@ -1448,6 +1449,7 @@ export const translations: Record<string, Record<string, string>> = {
     dropZoneAria: "Drop files or click the button below to choose a file",
     dropZoneSupportedFormatsAria: "Supported format examples",
     browseFiles: "Browse files",
+    dropOverlayAria: "Drop any file to open it in a new tab",
 
         // FileMetadata
     fileInfo: "File info",
