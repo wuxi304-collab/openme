@@ -25,8 +25,13 @@ interface Props {
   caption?: ReactNode;
   /** Optional primary action button. */
   action?: ViewerErrorAction;
-  /** Optional dismiss handler — adds a close button in the top-right. */
-  onClose?: () => void;
+    /** Optional secondary action button — rendered alongside the primary one
+     *  with a quieter visual treatment. Useful for "try anyway" overrides or
+     *  alternate fallbacks (e.g. AudioUnsupported letting the user override
+     *  the codec probe verdict). */
+    secondaryAction?: ViewerErrorAction & { ariaLabel?: string };
+    /** Optional dismiss handler — adds a close button in the top-right. */
+    onClose?: () => void;
     /** Localized label for the close button. Required when onClose is set. */
     closeLabel?: string;
     /** Extra content rendered below the message but above the action row. */
@@ -60,6 +65,7 @@ export default function ViewerError({
   icon,
   caption,
   action,
+  secondaryAction,
   onClose,
   closeLabel,
   children,
@@ -96,17 +102,29 @@ export default function ViewerError({
         </div>
         {message && <p className="viewer-error-message">{message}</p>}
         {children}
-        {action && (
+        {(action || secondaryAction) && (
           <div className="viewer-error-actions">
-            <button
-              type="button"
-              className="btn-mario"
-              onClick={action.onClick}
-            >
-              {action.label}
-            </button>
-          </div>
-        )}
+                    {action && (
+                      <button
+                        type="button"
+                        className="btn-mario"
+                        onClick={action.onClick}
+                      >
+                        {action.label}
+                      </button>
+                    )}
+                    {secondaryAction && (
+                      <button
+                        type="button"
+                        className="btn-mario is-secondary"
+                        onClick={secondaryAction.onClick}
+                        aria-label={secondaryAction.ariaLabel}
+                      >
+                        {secondaryAction.label}
+                      </button>
+                    )}
+                  </div>
+                )}
       </div>
     </div>
   );

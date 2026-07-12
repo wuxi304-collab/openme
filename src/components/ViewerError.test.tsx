@@ -45,6 +45,47 @@ describe("ViewerError", () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+    it("renders a secondary action with the is-secondary modifier when provided", () => {
+      const primary = vi.fn();
+      const secondary = vi.fn();
+      const { container } = renderError({
+        title: "Failed",
+        action: { label: "Open externally", onClick: primary },
+        secondaryAction: { label: "Try anyway", onClick: secondary },
+      });
+      const secondaryBtn = screen.getByRole("button", { name: "Try anyway" });
+      expect(secondaryBtn.className).toContain("is-secondary");
+      expect(container.querySelector(".viewer-error-actions .btn-mario.is-secondary")).toBeTruthy();
+      fireEvent.click(secondaryBtn);
+      expect(secondary).toHaveBeenCalledTimes(1);
+      expect(primary).not.toHaveBeenCalled();
+    });
+
+    it("hides the secondary action when only the primary is supplied", () => {
+      renderError({ title: "Failed", action: { label: "Only primary", onClick: () => undefined } });
+      expect(screen.queryByRole("button", { name: /try anyway/i })).toBeNull();
+    });
+
+    it("renders the action row only when at least one action is supplied", () => {
+      const noAction = renderError({ title: "Nothing actionable" });
+      expect(noAction.container.querySelector(".viewer-error-actions")).toBeNull();
+      noAction.unmount();
+
+      const onlySecondary = renderError({
+        title: "Only secondary",
+        secondaryAction: { label: "Retry probe", onClick: () => undefined },
+      });
+      expect(onlySecondary.container.querySelector(".viewer-error-actions")).toBeTruthy();
+    });
+
+    it("passes an aria-label through on the secondary action for screen readers", () => {
+      renderError({
+        title: "Failed",
+        secondaryAction: { label: "Try anyway", ariaLabel: "Force built-in playback", onClick: () => undefined },
+      });
+      expect(screen.getByRole("button", { name: "Force built-in playback" })).toBeTruthy();
+    });
+
   it("renders close button when onClose is provided, with localized aria-label", () => {
     const onClose = vi.fn();
     renderError({ title: "Failed", onClose, closeLabel: "Dismiss error" });

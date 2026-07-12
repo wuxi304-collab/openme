@@ -26,12 +26,18 @@ export default function MediaViewer({ filePath, kind }: Props) {
   const [source, setSource] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [codecProbe, setCodecProbe] = useState<AudioProbeResult | null>(null);
+    // User override for the probe — when true, ignore the "unsupported"
+    // verdict and let the simple <audio> deck try to play anyway. Mirrors
+    // the same escape hatch in LosslessAudioPlayer so both surfaces stay
+    // consistent.
+    const [probeOverride, setProbeOverride] = useState(false);
 
-  useEffect(() => {
-    let disposed = false;
-    setError(null);
-    setSource(null);
-    setCodecProbe(null);
+    useEffect(() => {
+      let disposed = false;
+      setError(null);
+      setSource(null);
+      setCodecProbe(null);
+      setProbeOverride(false);
 
     window.electronAPI
       .getMediaUrl(filePath)
@@ -88,12 +94,13 @@ export default function MediaViewer({ filePath, kind }: Props) {
             >
               {t("mediaVideoFallbackBody")}
             </video>
-          ) : codecProbe?.status === "unsupported" ? (
+          ) : codecProbe?.status === "unsupported" && !probeOverride ? (
             <AudioUnsupported
               filePath={filePath}
               probe={codecProbe}
-            />
-          ) : (
+                        onTryAnyway={() => setProbeOverride(true)}
+                      />
+                    ) : (
             <div className="audio-deck">
               <div className="audio-disc" aria-hidden="true"><i /></div>
               <div className="audio-bars" aria-hidden="true">{Array.from({ length: 16 }, (_, index) => <i key={index} />)}</div>

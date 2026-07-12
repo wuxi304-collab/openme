@@ -12,6 +12,10 @@ interface Props {
   bitDepth?: number | null;
   sampleRate?: number | null;
   channels?: number | null;
+  /** Lets the user override the probe verdict. The probe can false-positive
+   *  on slow disks or exotic muxing, so giving the user an escape hatch
+   *  to attempt built-in playback anyway keeps them unblocked. */
+  onTryAnyway?: () => void;
 }
 
 /**
@@ -20,7 +24,10 @@ interface Props {
  * We deliberately keep the metadata visible — the user can confirm the
  * format via bit-depth / sample-rate readouts even when we can't play it.
  * The action row offers one-click "open in system" plus, where relevant,
- * a hint pointing at the right external player.
+ * a hint pointing at the right external player. A secondary "try anyway"
+ * action lets the user override the probe verdict and let the main
+ * `<audio>` element take another shot — useful when the probe fired on a
+ * cold cache or a transient protocol hiccup.
  */
 export default function AudioUnsupported({
   filePath,
@@ -29,6 +36,7 @@ export default function AudioUnsupported({
   bitDepth,
   sampleRate,
   channels,
+  onTryAnyway,
 }: Props) {
   const { t } = useI18n();
   const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
@@ -48,6 +56,14 @@ export default function AudioUnsupported({
     window.electronAPI.openInSystem(filePath);
   };
 
+  const secondaryAction = onTryAnyway
+    ? {
+        label: t("mediaUnsupportedTryAnyway"),
+        ariaLabel: t("mediaUnsupportedTryAnywayAria"),
+        onClick: () => onTryAnyway(),
+      }
+    : undefined;
+
   return (
     <div className="audio-unsupported">
       <ViewerError
@@ -56,6 +72,7 @@ export default function AudioUnsupported({
         caption={fileName}
         message={reason}
         action={{ label: t("mediaUnsupportedActionSystem"), onClick: openInSystem }}
+        secondaryAction={secondaryAction}
       >
         <div className="audio-unsupported-meta" role="group" aria-label={t("audioUnsupportedMetaAria")}>
           {formatChips.map((chip) => (

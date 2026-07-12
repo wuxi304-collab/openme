@@ -33,6 +33,14 @@ describe("audioCodecSupport util — runtime probe", () => {
     expect(src).toMatch(/audio\.addEventListener\(\s*["']error["']/);
   });
 
+    it("attaches the probe audio to document.body so Chromium actually fetches the protocol URL", () => {
+      // Without attach the probe never receives loadedmetadata for non-http
+      // schemes and false-positives every supported format as unsupported.
+      expect(src).toMatch(/document\.body/);
+      expect(src).toMatch(/appendChild\(audio\)/);
+      expect(src).toMatch(/removeChild\(audio\)/);
+    });
+
   it("derives a stable reason key from extension + MediaError code", () => {
     expect(src).toMatch(/deriveReasonKey/);
     expect(src).toMatch(/\.dsf/);
@@ -53,6 +61,13 @@ describe("audioCodecSupport util — runtime probe", () => {
     expect(src).toMatch(/setTimeout/);
     expect(src).toMatch(/timeoutMs/);
   });
+
+    it("defaults the probe timeout to a snappy 2.5s rather than a sluggish 4s", () => {
+      // 2500ms keeps the UI feeling responsive while still leaving room
+      // for cold-cache reads. The old 4000ms caused a perceptible hang
+      // before the fallback card rendered.
+      expect(src).toMatch(/timeoutMs\s*\?\?\s*2500/);
+    });
 });
 
 describe("LosslessAudioPlayer — codec probe wiring", () => {
@@ -74,9 +89,19 @@ describe("LosslessAudioPlayer — codec probe wiring", () => {
 
   it("keeps the metadata card visible while the audio element is unavailable", () => {
     // The audio src becomes undefined when the probe says unsupported so
-    // Chromium stops trying to load and re-erroring.
-    expect(src).toMatch(/codecProbe\?\.status\s*===\s*["']unsupported["']\s*\?\s*undefined/);
-  });
+      // Chromium stops trying to load and re-erroring. The override flag
+      // gates the suppression so the user can still attempt playback after
+      // dismissing the fallback card.
+      expect(src).toMatch(/codecProbe\?\.status\s*===\s*["']unsupported["']\s*&&\s*!probeOverride\s*\?\s*undefined/);
+    });
+
+    it("exposes a probeOverride state so the user can force the built-in player", () => {
+      expect(src).toMatch(/probeOverride/);
+      expect(src).toMatch(/setProbeOverride/);
+      // Override must gate both the AudioUnsupported render AND the <audio>
+      // src — without both the user clicks the button and nothing changes.
+      expect(src).toMatch(/!probeOverride/);
+    });
 });
 
 describe("MediaViewer — codec probe wiring (simple audio deck)", () => {
@@ -109,6 +134,13 @@ describe("AudioUnsupported fallback component", () => {
     expect(src).toMatch(/electronAPI\.openInSystem/);
   });
 
+    it("passes an onTryAnyway callback through to the ViewerError secondary action", () => {
+      expect(src).toMatch(/onTryAnyway/);
+      expect(src).toMatch(/secondaryAction/);
+      expect(src).toMatch(/mediaUnsupportedTryAnyway/);
+      expect(src).toMatch(/mediaUnsupportedTryAnywayAria/);
+    });
+
   it("uses the localised audio badge, not a literal fallback string", () => {
     // Regression guard: PR #140 originally called `t("losslessBadgeAudio")`
     // which doesn't exist, so the user saw `LOSSLESSBADGEAUDIO` literally.
@@ -138,16 +170,18 @@ describe("audioCodecCoverage — i18n keys (zh + en)", () => {
     "mediaUnsupportedBody",
     "mediaUnsupportedSuggestions",
     "mediaUnsupportedActionSystem",
-    "mediaUnsupportedReasonDsd",
-    "mediaUnsupportedReasonAlacCaf",
-    "mediaUnsupportedReasonAiff",
-    "mediaUnsupportedReasonApe",
-    "mediaUnsupportedReasonWma",
-    "mediaUnsupportedReasonTak",
-    "mediaUnsupportedReasonWavpack",
-    "mediaUnsupportedReasonGeneric",
-    "audioUnsupportedMetaAria",
-  ];
+      "mediaUnsupportedTryAnyway",
+      "mediaUnsupportedTryAnywayAria",
+      "mediaUnsupportedReasonDsd",
+      "mediaUnsupportedReasonAlacCaf",
+      "mediaUnsupportedReasonAiff",
+      "mediaUnsupportedReasonApe",
+      "mediaUnsupportedReasonWma",
+      "mediaUnsupportedReasonTak",
+      "mediaUnsupportedReasonWavpack",
+      "mediaUnsupportedReasonGeneric",
+      "audioUnsupportedMetaAria",
+    ];
 
   it("every key has both zh + en strings", () => {
     for (const key of required) {
