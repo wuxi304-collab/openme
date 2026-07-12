@@ -28,6 +28,7 @@ const MODAL_FILES: ModalFile[] = [
   { file: "src/components/SettingsDialog.tsx", cardSelector: "settings-dialog-card" },
   { file: "src/components/AboutDialog.tsx", cardSelector: "about-dialog-card" },
   { file: "src/components/ShortcutsOverlay.tsx", cardSelector: "shortcuts-overlay" },
+  { file: "src/components/ConfirmDialog.tsx", cardSelector: "confirm-dialog-card" },
 ];
 
 function readSource(file: string): string {

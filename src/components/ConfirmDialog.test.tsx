@@ -94,4 +94,45 @@ describe("ConfirmDialog", () => {
       const confirm = screen.getByRole("button", { name: "Yes" });
       expect(confirm.className).not.toContain("is-danger");
     });
-});
+
+        it("Tab from confirm button wraps back to cancel button", () => {
+          renderDialog(baseState);
+          const cancel = screen.getByRole("button", { name: "No" });
+          const confirm = screen.getByRole("button", { name: "Yes" });
+          cancel.focus();
+          expect(document.activeElement).toBe(cancel);
+          // Shift+Tab from first (cancel) jumps to last (confirm)
+          fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+          expect(document.activeElement).toBe(confirm);
+          // Tab from last (confirm) jumps to first (cancel)
+          fireEvent.keyDown(document, { key: "Tab" });
+          expect(document.activeElement).toBe(cancel);
+        });
+
+        it("restores focus to the trigger element after close", async () => {
+          const trigger = document.createElement("button");
+          trigger.textContent = "trigger";
+          document.body.appendChild(trigger);
+          trigger.focus();
+          const onResolve = vi.fn();
+          const { rerender } = render(
+            <I18nProvider>
+              <ConfirmDialog state={baseState} onResolve={onResolve} />
+            </I18nProvider>
+          );
+          // After open, focus is on cancel
+          await new Promise((r) => requestAnimationFrame(() => r(null)));
+          const cancel = screen.getByRole("button", { name: "No" });
+          expect(document.activeElement).toBe(cancel);
+          // Close the dialog
+          rerender(
+            <I18nProvider>
+              <ConfirmDialog state={null} onResolve={onResolve} />
+            </I18nProvider>
+          );
+          // setTimeout(0) deferred restore — wait one tick
+          await new Promise((r) => setTimeout(r, 10));
+          expect(document.activeElement).toBe(trigger);
+          document.body.removeChild(trigger);
+        });
+    });
