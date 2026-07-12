@@ -2,6 +2,8 @@
 // dependency-free so it can run in tests, the main process, or the
 // renderer without ceremony.
 
+import { translations } from "../i18n";
+
 // Convert a byte count into a human-readable string with one decimal of
 // precision once we cross the KB threshold. Below 1 KB we surface raw
 // bytes — useful for small config files where the precision matters.
@@ -34,6 +36,73 @@ export function formatFileSize(bytes: number, lang: "zh" | "en" = "en"): string 
     return `${display} ${unit.suffix[lang]}`;
 }
 
+// ICU-style minimal substitution helper for use outside React. Mirrors
+// the contract of `formatIcu` in i18n.tsx but with no React dependency
+// — needed so this module stays importable from tests and the main
+// process. Supports `{key}` substitution and `{key, plural, one {...}
+// other {#...} }` for grammatically-aware units.
+function formatTemplate(template: string, params: Record<string, string | number>, lang: "zh" | "en"): string {
+  let out = "";
+  let i = 0;
+  while (i < template.length) {
+    const c = template[i];
+    if (c !== "{") { out += c; i++; continue; }
+    // Find balanced closing brace.
+    let depth = 0;
+    let j = i;
+    while (j < template.length) {
+      if (template[j] === "{") depth++;
+      else if (template[j] === "}") { depth--; if (depth === 0) break; }
+      j++;
+    }
+    if (j >= template.length) { out += template.slice(i); break; }
+    const inner = template.slice(i + 1, j);
+    if (inner.includes(",")) {
+      const parts = inner.split(/\s*,\s*/);
+      if (parts.length >= 3 && parts[1] === "plural") {
+        const key = parts[0];
+        const body = parts.slice(2).join(",");
+        const n = Number(params[key]);
+        const branch = lang === "zh" ? "other" : n === 1 ? "one" : "other";
+        const branchRe = new RegExp(`\\b${branch}\\s*\\{`);
+        const branchMatch = body.match(branchRe);
+        if (branchMatch) {
+          const branchStart = branchMatch.index! + branchMatch[0].length - 1;
+          let bd = 0;
+          let bj = branchStart;
+          while (bj < body.length) {
+            if (body[bj] === "{") bd++;
+            else if (body[bj] === "}") { bd--; if (bd === 0) break; }
+            bj++;
+          }
+          const branchText = body.slice(branchStart + 1, bj);
+          out += branchText.replace(/#/g, String(n));
+          i = j + 1;
+          continue;
+        }
+      }
+    }
+    const v = params[inner];
+    out += v === undefined || v === null ? `{${inner}}` : String(v);
+    i = j + 1;
+  }
+  // Pass 2: substitute any remaining {key} tokens (e.g. inside a plural branch).
+  return out.replace(/\{(\w+)\}/g, (_, k) => {
+    const v = params[k];
+    return v === undefined || v === null ? `{${k}}` : String(v);
+  });
+}
+
+// Look up an i18n key for the current locale with a fallback to the
+// other locale, then to the key itself. Lets `formatRelativeTime` keep
+// rendering reasonable strings even if the dict is briefly unavailable
+// (e.g. during the first render before `I18nProvider` mounts).
+function lookup(lang: "zh" | "en", key: string): string {
+  const zh = translations.zh?.[key];
+  const en = translations.en?.[key];
+  return (lang === "en" ? en : zh) ?? en ?? zh ?? key;
+}
+
 // Convert an ISO timestamp (or epoch ms / Date) into a coarse relative
 // description like "2 minutes ago" / "2 分钟前". Returns the absolute
 // local date when the gap is over 30 days so we don't show stale data.
@@ -46,14 +115,14 @@ export function formatRelativeTime(input: string | number | Date, lang: "zh" | "
     return formatAbsolute(date, lang);
   }
   const seconds = Math.floor(diffMs / 1000);
-  if (seconds < 5) return lang === "zh" ? "刚刚" : "just now";
-  if (seconds < 60) return lang === "zh" ? `${seconds} 秒前` : `${seconds} seconds ago`;
+  if (seconds < 5) return lookup(lang, "relativeTimeJustNow");
+  if (seconds < 60) return formatTemplate(lookup(lang, "relativeTimeSeconds"), { n: seconds }, lang);
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return lang === "zh" ? `${minutes} 分钟前` : `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  if (minutes < 60) return formatTemplate(lookup(lang, "relativeTimeMinutes"), { n: minutes }, lang);
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return lang === "zh" ? `${hours} 小时前` : `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  if (hours < 24) return formatTemplate(lookup(lang, "relativeTimeHours"), { n: hours }, lang);
   const days = Math.floor(hours / 24);
-  if (days < 30) return lang === "zh" ? `${days} 天前` : `${days} day${days === 1 ? "" : "s"} ago`;
+  if (days < 30) return formatTemplate(lookup(lang, "relativeTimeDays"), { n: days }, lang);
   return formatAbsolute(date, lang);
 }
 

@@ -66,4 +66,28 @@ describe("formatRelativeTime", () => {
     expect(formatRelativeTime("not-a-date", "en", now)).toBe("—");
     expect(formatRelativeTime(Number.NaN, "en", now)).toBe("—");
   });
+
+  it("ignores locale switching (renders per-call lang, not ambient)", () => {
+    // Two calls in quick succession in different locales must each pick
+    // the right plural branch — no leakage of one call's resources into
+    // the next.
+    expect(formatRelativeTime("2026-07-09T11:55:00Z", "en", now)).toBe("5 minutes ago");
+    expect(formatRelativeTime("2026-07-09T11:55:00Z", "zh", now)).toBe("5 分钟前");
+    expect(formatRelativeTime("2026-07-09T11:59:00Z", "en", now)).toBe("1 minute ago");
+    expect(formatRelativeTime("2026-07-09T11:59:00Z", "zh", now)).toBe("1 分钟前");
+  });
+
+  it("renders both just-now and second-boundary correctly", () => {
+    // < 5s gap → just-now branch; == 5s falls into "5 seconds ago".
+    expect(formatRelativeTime("2026-07-09T11:59:56Z", "en", now)).toBe("just now");
+    expect(formatRelativeTime("2026-07-09T11:59:56Z", "zh", now)).toBe("刚刚");
+    expect(formatRelativeTime("2026-07-09T11:59:55Z", "en", now)).toBe("5 seconds ago");
+    expect(formatRelativeTime("2026-07-09T11:59:55Z", "zh", now)).toBe("5 秒前");
+  });
+
+  it("handles future timestamps by falling back to absolute date", () => {
+    // System clock skew can make this happen; formatRelativeTime should
+    // never render negative "n seconds in the future" copy.
+    expect(formatRelativeTime("2026-07-10T12:00:00Z", "en", now)).toMatch(/^2026-07-10 /);
+  });
 });
