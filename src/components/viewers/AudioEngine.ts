@@ -61,32 +61,35 @@ export class AudioEngine {
   }
 
   /** Lazy-create the AudioContext and routing. Must be called from a user
-   *  gesture the first time. Subsequent calls reuse the same context. */
-  private ensureContext(): AudioContext {
-    if (!this.ctx) {
-      const w = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
-      const Ctor = w.AudioContext || w.webkitAudioContext;
-      if (!Ctor) throw new Error("Web Audio API not supported in this environment");
-      this.ctx = new Ctor();
-      this.gainNode = this.ctx.createGain();
-      this.gainNode.gain.value = this.muted ? 0 : this.volume;
-      this.analyser = this.ctx.createAnalyser();
-      this.analyser.fftSize = 1024;
-      const splitter = this.ctx.createChannelSplitter(2);
-      this.leftAnalyser = this.ctx.createAnalyser();
-      this.rightAnalyser = this.ctx.createAnalyser();
-      this.leftAnalyser.fftSize = 1024;
-      this.rightAnalyser.fftSize = 1024;
-      this.leftAnalyser.smoothingTimeConstant = 0.4;
-      this.rightAnalyser.smoothingTimeConstant = 0.4;
-      this.gainNode.connect(splitter);
-      this.gainNode.connect(this.analyser);
-      splitter.connect(this.leftAnalyser, 0);
-      splitter.connect(this.rightAnalyser, 1);
-      this.analyser.connect(this.ctx.destination);
+     *  gesture the first time. Subsequent calls reuse the same context. */
+    private ensureContext(): AudioContext {
+      if (!this.ctx) {
+        const w = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+        const Ctor = w.AudioContext || w.webkitAudioContext;
+        if (!Ctor) throw new Error("Web Audio API not supported in this environment");
+        this.ctx = new Ctor();
+        this.gainNode = this.ctx.createGain();
+        this.gainNode.gain.value = this.muted ? 0 : this.volume;
+        this.analyser = this.ctx.createAnalyser();
+        this.analyser.fftSize = 1024;
+        const splitter = this.ctx.createChannelSplitter(2);
+        this.leftAnalyser = this.ctx.createAnalyser();
+        this.rightAnalyser = this.ctx.createAnalyser();
+        this.leftAnalyser.fftSize = 1024;
+        this.rightAnalyser.fftSize = 1024;
+        this.leftAnalyser.smoothingTimeConstant = 0.4;
+        this.rightAnalyser.smoothingTimeConstant = 0.4;
+        // Audio reaches speakers via splitter → destination (single tap, no extra
+        // node in the audible path). The analyser is a metering-only tap off
+        // gainNode; left/right analysers are metering taps off splitter.
+        this.gainNode.connect(splitter);
+        splitter.connect(this.ctx.destination);
+        this.gainNode.connect(this.analyser);
+        splitter.connect(this.leftAnalyser, 0);
+        splitter.connect(this.rightAnalyser, 1);
+      }
+      return this.ctx;
     }
-    return this.ctx;
-  }
 
   /** Get the underlying AudioContext (null until first use). */
   getContext(): AudioContext | null {
