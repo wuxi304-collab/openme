@@ -227,7 +227,7 @@ export default function CodeEditor({ content, language, onChange }: Props) {
             scrollBeyondLastLine: false,
             renderLineHighlight: "line",
             cursorBlinking: "smooth",
-            cursorSmoothCaretAnimation: "on",
+            cursorSmoothCaretAnimation: true,
             smoothScrolling: true,
             tabSize: settings.tabSize,
             insertSpaces: true,
@@ -240,8 +240,7 @@ export default function CodeEditor({ content, language, onChange }: Props) {
             contextmenu: true,
             folding: true,
             foldingHighlight: false,
-            bracketPairColorization: { enabled: true },
-          }}
+          } as unknown as Parameters<typeof Editor>[0]["options"]}
           loading={
             <div className="flex items-center justify-center h-full" style={{ background: "#0d1117" }}>
               <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>{t("codeEditorLoading")}</span>
