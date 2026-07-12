@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useI18n } from "../../i18n";
 import { isLosslessExtension } from "../../utils/audioFormat";
 import ViewerError from "../ViewerError";
+import { probeAudioSupport, type AudioProbeResult } from "../../utils/audioCodecSupport";
+import AudioUnsupported from "./AudioUnsupported";
 import "../ViewerError.css";
 import LosslessAudioPlayer from "./LosslessAudioPlayer";
 import "./MediaViewer.css";
@@ -23,16 +25,27 @@ export default function MediaViewer({ filePath, kind }: Props) {
   const { t } = useI18n();
   const [source, setSource] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [codecProbe, setCodecProbe] = useState<AudioProbeResult | null>(null);
 
   useEffect(() => {
     let disposed = false;
     setError(null);
     setSource(null);
+    setCodecProbe(null);
 
     window.electronAPI
       .getMediaUrl(filePath)
       .then((url) => {
-        if (!disposed) setSource(url);
+        if (disposed) return;
+        setSource(url);
+        // Probe codec support for every non-lossless audio path too: even
+        // WAV/AIFF routed here (uncommon) or any future exotics. We use the
+        // same probe util so behaviour is consistent across players.
+        if (kind === "audio") {
+          probeAudioSupport(filePath, url)
+            .then((result) => { if (!disposed) setCodecProbe(result); })
+            .catch(() => { /* ignored — fallback to <audio> deck */ });
+        }
       })
       .catch((reason) => {
         if (!disposed) setError(reason instanceof Error ? reason.message : t("mediaLoadFailed"));
@@ -41,7 +54,7 @@ export default function MediaViewer({ filePath, kind }: Props) {
     return () => {
       disposed = true;
     };
-  }, [filePath, t]);
+  }, [filePath, kind, t]);
 
   if (error) {
     return <MediaFallback filePath={filePath} kind={kind} message={error} />;
@@ -75,6 +88,11 @@ export default function MediaViewer({ filePath, kind }: Props) {
             >
               {t("mediaVideoFallbackBody")}
             </video>
+          ) : codecProbe?.status === "unsupported" ? (
+            <AudioUnsupported
+              filePath={filePath}
+              probe={codecProbe}
+            />
           ) : (
             <div className="audio-deck">
               <div className="audio-disc" aria-hidden="true"><i /></div>

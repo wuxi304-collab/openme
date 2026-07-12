@@ -611,3 +611,44 @@
   @media (prefers-reduced-motion: reduce) {
     .ll-btn:active:not(:disabled) { transform: none; }
   }
+
+/* ---------- Audio codec fallback (PR #140) ---------- */
+.audio-unsupported {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  margin-top: 14px;
+}
+.audio-unsupported .viewer-error-card {
+  width: 100%;
+  max-width: 520px;
+  background: linear-gradient(180deg, #2a1414 0%, #1a0e0e 100%);
+  border-color: #ff8a8a44;
+}
+.audio-unsupported-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 8px;
+}
+.audio-unsupported-chip {
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #ffffff14;
+  background: #ffffff08;
+  color: #c8d4e5;
+}
+.audio-unsupported-suggestions {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #94a0bc;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .audio-unsupported .viewer-error-card { transition: none; }
+}

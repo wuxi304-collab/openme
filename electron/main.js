@@ -76,15 +76,34 @@ const isDev = !app.isPackaged && process.env.OPENME_USE_DIST !== "1";
 const DEV_ORIGIN = "http://localhost:1420";
 
 function buildContentSecurityPolicy() {
-  // For dev allow inline scripts injected by Vite (HMR/react-refresh). Do NOT include 'unsafe-inline' in production.
-  const scriptSrc = isDev ? "'self' 'unsafe-eval' 'unsafe-inline' http://localhost:1420" : "'self'";
-  const connectSrc = isDev ? "'self' http://localhost:1420 ws://localhost:1420 openme-media:" : "'self' openme-media:";
+  // Dev allowance: Vite HMR / react-refresh inject inline scripts and rely on
+  // eval-based module evaluation, so we have to grant 'unsafe-inline' +
+  // 'unsafe-eval' to script-src. We *narrow* it with a host allow-list so a
+  // future injection of remote scripts would still be blocked. Production
+  // CSP keeps 'self' only — see electron-builder release config.
+  const scriptSrc = isDev
+    ? "'self' 'unsafe-inline' 'unsafe-eval' http://localhost:1420"
+    : "'self'";
+  const connectSrc = isDev
+    ? "'self' http://localhost:1420 ws://localhost:1420 openme-media:"
+    : "'self' openme-media:";
+  // stylesheet links from googleapis + woff2 binaries from gstatic.
+  // Pulled from src/index.css which @imports the Catamaran + JetBrains Mono
+  // families for the Mario landing page. Without these hosts the landing
+  // background hero silently falls back to sans-serif in dev.
+  const styleSrc = isDev
+    ? "'self' 'unsafe-inline' https://fonts.googleapis.com"
+    : "'self' 'unsafe-inline'";
+  const fontSrc = isDev
+    ? "'self' data: https://fonts.gstatic.com"
+    : "'self' data:";
   return [
     "default-src 'self'",
     `script-src ${scriptSrc}`,
-    "style-src 'self' 'unsafe-inline'",
+    `style-src ${styleSrc}`,
+    "style-src-elem " + (isDev ? "'self' 'unsafe-inline' https://fonts.googleapis.com" : "'self' 'unsafe-inline'"),
     "img-src 'self' data: blob: openme-media:",
-    "font-src 'self' data:",
+    `font-src ${fontSrc}`,
     "media-src 'self' blob: openme-media:",
     `connect-src ${connectSrc}`,
     "object-src 'none'",
