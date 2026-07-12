@@ -134,6 +134,14 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
   const [repeatMode, setRepeatMode] = useState<"off" | "all" | "one">("off");
   const [abLoop, setAbLoop] = useState<AbLoop | null>(null);
   const [queueOpen, setQueueOpen] = useState(true);
+  // Keyboard-driven focus position inside the queue listbox. Defaults to the
+  // currently-playing track (or 0 if nothing has started yet). The roving
+  // tabindex pattern means only this row is in the tab sequence; arrow keys
+  // move focus + the active descendant reference for screen readers.
+  const [queueFocusIndex, setQueueFocusIndex] = useState<number>(() =>
+    currentIndex >= 0 ? currentIndex : 0,
+  );
+  const queueListRef = useRef<HTMLOListElement | null>(null);
 
   // Persist volume + queue on change.
   useEffect(() => {
@@ -519,6 +527,63 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
     window.electronAPI.openInSystem(filePath);
   }, [filePath]);
 
+    // Queue listbox keyboard nav. Lives ABOVE the conditional `if (error)
+    // return <ViewerError />` early return so the hook count stays stable
+    // across renders (mirrors the drag-to-seek ordering rationale above).
+    // The listbox implements the WAI-ARIA pattern: roving tabindex moves
+    // through rows with arrow keys, Home/End jump to the ends, Enter/Space
+    // activate, Escape collapses the wrapping <details> and returns focus
+    // to its summary so keyboard users can close without reaching for the
+    // mouse.
+    const moveQueueFocus = useCallback((next: number) => {
+      if (queue.length === 0) return;
+      const clamped = Math.max(0, Math.min(queue.length - 1, next));
+      setQueueFocusIndex(clamped);
+      // Synchronously move DOM focus to match state. The listbox lives
+      // inside a <details>, so we may need to scroll the row into view
+      // before focusing so the focus ring is actually visible.
+      queueListRef.current?.querySelectorAll<HTMLButtonElement>(".ll-queue-open")[clamped]?.focus();
+    }, [queue.length]);
+    const handleQueueKeyDown = useCallback((e: React.KeyboardEvent<HTMLOListElement>) => {
+      if (queue.length === 0) return;
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          moveQueueFocus(queueFocusIndex + 1);
+          return;
+        case "ArrowUp":
+          e.preventDefault();
+          moveQueueFocus(queueFocusIndex - 1);
+          return;
+        case "Home":
+          e.preventDefault();
+          moveQueueFocus(0);
+          return;
+        case "End":
+          e.preventDefault();
+          moveQueueFocus(queue.length - 1);
+          return;
+        case "Enter":
+        case " ":
+          // Browser would scroll the page — activate the row instead.
+          e.preventDefault();
+          playIndex(queueFocusIndex);
+          return;
+        case "Escape": {
+          e.preventDefault();
+          // Collapse the <details> and move focus to its summary so the
+          // user can keep tabbing through the chrome instead of being
+          // stranded inside the (now hidden) listbox.
+          setQueueOpen(false);
+          const summary = queueListRef.current?.closest<HTMLDetailsElement>(".ll-queue")?.querySelector<HTMLElement>("summary");
+          // Defer the focus call until after the <details> has collapsed
+          // and removed the listbox from the layout.
+          window.setTimeout(() => summary?.focus(), 0);
+          return;
+        }
+      }
+    }, [queue.length, queueFocusIndex, moveQueueFocus, playIndex]);
+
   // Build quality badge class. The tier is just the variant; the
   // numeric summary comes from individual formatters.
   const tier: QualityTier = useMemo(() => getQualityTier(meta?.format), [meta]);
@@ -706,7 +771,7 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
 
         const cover = meta?.cover?.data ?? null;
 
-        return (
+                return (
         <div
           ref={rootRef}
           className={`lossless-player is-${tier}${playing ? " is-playing" : ""}${isSurround ? " is-surround" : ""}`}
@@ -874,25 +939,53 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
               if (picked) await importFolder(picked);
             }}>{t("losslessQueueAddFolder")}</button>
           </summary>
-          <ol className="ll-queue-list">
-            {queue.map((item, index) => (
-              <li key={item.path} className={`ll-queue-item${index === currentIndex ? " is-current" : ""}`}>
-                <button type="button" className="ll-queue-open" onClick={() => playIndex(index)} title={item.path}>
-                  <span className="ll-queue-num">{index + 1}</span>
-                  <span className="ll-queue-name">{item.name}</span>
-                </button>
-                <button type="button" className="ll-btn is-tiny" aria-label={t("losslessQueueRemove")} onClick={() => {
-                  setQueue((prev) => {
-                    const next = prev.filter((_, i) => i !== index);
-                    if (index < currentIndex) setCurrentIndex((ci) => ci - 1);
-                    else if (index === currentIndex) setCurrentIndex(-1);
-                    return next;
-                  });
-                }}>×</button>
-              </li>
-            ))}
-            {queue.length === 0 ? <li className="ll-queue-empty">{t("losslessQueueEmpty")}</li> : null}
-          </ol>
+          <ol
+                      ref={queueListRef}
+                      className="ll-queue-list"
+                      role="listbox"
+                      aria-label={t("losslessQueueListAria")}
+                      aria-activedescendant={queue.length > 0 ? `ll-queue-opt-${queueFocusIndex}` : undefined}
+                      tabIndex={queue.length > 0 ? -1 : undefined}
+                      onKeyDown={handleQueueKeyDown}
+                    >
+                      {queue.map((item, index) => {
+                        const isFocused = index === queueFocusIndex;
+                        const isPlaying = index === currentIndex;
+                        const optionLabel = `${tf("losslessQueueOptionAria", { n: index + 1, total: queue.length })}${isPlaying ? `, ${t("losslessQueueOptionPlaying")}` : ""}`;
+                        return (
+                          <li
+                            key={item.path}
+                            id={`ll-queue-opt-${index}`}
+                            role="option"
+                            aria-selected={isPlaying}
+                            aria-current={isPlaying ? "true" : undefined}
+                            className={`ll-queue-item${isPlaying ? " is-current" : ""}`}
+                          >
+                            <button
+                              type="button"
+                              className="ll-queue-open"
+                              onClick={() => { setQueueFocusIndex(index); playIndex(index); }}
+                              onFocus={() => setQueueFocusIndex(index)}
+                              title={item.path}
+                              aria-label={optionLabel}
+                              tabIndex={isFocused ? 0 : -1}
+                            >
+                              <span className="ll-queue-num" aria-hidden="true">{index + 1}</span>
+                              <span className="ll-queue-name">{item.name}</span>
+                            </button>
+                            <button type="button" className="ll-btn is-tiny" aria-label={t("losslessQueueRemove")} onClick={() => {
+                              setQueue((prev) => {
+                                const next = prev.filter((_, i) => i !== index);
+                                if (index < currentIndex) setCurrentIndex((ci) => ci - 1);
+                                else if (index === currentIndex) setCurrentIndex(-1);
+                                return next;
+                              });
+                            }}>×</button>
+                          </li>
+                        );
+                      })}
+                      {queue.length === 0 ? <li className="ll-queue-empty">{t("losslessQueueEmpty")}</li> : null}
+                    </ol>
         </details>
       </div>
 

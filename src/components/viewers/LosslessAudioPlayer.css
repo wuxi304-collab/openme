@@ -562,6 +562,11 @@
   .ll-queue-open:hover { color: #fff; }
 }
 .ll-queue-item.is-current .ll-queue-open { color: #fff; }
+.ll-queue-open:focus-visible {
+  outline: 2px solid var(--accent, #5da9ff);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
 .ll-queue-num {
   width: 28px;
   flex: none;
