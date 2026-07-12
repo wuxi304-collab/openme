@@ -230,3 +230,54 @@ describe("FileSummaryPanel metadata section (en)", () => {
     expect(document.querySelector(".summary-suggested-apps")).toBeNull();
   });
 });
+
+  describe("FileSummaryPanel routing fidelity row (PR #152)", () => {
+    beforeEach(() => {
+      try { localStorage.setItem("openme.lang", "en"); } catch { /* noop */ }
+    });
+
+    it("renders Level + Adapter rows for direct-routed formats (en)", async () => {
+      installApi();
+      const pdfTab = makeTab({
+        path: "C:\\Users\\demo\\reports\\q3.pdf",
+        name: "q3.pdf",
+        sourceFile: { extension: ".pdf", size: 4096, modified_at: new Date().toISOString() },
+      });
+      render(<Providers><FileSummaryPanel tab={pdfTab} onOpenInSystem={() => undefined} /></Providers>);
+      await waitFor(() => screen.getByText("Level"));
+      expect(screen.getByText("Adapter")).toBeTruthy();
+      const pill = document.querySelector(".routing-level-direct");
+      expect(pill).not.toBeNull();
+      expect(pill?.textContent).toBe("Direct preview");
+    });
+
+    it("renders the routing rows in Chinese (zh)", async () => {
+      try { localStorage.setItem("openme.lang", "zh"); } catch { /* noop */ }
+      installApi();
+      const pdfTab = makeTab({
+        path: "C:\\Users\\demo\\reports\\q3.pdf",
+        name: "q3.pdf",
+        sourceFile: { extension: ".pdf", size: 4096, modified_at: new Date().toISOString() },
+      });
+      render(<Providers><FileSummaryPanel tab={pdfTab} onOpenInSystem={() => undefined} /></Providers>);
+      await waitFor(() => screen.getByText("等级"));
+      expect(screen.getByText("适配器")).toBeTruthy();
+      const pill = document.querySelector(".routing-level-direct");
+      expect(pill?.textContent).toBe("直接预览");
+    });
+
+    it("classifies CAD formats as semantic inspector", async () => {
+      installApi();
+      const dwgTab = makeTab({
+        path: "C:\\Users\\demo\\drawings\\shaft.dwg",
+        name: "shaft.dwg",
+        category: "cad",
+        sourceFile: { extension: ".dwg", size: 8192, modified_at: new Date().toISOString() },
+      });
+      render(<Providers><FileSummaryPanel tab={dwgTab} onOpenInSystem={() => undefined} /></Providers>);
+      await waitFor(() => screen.getByText("Level"));
+      const pill = document.querySelector(".routing-level-semantic");
+      expect(pill).not.toBeNull();
+      expect(pill?.textContent).toBe("Semantic inspector");
+    });
+  });

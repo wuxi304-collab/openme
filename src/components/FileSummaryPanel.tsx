@@ -18,6 +18,7 @@ import {
   getQualityTier,
   isLosslessExtension,
 } from "../utils/audioFormat";
+import { getViewerMatrixEntryByPath } from "../viewer-matrix";
 import type { AudioFormatProbe, ElectronAPI, FileHashResult, IpcFailureResult, RevealResult } from "../types/electron-api";
 
 interface FileSummaryPanelProps {
@@ -67,7 +68,8 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
   const { t, tf, lang } = useI18n();
   const { pushToast } = useToast();
   const registryFormat = getFileFormatByPath(tab.path);
-  const metadata = extractMetadata({
+    const viewerMatrix = getViewerMatrixEntryByPath(tab.path);
+    const metadata = extractMetadata({
     filePath: tab.path,
     fileName: tab.name,
     extension: tab.sourceFile?.extension,
@@ -230,11 +232,27 @@ export default function FileSummaryPanel({ tab, onOpenInSystem }: FileSummaryPan
                 <dt>{t("summaryRisk")}</dt>
                 <dd>{brief.riskLevel}</dd>
               </div>
-            </dl>
-            <CapabilityGrid format={registryFormat} />
-          </div>
-        </div>
-      )}
+                    {viewerMatrix && (
+                      <>
+                        <div>
+                          <dt>{t("summaryRoutingLevel")}</dt>
+                          <dd>
+                            <span className={`routing-level-pill routing-level-${viewerMatrix.level}`}>
+                              {t(`summaryLevel${viewerMatrix.level.charAt(0).toUpperCase()}${viewerMatrix.level.slice(1)}`)}
+                            </span>
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>{t("summaryRoutingAdapter")}</dt>
+                          <dd title={t("summaryRoutingHint")}>{viewerMatrix.adapter}</dd>
+                        </div>
+                      </>
+                    )}
+                  </dl>
+                  <CapabilityGrid format={registryFormat} />
+                </div>
+              </div>
+            )}
 
       {showAudioSection && audioProbe && (() => {
         const tier = getQualityTier({
