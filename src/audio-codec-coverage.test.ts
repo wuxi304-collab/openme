@@ -109,6 +109,14 @@ describe("AudioUnsupported fallback component", () => {
     expect(src).toMatch(/electronAPI\.openInSystem/);
   });
 
+  it("uses the localised audio badge, not a literal fallback string", () => {
+    // Regression guard: PR #140 originally called `t("losslessBadgeAudio")`
+    // which doesn't exist, so the user saw `LOSSLESSBADGEAUDIO` literally.
+    // The badge must come from the registered i18n key.
+    expect(src).toMatch(/badge=\{t\(["']mediaBadgeAudio["']\)\}/);
+    expect(src).not.toMatch(/losslessBadgeAudio/);
+  });
+
   it("shows format chips so the user can confirm what they're looking at", () => {
     expect(src).toMatch(/audio-unsupported-chip/);
     expect(src).toMatch(/container\.toUpperCase\(\)/);
