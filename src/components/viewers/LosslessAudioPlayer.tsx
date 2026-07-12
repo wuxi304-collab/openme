@@ -25,7 +25,12 @@ import {
 } from "../../utils/audioFormat";
 import { useAudioMeter } from "../../hooks/useAudioMeter";
 import AudioMeterBars from "./AudioMeterBars";
+import AudioUnsupported from "./AudioUnsupported";
 import ViewerError from "../ViewerError";
+import {
+  probeAudioSupport,
+  type AudioProbeResult,
+} from "../../utils/audioCodecSupport";
 import "../ViewerError.css";
 import "./LosslessAudioPlayer.css";
 
@@ -56,6 +61,11 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
   const [meta, setMeta] = useState<AudioMetadataResult | null>(null);
   const [source, setSource] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Runtime probe: if Chromium can't decode the format, we render an
+  // AudioUnsupported card *alongside* the metadata card, instead of the
+  // audio element.  This state is populated by the effect below once
+  // the source URL is known.
+  const [codecProbe, setCodecProbe] = useState<AudioProbeResult | null>(null);
 
   // Transport state.
   const [playing, setPlaying] = useState(false);
@@ -119,6 +129,7 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
     setCurrentTime(0);
     setDuration(null);
     setAbLoop(null);
+    setCodecProbe(null);
 
     // 1) read tags + cover
     window.electronAPI.getAudioMetadata(filePath)
@@ -141,7 +152,16 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
 
     // 2) resolve a play URL
     window.electronAPI.getMediaUrl(filePath)
-      .then((url) => { if (!disposed) setSource(url); })
+      .then((url) => {
+        if (disposed) return;
+        setSource(url);
+        // Kick off the codec probe now that we have a source URL.
+        // We resolve but don't await — the result will land in state and
+        // either keep us on the audio element or surface AudioUnsupported.
+        probeAudioSupport(filePath, url)
+          .then((result) => { if (!disposed) setCodecProbe(result); })
+          .catch(() => { /* ignored — fallback to plain <audio> deck */ });
+      })
       .catch((reason) => { if (!disposed) setError(reason instanceof Error ? reason.message : t("mediaLoadFailed")); });
 
     // 3) ensure the current path is in the queue so prev/next make sense.
@@ -450,6 +470,17 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
           <div className="ll-cell"><span className="ll-cell-k">{t("losslessDuration")}</span><span className="ll-cell-v">{formatDuration(totalDuration)}</span></div>
         </div>
 
+        {codecProbe?.status === "unsupported" ? (
+          <AudioUnsupported
+            filePath={filePath}
+            probe={codecProbe}
+            container={meta?.format.container ?? null}
+            bitDepth={meta?.format.bitsPerSample ?? null}
+            sampleRate={meta?.format.sampleRate ?? null}
+            channels={meta?.format.channels ?? null}
+          />
+        ) : null}
+
         <div className="ll-progress">
                   <div className="ll-times">
                     <span>{formatDuration(isDragging && dragTime != null ? dragTime : currentTime)}</span>
@@ -566,7 +597,7 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
 
       <audio
         ref={audioRef}
-        src={source ?? undefined}
+        src={codecProbe?.status === "unsupported" ? undefined : (source ?? undefined)}
         preload="metadata"
         onError={() => setError(t("mediaCodecUnsupported"))}
       >
