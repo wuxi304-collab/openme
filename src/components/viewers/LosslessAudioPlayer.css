@@ -417,6 +417,39 @@
   flex: 1;
   min-width: 0;
 }
+
+/* FFmpeg decode status (PR #146 — universal audio decoder). Shown while
+   the main process streams raw PCM back to the renderer. */
+.ll-decode-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #1a2238;
+  border: 1px solid #2a3554;
+  color: #94a0bc;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.ll-decode-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #3b4775;
+  border-top-color: #88a3ff;
+  animation: ll-decode-spin 0.9s linear infinite;
+}
+.ll-decode-label { color: #c8d3ec; }
+.ll-decode-bytes { color: #6f7a93; margin-left: 4px; }
+@keyframes ll-decode-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ll-decode-spinner { animation: none; border-top-color: #88a3ff; opacity: 0.7; }
+}
 .ll-queue > summary .ll-btn { margin-left: auto; }
 .ll-queue-list {
   list-style: none;

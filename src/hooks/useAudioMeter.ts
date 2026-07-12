@@ -25,8 +25,15 @@ import {
 } from "../utils/audioMeter";
 
 interface Options {
-  /** React ref to the HTMLAudioElement the meter should listen to. */
-  audioRef: React.RefObject<HTMLAudioElement | null>;
+  /** React ref to the HTMLAudioElement the meter should listen to.
+   *  Optional when an external analyser pair is supplied. */
+  audioRef?: React.RefObject<HTMLAudioElement | null>;
+  /** Pre-built analyser nodes from an external audio graph (Web Audio engine).
+   *  If supplied, the audioRef-based graph is not built and these analysers
+   *  drive the meter instead. */
+  analyserNodes?: { left: AnalyserNode; right: AnalyserNode } | null;
+  /** AudioContext to resume() while playing (e.g. the engine's context). */
+  audioContext?: AudioContext | null;
   /** Whether playback is currently active. */
   playing: boolean;
   /** Whether a media source URL has been resolved. */
@@ -37,9 +44,10 @@ const EMIT_INTERVAL_MS = 100;
 
 type PeakHoldState = { peak: number; capturedAt: number };
 
-export function useAudioMeter({ audioRef, playing, sourceReady }: Options) {
+export function useAudioMeter({ audioRef, analyserNodes, audioContext, playing, sourceReady }: Options) {
   const [frame, setFrame] = useState<MeterFrame>(emptyMeterFrame());
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const externalAnalysersRef = useRef<{ left: AnalyserNode; right: AnalyserNode } | null>(null);
   const leftAnalyserRef = useRef<AnalyserNode | null>(null);
   const rightAnalyserRef = useRef<AnalyserNode | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -47,11 +55,21 @@ export function useAudioMeter({ audioRef, playing, sourceReady }: Options) {
   const peakLeftRef = useRef<PeakHoldState>({ peak: 0, capturedAt: 0 });
   const peakRightRef = useRef<PeakHoldState>({ peak: 0, capturedAt: 0 });
 
+  // Pre-built analyser mode: caller owns the audio graph (e.g. AudioEngine).
+  useEffect(() => {
+    externalAnalysersRef.current = analyserNodes ?? null;
+    if (analyserNodes) {
+      leftAnalyserRef.current = analyserNodes.left;
+      rightAnalyserRef.current = analyserNodes.right;
+    }
+  }, [analyserNodes]);
+
   // Build the audio graph once we have both an audio element AND a resolved
   // media source. Re-running the effect won't rebuild — we keep the refs.
   useEffect(() => {
+    if (analyserNodes) return; // external mode; skip internal graph
     if (!sourceReady) return;
-    const el = audioRef.current;
+    const el = audioRef?.current;
     if (!el) return;
     if (audioCtxRef.current) return; // already built
     const AudioCtor: typeof AudioContext | undefined =
@@ -96,7 +114,7 @@ export function useAudioMeter({ audioRef, playing, sourceReady }: Options) {
     const analyserR = rightAnalyserRef.current;
     if (!analyserL || !analyserR) return;
 
-    const ctx = audioCtxRef.current;
+    const ctx = audioCtxRef.current ?? audioContext ?? null;
     if (ctx && ctx.state === "suspended") void ctx.resume();
 
     const bufferL = new Uint8Array(analyserL.fftSize);

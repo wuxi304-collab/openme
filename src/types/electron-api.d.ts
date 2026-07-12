@@ -44,6 +44,15 @@ export interface ElectronAPI {
   getAudioMetadata: (path: string) => Promise<AudioMetadataResult | IpcFailureResult>;
   getAudioFormat: (path: string) => Promise<AudioFormatProbe | IpcFailureResult>;
   listAudioInFolder: (folderPath: string, options?: { recursive?: boolean; limit?: number }) => Promise<ListAudioFolderResult | IpcFailureResult>;
+  /** Universal audio decoder (PR #146) — main process uses ffmpeg-static to
+   *  decode the file into f32le PCM and streams chunks back via IPC events.
+   *  `decodeAudioPcm` returns once the file is fully streamed. */
+  decodeAudioPcm: (path: string, options: { targetSampleRate?: number; targetChannels?: number; expectedBytes?: number | null }) => Promise<{ ok: boolean; requestId: string; totalBytes?: number; error?: { code: string; message: string }; meta?: AudioFfmpegMeta | null }>;
+  cancelAudioDecode: (requestId: string) => void;
+  getFfmpegInfo: () => Promise<{ available: boolean; ffmpegPath?: string; version?: string }>;
+  onAudioPcmMeta: (cb: (payload: { requestId: string; ok: boolean; meta: AudioFfmpegMeta | null }) => void) => () => void;
+  onAudioPcmChunk: (cb: (payload: { requestId: string; bytes: ArrayBuffer }) => void) => () => void;
+  onAudioPcmDone: (cb: (payload: { requestId: string; ok: boolean; totalBytes: number; error?: { code: string; message: string } }) => void) => () => void;
   readEpub: (path: string) => Promise<{ success: boolean; book?: EpubBook; message?: string }>;
   getCadEngineStatus: () => Promise<CadEngineStatus>;
   inspectCadDocument: (path: string) => Promise<CadInspectionResult>;
@@ -219,4 +228,17 @@ export interface ZipEntry {
   isDir: boolean;
   size: number;
   safe?: boolean;
+}
+
+// AudioFfmpegMeta mirrors the structure emitted by electron/audioFfmpeg.js
+// over the audio-pcm-meta IPC event. See src/utils/audioFfmpegDecoder.ts.
+export interface AudioFfmpegMeta {
+  sampleRate: number | null;
+  channels: number | null;
+  bitDepth: number | null;
+  durationSec: number | null;
+  codec: string | null;
+  container: string | null;
+  lossless: boolean | null;
+  bitrate: number | null;
 }

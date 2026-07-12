@@ -31,6 +31,28 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getMediaUrl: (path) => ipcRenderer.invoke("get-media-url", path),
   getAudioMetadata: (path) => ipcRenderer.invoke("get-audio-metadata", path),
   getAudioFormat: (path) => ipcRenderer.invoke("get-audio-format", path),
+  // Universal audio decoder (ffmpeg-static → raw f32le PCM over IPC).
+  // The renderer registers `onAudioPcmMeta/Chunk/Done` listeners BEFORE
+  // calling `decodeAudioPcm` so it never misses the meta event that
+  // precedes the chunk stream.
+  decodeAudioPcm: (filePath, options) => ipcRenderer.invoke("decode-audio-pcm", { filePath, options }),
+  cancelAudioDecode: (requestId) => ipcRenderer.send("decode-audio-cancel", { requestId }),
+  getFfmpegInfo: () => ipcRenderer.invoke("get-ffmpeg-info"),
+  onAudioPcmMeta: (cb) => {
+    const listener = (_e, payload) => cb(payload);
+    ipcRenderer.on("audio-pcm-meta", listener);
+    return () => ipcRenderer.removeListener("audio-pcm-meta", listener);
+  },
+  onAudioPcmChunk: (cb) => {
+    const listener = (_e, payload) => cb(payload);
+    ipcRenderer.on("audio-pcm-chunk", listener);
+    return () => ipcRenderer.removeListener("audio-pcm-chunk", listener);
+  },
+  onAudioPcmDone: (cb) => {
+    const listener = (_e, payload) => cb(payload);
+    ipcRenderer.on("audio-pcm-done", listener);
+    return () => ipcRenderer.removeListener("audio-pcm-done", listener);
+  },
   listAudioInFolder: (folderPath, options) => ipcRenderer.invoke("list-audio-in-folder", folderPath, options),
   readEpub: (path) => ipcRenderer.invoke("read-epub", path),
   getCadEngineStatus: () => ipcRenderer.invoke("get-cad-engine-status"),
