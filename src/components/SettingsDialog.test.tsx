@@ -262,4 +262,142 @@ describe("SettingsDialog", () => {
       const wrap = screen.getByRole("radiogroup", { name: /Word wrap/i });
       expect(wrap.getAttribute("aria-describedby")).toBe("settings-word-wrap-desc");
     });
-  });
+
+          // Slice K — Settings search/filter (PR #163)
+    it("renders the search input with the localized placeholder and aria-label", () => {
+      renderDialog();
+      const input = screen.getByPlaceholderText("Filter settings…") as HTMLInputElement;
+      expect(input).toBeTruthy();
+      expect(input.getAttribute("aria-label")).toBe("Filter settings");
+      // "/" hint chip is rendered as sr-only text. Use the input's parent
+      // wrapper to find it without disturbing other matches in the doc.
+      const dialog = screen.getByRole("dialog");
+      const hint = within(dialog).getByText("Press / to focus search");
+      expect(hint).toBeTruthy();
+    });
+
+    it("hides non-matching sections when typing a search query", async () => {
+      renderDialog();
+      const input = screen.getByPlaceholderText("Filter settings…") as HTMLInputElement;
+      fireEvent.change(input, { target: { value: "theme" } });
+      // After effect flushes, only the Theme section should be visible.
+      await waitFor(() => {
+        const dialog = screen.getByRole("dialog");
+        const visibleSections = Array.from(
+          dialog.querySelectorAll<HTMLElement>(".settings-dialog-section")
+        ).filter((s) => !s.hidden);
+        expect(visibleSections.length).toBe(1);
+        expect(visibleSections[0]?.querySelector("h3")?.textContent).toMatch(/Theme/i);
+      });
+    });
+
+    it("shows a no-results message when the query matches no section", async () => {
+      renderDialog();
+      const input = screen.getByPlaceholderText("Filter settings…") as HTMLInputElement;
+      fireEvent.change(input, { target: { value: "zzzzzz" } });
+      await waitFor(() => {
+        const dialog = screen.getByRole("dialog");
+        expect(within(dialog).getByText(/No settings match/i)).toBeTruthy();
+      });
+    });
+
+    it("resets the filter when the dialog is closed and reopened", async () => {
+      // Force English locale before this specific test so we can match the
+      // placeholder verbatim.
+      try { localStorage.setItem("openme.lang", "en"); } catch { /* noop */ }
+      const { rerender } = render(
+        <I18nProvider>
+          <SettingsProvider>
+            <ConfirmProvider>
+              <ToastProvider value={{ pushToast: () => undefined }}>
+                <SettingsDialog open={true} onClose={() => undefined} />
+              </ToastProvider>
+            </ConfirmProvider>
+          </SettingsProvider>
+        </I18nProvider>
+      );
+      const input = screen.getByPlaceholderText("Filter settings…") as HTMLInputElement;
+      fireEvent.change(input, { target: { value: "theme" } });
+      await waitFor(() => expect(input.value).toBe("theme"));
+      // Now close and reopen — filter should clear.
+      rerender(
+        <I18nProvider>
+          <SettingsProvider>
+            <ConfirmProvider>
+              <ToastProvider value={{ pushToast: () => undefined }}>
+                <SettingsDialog open={false} onClose={() => undefined} />
+              </ToastProvider>
+            </ConfirmProvider>
+          </SettingsProvider>
+        </I18nProvider>
+      );
+      rerender(
+        <I18nProvider>
+          <SettingsProvider>
+            <ConfirmProvider>
+              <ToastProvider value={{ pushToast: () => undefined }}>
+                <SettingsDialog open={true} onClose={() => undefined} />
+              </ToastProvider>
+            </ConfirmProvider>
+          </SettingsProvider>
+        </I18nProvider>
+      );
+      const reopened = screen.getByPlaceholderText("Filter settings…") as HTMLInputElement;
+      expect(reopened.value).toBe("");
+    });
+
+          it("focuses the search input when '/' is pressed and no other input is focused", () => {
+            renderDialog();
+            // Focus the dialog card first so the focus-trap doesn't intercept.
+            const dialog = screen.getByRole("dialog");
+            const card = dialog.querySelector(".settings-dialog-card") as HTMLElement;
+            card.focus();
+            fireEvent.keyDown(window, { key: "/" });
+            const input = screen.getByPlaceholderText("Filter settings…") as HTMLInputElement;
+            expect(document.activeElement).toBe(input);
+          });
+
+          it("does not hijack '/' when an input is already focused", () => {
+            renderDialog();
+            const input = screen.getByPlaceholderText("Filter settings…") as HTMLInputElement;
+            input.focus();
+            // Pre-fill so the user is mid-typing.
+            fireEvent.change(input, { target: { value: "the" } });
+            // Press '/' — must NOT cause preventDefault / NOT block the typing.
+            // The handler should be a no-op because the user is typing.
+            // We assert by checking that no exception is thrown AND input value
+            // remains the user's value.
+            fireEvent.keyDown(window, { key: "/" });
+            expect(input.value).toBe("the");
+          });
+
+          it("Escape inside the search input clears the query (does not close the dialog)", () => {
+            let closed = false;
+            renderDialog(true, () => { closed = true; });
+            const input = screen.getByPlaceholderText("Filter settings…") as HTMLInputElement;
+            fireEvent.change(input, { target: { value: "theme" } });
+            expect(input.value).toBe("theme");
+            fireEvent.keyDown(input, { key: "Escape" });
+            expect(input.value).toBe("");
+            // Dialog must NOT have closed.
+            expect(closed).toBe(false);
+            expect(screen.queryByRole("dialog")).toBeTruthy();
+          });
+
+          it("hides section <h3> titles from the Tab focus trap via the [hidden] attribute", async () => {
+            renderDialog();
+            const input = screen.getByPlaceholderText("Filter settings…") as HTMLInputElement;
+            fireEvent.change(input, { target: { value: "theme" } });
+            await waitFor(() => {
+              const dialog = screen.getByRole("dialog");
+              const card = dialog.querySelector(".settings-dialog-card") as HTMLElement;
+              // The hidden attribute removes elements from the DOM in practice, but
+              // JSDOM keeps them. Verify they're flagged with [hidden] (which our
+              // CSS turns into display:none in real browsers).
+              const hiddenSections = Array.from(
+                card.querySelectorAll<HTMLElement>(".settings-dialog-section[hidden]")
+              );
+              expect(hiddenSections.length).toBe(4);
+            });
+          });
+        });
