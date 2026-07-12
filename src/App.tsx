@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { I18nProvider, useI18n } from "./i18n";
 import { ThemeProvider } from "./theme";
 import { SettingsProvider, useSettings } from "./settings";
@@ -19,6 +19,7 @@ import { ConfirmProvider, useCloseAllConfirm, useCloseTabConfirm } from "./compo
 import { ToastProvider } from "./components/useToast";
 import { ToastStack, nextToastId, type ToastEntry, type ToastKind } from "./components/Toast";
 import AppErrorBoundary from "./components/AppErrorBoundary";
+import FileDropZone from "./components/FileDropZone";
 import { installErrorCapture } from "./utils/errorLog";
 
 // Electron's preload extends the standard `File` with a `path` field —
@@ -280,6 +281,35 @@ function AppShell() {
 
   const handleContentChange = useCallback((content: string) => { if (!activeTabId) return; setTabs((prev) => prev.map((t) => t.id === activeTabId ? { ...t, content, isDirty: true } : t)); }, [activeTabId]);
   const handleDrop = useCallback((event: React.DragEvent) => { event.preventDefault(); const paths = Array.from(event.dataTransfer.files).map((file) => (file as FileWithPath).path).filter((path): path is string => typeof path === "string" && path.length > 0); if (paths.length) handleFilePaths(paths); }, [handleFilePaths]);
+
+  // Drop overlay state. dragenter/dragleave fire on every child boundary
+  // transition, so we keep a counter that only flips the overlay on/off
+  // when the count reaches 0/1. The overlay itself is pointer-events:none
+  // (see FileDropZone overlay variant), so it never disturbs the counter.
+  const [dropOverlayActive, setDropOverlayActive] = useState(false);
+  const dropCounterRef = useRef(0);
+  const onWorkspaceDragEnter = useCallback((event: React.DragEvent) => {
+    if (!event.dataTransfer.types || !Array.from(event.dataTransfer.types).includes("Files")) return;
+    event.preventDefault();
+    dropCounterRef.current += 1;
+    if (dropCounterRef.current === 1) setDropOverlayActive(true);
+  }, []);
+  const onWorkspaceDragOver = useCallback((event: React.DragEvent) => {
+    // dragover's dataTransfer.types is the union of all entering types. We
+    // accept any File drag here — the overlay only depends on the counter.
+    if (!event.dataTransfer.types || !Array.from(event.dataTransfer.types).includes("Files")) return;
+    event.preventDefault();
+  }, []);
+  const onWorkspaceDragLeave = useCallback((event: React.DragEvent) => {
+    if (!event.dataTransfer.types || !Array.from(event.dataTransfer.types).includes("Files")) return;
+    event.preventDefault();
+    dropCounterRef.current = Math.max(0, dropCounterRef.current - 1);
+    if (dropCounterRef.current === 0) setDropOverlayActive(false);
+  }, []);
+  const closeDropOverlay = useCallback(() => {
+    dropCounterRef.current = 0;
+    setDropOverlayActive(false);
+  }, []);
   const activateRelativeTab = useCallback((direction: 1 | -1) => { if (tabs.length < 2) return; const current = Math.max(0, tabs.findIndex((tab) => tab.id === activeTabId)); setActiveTabId(tabs[(current + direction + tabs.length) % tabs.length].id); }, [tabs, activeTabId]);
 
   const commands = useMemo<CommandItem[]>(() => {
@@ -336,7 +366,7 @@ function AppShell() {
             <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} onReorder={handleReorderTabs} />
             <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
               <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} totalCount={recentFiles.length} onReveal={handleRevealRecent} onOpenInSystem={handleOpenRecentInSystem} />
-              <main id="main-content" role="main" aria-label={t("appMainAria")} tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
+              <main id="main-content" role="main" aria-label={t("appMainAria")} tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={onWorkspaceDragOver} onDragEnter={onWorkspaceDragEnter} onDragLeave={onWorkspaceDragLeave}>
                 {tabs.length === 0 ? <EmptyState onOpenDialog={handleOpenDialog} recentFiles={recentFiles} onOpenRecent={(file) => { void openFileInTab(file); }} /> : activeTab ? (
                   <div className="workspace-viewer-grid"><div className="workspace-viewer-main">{activeTab.isLoading ? <LoadingState /> : <ViewerRouter tab={activeTab} onChange={handleContentChange} onRetry={activeTab.sourceFile ? () => { void retryTab(activeTab.id); } : undefined} />}</div><FileSummaryPanel tab={activeTab} onOpenInSystem={() => window.electronAPI.openInSystem(activeTab.path)} /></div>
                 ) : null}
@@ -367,6 +397,15 @@ function AppShell() {
             <ToastStack toasts={toasts} onDismiss={dismissToast} />
             <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
             <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+            {dropOverlayActive ? (
+              <FileDropZone
+                variant="overlay"
+                onFileDrop={(paths) => {
+                  closeDropOverlay();
+                  void handleFilePaths(paths);
+                }}
+              />
+            ) : null}
           </div>
         </AppErrorBoundary>
       </ToastProvider>
