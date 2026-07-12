@@ -152,6 +152,85 @@
   gap: 18px;
 }
 
+/* Slice K — Settings search/filter (PR #163)
+ * Filter row at the top of the dialog body. Sits in normal flow above the
+ * sections so a hidden section still leaves the input visible — and so
+ * Tab/Shift+Tab focus trap picks it up as the first focusable child.
+ * Hint chip stays muted and tiny (matches the `/` chord convention used
+ * in VSCode / GitHub).
+ */
+.settings-dialog-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0 0 0;
+  border-bottom: 1px dashed var(--border-muted, rgba(255, 255, 255, 0.04));
+  margin-bottom: -4px;
+}
+  .settings-dialog-search-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: var(--bg-canvas, rgba(255, 255, 255, 0.03));
+    color: var(--text-primary, #e8ecf3);
+    border: 1px solid var(--border-default, rgba(255, 255, 255, 0.08));
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color var(--dur-fast, 140ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+                box-shadow var(--dur-fast, 140ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+  }
+  .settings-dialog-search-input::placeholder {
+    color: var(--text-muted, rgba(232, 236, 243, 0.55));
+  }
+  .settings-dialog-search-input:focus-visible {
+    border-color: var(--mario-yellow, #efc14f);
+    box-shadow: 0 0 0 2px rgba(239, 193, 79, 0.18);
+  }
+  .settings-dialog-search-input::-webkit-search-cancel-button {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--text-muted, rgba(232, 236, 243, 0.55));
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><path d='M3 3 L11 11 M11 3 L3 11' stroke='black' stroke-width='1.5' stroke-linecap='round' fill='none'/></svg>") no-repeat center / 14px 14px;
+            mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><path d='M3 3 L11 11 M11 3 L3 11' stroke='black' stroke-width='1.5' stroke-linecap='round' fill='none'/></svg>") no-repeat center / 14px 14px;
+    cursor: pointer;
+  }
+  .settings-dialog-search-hint {
+    flex: 0 0 auto;
+    font-size: 11px;
+    color: var(--text-muted, rgba(232, 236, 243, 0.55));
+    padding: 3px 7px;
+    border: 1px solid var(--border-muted, rgba(255, 255, 255, 0.06));
+    border-radius: 4px;
+    background: var(--bg-canvas, rgba(255, 255, 255, 0.02));
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+    user-select: none;
+  }
+
+.settings-dialog-section[hidden] {
+  display: none;
+}
+
+.settings-dialog-no-results {
+  margin: 12px 0 4px 0;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--text-muted, rgba(232, 236, 243, 0.7));
+  background: var(--bg-canvas, rgba(255, 255, 255, 0.02));
+  border: 1px dashed var(--border-default, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  text-align: center;
+  font-style: italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-dialog-search-input {
+    transition: none;
+  }
+}
+
 .settings-dialog-section {
   display: flex;
   flex-direction: column;

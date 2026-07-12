@@ -19,10 +19,17 @@ export default function SettingsDialog({ open, onClose }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [storagePath, setStoragePath] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
       const resettingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredOut, setFilteredOut] = useState<number>(0);
+    // Total number of <section class="settings-dialog-section"> blocks — used
+    // by the no-results message to know when EVERY section is hidden by the
+    // current search query.
+    const TOTAL_SECTIONS = 5;
 
   const handleExport = useCallback(async () => {
     if (!window.electronAPI?.exportSettingsToFile) {
@@ -174,7 +181,9 @@ export default function SettingsDialog({ open, onClose }: Props) {
       setCopied(false);
       if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
       copiedTimerRef.current = null;
-    }, [open]);
+        setSearchQuery("");
+        setFilteredOut(0);
+      }, [open]);
 
   // Fetch the settings storage path (userData). Only available when
   // running inside Electron — gracefully degrade in browser mode.
@@ -211,6 +220,54 @@ export default function SettingsDialog({ open, onClose }: Props) {
           if (resettingTimerRef.current) clearTimeout(resettingTimerRef.current);
         };
       }, []);
+
+  // Filter sections by search query: hide any <section> whose <h3> title
+  // doesn't match. We do this imperatively (vs. conditional rendering) so
+  // the focus-trap above can keep querying the live DOM without being told
+  // about the filter — hidden sections are skipped naturally by being
+  // display:none. State is reflected in `filteredOut` so the no-results
+  // message can render reactively.
+  useEffect(() => {
+    if (!open) return;
+    const card = cardRef.current;
+    if (!card) return;
+    const sections = card.querySelectorAll<HTMLElement>(".settings-dialog-section");
+    const q = searchQuery.trim().toLowerCase();
+    let hidden = 0;
+    sections.forEach((section) => {
+      const heading = section.querySelector(".settings-dialog-section-title");
+      const title = (heading?.textContent ?? "").toLowerCase();
+      const match = q === "" || title.includes(q);
+      section.hidden = !match;
+      if (!match) hidden += 1;
+    });
+    setFilteredOut(hidden);
+  }, [open, searchQuery]);
+
+  // Press "/" anywhere in the dialog to focus the search input (VSCode
+  // convention). Skip when the user is already typing in an input/textarea
+  // or contenteditable element so we don't hijack search fields in
+  // upcoming options.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "/") return;
+      const active = document.activeElement as HTMLElement | null;
+      const tag = active?.tagName;
+      const isTyping =
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        active?.isContentEditable === true;
+      if (isTyping) return;
+      const input = searchInputRef.current;
+      if (!input) return;
+      event.preventDefault();
+      input.focus();
+      input.select();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   // Focus trap: cycle Tab / Shift+Tab within the dialog card so keyboard
   // users can't escape into the page background.
@@ -284,6 +341,36 @@ export default function SettingsDialog({ open, onClose }: Props) {
         </header>
 
         <div className="settings-dialog-body">
+          <div className="settings-dialog-search">
+            <input
+              ref={searchInputRef}
+              type="search"
+              className="settings-dialog-search-input"
+              placeholder={t("settingsSearchPlaceholder")}
+              aria-label={t("settingsSearchAria")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape" && searchQuery !== "") {
+                              // Block the dialog-level Escape handler so the user only
+                              // clears the filter on the first press; a second Escape
+                              // closes the dialog (matches VSCode's command palette).
+                              e.preventDefault();
+                              e.stopPropagation();
+                              e.nativeEvent.stopImmediatePropagation();
+                              setSearchQuery("");
+                            }
+                          }}
+                        />
+            <span className="settings-dialog-search-hint" aria-hidden="true">
+              {t("settingsSearchHint")}
+            </span>
+          </div>
+          {searchQuery.trim() !== "" && filteredOut === TOTAL_SECTIONS && (
+                      <div className="settings-dialog-no-results" role="status">
+                        {tf("settingsSearchNoResults", { query: searchQuery })}
+                      </div>
+                    )}
           <section className="settings-dialog-section" aria-labelledby="settings-theme-title">
             <h3 id="settings-theme-title" className="settings-dialog-section-title">{t("settingsThemeTitle")}</h3>
                       <p id="settings-theme-desc" className="settings-dialog-section-desc">{t("settingsThemeDesc")}</p>

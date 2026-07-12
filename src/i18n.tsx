@@ -1162,7 +1162,13 @@ export const translations: Record<string, Record<string, string>> = {
     settingsResetConfirmConfirm: "恢复默认",
     settingsResetConfirmCancel: "取消",
 
-    // PR #76 — OpenMeRouteCard v2 (support chip, open strategy labels, risk, route sections, suggested apps)
+    // Slice K — Settings dialog search/filter (PR #163)
+    settingsSearchPlaceholder: "筛选设置…",
+    settingsSearchAria: "筛选设置",
+    settingsSearchNoResults: "没有匹配 “{query}” 的设置",
+    settingsSearchHint: "按 / 聚焦搜索框",
+
+            // PR #76 — OpenMeRouteCard v2 (support chip, open strategy labels, risk, route sections, suggested apps)
     supportLevelAplus: "完整原生支持",
     supportLevelA: "完整支持",
     supportLevelB: "有预览",
@@ -2406,7 +2412,13 @@ export const translations: Record<string, Record<string, string>> = {
     settingsResetConfirmConfirm: "Reset",
     settingsResetConfirmCancel: "Cancel",
 
-    // PR #76 — OpenMeRouteCard v2 (support chip, open strategy labels, risk, route sections, suggested apps)
+    // Slice K — Settings dialog search/filter (PR #163)
+    settingsSearchPlaceholder: "Filter settings…",
+    settingsSearchAria: "Filter settings",
+    settingsSearchNoResults: "No settings match “{query}”",
+    settingsSearchHint: "Press / to focus search",
+
+            // PR #76 — OpenMeRouteCard v2 (support chip, open strategy labels, risk, route sections, suggested apps)
     supportLevelAplus: "First-class native support",
     supportLevelA: "Full support",
     supportLevelB: "Preview available",
