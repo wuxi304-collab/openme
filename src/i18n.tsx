@@ -596,6 +596,9 @@ export const translations: Record<string, Record<string, string>> = {
     losslessQueueAddFolder: "添加文件夹",
     losslessQueueRemove: "从队列移除",
     losslessQueueEmpty: "队列为空。点击“添加文件夹”扫描一个目录，或直接打开任意音频文件加入队列。",
+        losslessQueueListAria: "播放队列列表，用上下方向键切换曲目",
+        losslessQueueOptionAria: "第 {n} 首，共 {total} 首",
+        losslessQueueOptionPlaying: "正在播放",
 
     // OfficeViewer
     officeWordLabel: "Word 文档",
@@ -1846,6 +1849,9 @@ export const translations: Record<string, Record<string, string>> = {
     losslessQueueAddFolder: "Add folder",
     losslessQueueRemove: "Remove from queue",
     losslessQueueEmpty: "Queue is empty. Click \"Add folder\" to scan a directory, or open any audio file to seed it.",
+        losslessQueueListAria: "Playback queue list. Use Up and Down arrows to switch tracks.",
+        losslessQueueOptionAria: "Track {n} of {total}",
+        losslessQueueOptionPlaying: "Now playing",
 
     // OfficeViewer
     officeWordLabel: "Word Document",
