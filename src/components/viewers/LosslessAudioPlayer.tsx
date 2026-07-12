@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../../i18n";
+import { useToast } from "../useToast";
 import type { AudioMetadataResult, ListAudioFolderResult } from "../../types/electron-api";
 import {
   formatBitrate,
@@ -57,6 +58,7 @@ const QUEUE_KEY = "openme.audio.queue.v1";
 
 export default function LosslessAudioPlayer({ filePath }: Props) {
   const { t, tf } = useI18n();
+  const { pushToast } = useToast();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<AudioEngine | null>(null);
@@ -78,20 +80,23 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
   const [probeOverride, setProbeOverride] = useState(false);
 
   // FFmpeg decode state. We use ffmpeg-static in the main process to
-  // decode every supported audio format (FLAC, ALAC, AIFF, DSD, APE,
-  // WavPack, TAK, WMA, ...) into raw f32le PCM, then load the resulting
-  // AudioBuffer into an AudioEngine driven by Web Audio. This avoids the
-  // "Chromium can't decode FLAC" failure that we used to surface via the
-  // runtime codec probe.
-  const [ffmpegAvailable] = useState<boolean>(() => {
-    try { return isFfmpegAvailable(); } catch { return false; }
-  });
-  const [decodeState, setDecodeState] = useState<"idle" | "decoding" | "ready" | "error">("idle");
-  const [decodeProgress, setDecodeProgress] = useState<AudioFfmpegProgress | null>(null);
-  const [, setDecodeError] = useState<string | null>(null);
-  const [engineReady, setEngineReady] = useState(false);
+    // decode every supported audio format (FLAC, ALAC, AIFF, DSD, APE,
+    // WavPack, TAK, WMA, ...) into raw f32le PCM, then load the resulting
+    // AudioBuffer into an AudioEngine driven by Web Audio. This avoids the
+    // "Chromium can't decode FLAC" failure that we used to surface via the
+    // runtime codec probe.
+    const [ffmpegAvailable] = useState<boolean>(() => {
+      try { return isFfmpegAvailable(); } catch { return false; }
+    });
+    const [decodeState, setDecodeState] = useState<"idle" | "decoding" | "ready" | "error">("idle");
+    const [decodeProgress, setDecodeProgress] = useState<AudioFfmpegProgress | null>(null);
+    const [decodeError, setDecodeError] = useState<string | null>(null);
+    // Toast for decode failures: we only want to fire it once per decode
+    // attempt so a re-render or repeat don't spam the toast stack.
+    const decodeErrorToastShownRef = useRef(false);
+    const [engineReady, setEngineReady] = useState(false);
 
-  // Transport state.
+    // Transport state.
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState<number | null>(null);
@@ -305,18 +310,32 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
             if (result.meta?.durationSec) setDuration(result.meta.durationSec);
           }
         } catch (err) {
-          if (!cancelled) {
-            setDecodeState("error");
-            setDecodeError(err instanceof Error ? err.message : String(err));
-          }
-        }
+                  if (!cancelled) {
+                    const detail = err instanceof Error ? err.message : String(err);
+                    setDecodeState("error");
+                    setDecodeError(detail);
+                    if (!decodeErrorToastShownRef.current) {
+                      pushToast("error", `${t("mediaDecodeFailedTitle")}: ${detail}`);
+                      decodeErrorToastShownRef.current = true;
+                    }
+                  }
+                }
       })
       .catch((err) => {
-        if (cancelled) return;
-        // FFmpeg failed — fall through to the HTML5 <audio> fallback path.
-        setDecodeState("error");
-        setDecodeError(err instanceof Error ? err.message : String(err));
-      });
+              if (cancelled) return;
+              // FFmpeg decode rejected (spawn failed, non-zero exit, broken
+              // pipe, EOF error, malformed stream, ...). The error used to be
+              // silently swallowed — capture it into decodeError state so the
+              // ViewerError card can show it, and fire a one-shot toast so the
+              // user knows something actually went wrong.
+              const detail = err instanceof Error ? err.message : String(err);
+              setDecodeState("error");
+              setDecodeError(detail);
+              if (!decodeErrorToastShownRef.current) {
+                pushToast("error", `${t("mediaDecodeFailedTitle")}: ${detail}`);
+                decodeErrorToastShownRef.current = true;
+              }
+            });
 
     return () => {
       cancelled = true;
@@ -618,19 +637,69 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
           };
         }, [isDragging, continueSeek, endSeek]);
 
-        if (error) {
-          return (
-            <ViewerError
-              title={t("mediaAudioErrorTitle")}
-              badge={t("mediaBadgeAudio")}
-              caption={trackDisplayName(filePath, meta?.tag.title)}
-              message={error}
-              action={{ label: t("openInSystem"), onClick: exportTrackToSystem }}
-            />
-          );
-        }
+        if (decodeError) {
+                  // FFmpeg failed to decode the file. The detail string carries
+                  // the actual ffmpeg stderr (truncated to a few KiB by the
+                  // decoder), which is invaluable for diagnosing why an exotic
+                  // file won't play — surface it in a collapsible <details>
+                  // block so the card stays compact but the information is one
+                  // click away.
+                  const detailId = "ll-decode-error-detail";
+                  return (
+                    <ViewerError
+                      variant="fullpage"
+                      title={t("mediaDecodeFailedTitle")}
+                      badge={t("mediaBadgeAudio")}
+                      caption={trackDisplayName(filePath, meta?.tag.title)}
+                      message={t("mediaDecodeFailedHint")}
+                      action={{ label: t("openInSystem"), onClick: exportTrackToSystem }}
+                    >
+                      <details
+                        id={detailId}
+                        className="ll-decode-error-detail"
+                        onToggle={(ev) => {
+                          const el = ev.currentTarget;
+                          // Surface the raw ffmpeg stderr to the clipboard so
+                          // power users can paste it into a bug report.
+                          const copy = el.querySelector(".ll-decode-error-copy") as HTMLButtonElement | null;
+                          if (copy) copy.dataset.detail = decodeError ?? "";
+                        }}
+                      >
+                        <summary>{t("mediaDecodeFailedDetailLabel")}</summary>
+                        <code>{decodeError}</code>
+                        <button
+                          type="button"
+                          className="ll-decode-error-copy"
+                          onClick={async (ev) => {
+                            const detail = (ev.currentTarget as HTMLButtonElement).dataset.detail ?? "";
+                            try {
+                              await navigator.clipboard.writeText(detail);
+                              pushToast("success", t("mediaDecodeFailedCopied"));
+                            } catch {
+                              /* ignore — clipboard might be blocked */
+                            }
+                          }}
+                        >
+                          {t("mediaDecodeFailedCopy")}
+                        </button>
+                      </details>
+                    </ViewerError>
+                  );
+                }
 
-        const progress = totalDuration && totalDuration > 0 ? Math.min(100, (currentTime / totalDuration) * 100) : 0;
+                if (error) {
+                  return (
+                    <ViewerError
+                      title={t("mediaAudioErrorTitle")}
+                      badge={t("mediaBadgeAudio")}
+                      caption={trackDisplayName(filePath, meta?.tag.title)}
+                      message={error}
+                      action={{ label: t("openInSystem"), onClick: exportTrackToSystem }}
+                    />
+                  );
+                }
+
+                const progress = totalDuration && totalDuration > 0 ? Math.min(100, (currentTime / totalDuration) * 100) : 0;
         const abProgress = abLoop && totalDuration && totalDuration > 0
           ? { leftPct: (abLoop.a / totalDuration) * 100, rightPct: (abLoop.b / totalDuration) * 100 }
           : null;

@@ -450,6 +450,81 @@
 @media (prefers-reduced-motion: reduce) {
   .ll-decode-spinner { animation: none; border-top-color: #88a3ff; opacity: 0.7; }
 }
+
+/* Decode-failure collapsible details (PR #155) -------------------------------- */
+.ll-decode-error-detail {
+  margin-top: 10px;
+  border: 1px solid #ffffff14;
+  border-radius: 6px;
+  background: #ffffff06;
+  overflow: hidden;
+}
+.ll-decode-error-detail > summary {
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #c8d3ec;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ll-decode-error-detail > summary::-webkit-details-marker { display: none; }
+.ll-decode-error-detail > summary::before {
+  content: "▸";
+  display: inline-block;
+  font-size: 10px;
+  color: #6f7a93;
+  transition: transform var(--dur-fast, 200ms) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+.ll-decode-error-detail[open] > summary::before {
+  transform: rotate(90deg);
+}
+.ll-decode-error-detail > code {
+  display: block;
+  padding: 10px 12px 12px;
+  margin: 0;
+  font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #d1d9ee;
+  background: #ffffff08;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+  border-top: 1px solid #ffffff0a;
+}
+.ll-decode-error-copy {
+  display: block;
+  margin: 8px 12px 12px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: #88a3ff;
+  background: transparent;
+  border: 1px solid #88a3ff40;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background var(--dur-fast, 200ms) var(--ease, ease),
+              border-color var(--dur-fast, 200ms) var(--ease, ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ll-decode-error-copy:hover {
+    background: #88a3ff14;
+    border-color: #88a3ff80;
+  }
+}
+.ll-decode-error-copy:focus-visible {
+  outline: 2px solid var(--accent, #5da9ff);
+  outline-offset: 2px;
+}
+.ll-decode-error-copy:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  .ll-decode-error-detail > summary::before { transition: none; }
+  .ll-decode-error-copy { transition: none; }
+  .ll-decode-error-copy:active { transform: none; }
+}
 .ll-queue > summary .ll-btn { margin-left: auto; }
 .ll-queue-list {
   list-style: none;

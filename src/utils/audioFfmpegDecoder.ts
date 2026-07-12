@@ -154,15 +154,15 @@ export class AudioFfmpegDecoder {
     donePromise = new Promise((res) => { resolveDone = res; });
 
     let offDone = api.onAudioPcmDone((payload) => {
-      if (!this.active || payload.requestId !== this.active.requestId) return;
-      resolveDone(payload);
-    });
+          if (!this.active || payload.requestId !== this.active.requestId) return;
+          resolveDone(payload);
+        });
 
     const invokeResult = await api.decodeAudioPcm(filePath, {
-      targetSampleRate: options.targetSampleRate ?? 48000,
-      targetChannels: options.targetChannels ?? 2,
-      expectedBytes: options.expectedBytes ?? null,
-    });
+          targetSampleRate: options.targetSampleRate ?? 48000,
+          targetChannels: options.targetChannels ?? 2,
+          expectedBytes: options.expectedBytes ?? null,
+        });
 
     if (!invokeResult.ok || !invokeResult.requestId) {
       offMeta(); offChunk(); offDone();
