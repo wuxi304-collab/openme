@@ -37,6 +37,134 @@ process.on("unhandledRejection", (reason) => {
 app.setAppUserModelId("com.openme.desktop");
 protocol.registerSchemesAsPrivileged([{ scheme: "openme-media", privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } }]);
 
+// ---------------------------------------------------------------------------
+// One-click launch support
+// ---------------------------------------------------------------------------
+//
+// Goal: make `OpenMe.exe <file1> <file2> ...` Just Work, both when the app
+// is starting cold and when another instance is already running.
+//
+// Behaviour:
+//   * Single-instance lock. If another instance owns the lock, we hand off
+//     our argv to it via `second-instance` and quit immediately.
+//   * Parse argv on cold start too. Real file paths get buffered and
+//     forwarded to the renderer once the main window is ready.
+//   * macOS `open-file` event is also wired — double-clicking a file in
+//     Finder hits this path, not argv.
+//
+// Why a buffer and not fire-and-forget: on cold start the renderer isn't
+// mounted yet; if we send an IPC the renderer hasn't registered its
+// `openme:initial-files` listener for and the files vanish silently.
+let pendingFilePaths = [];
+let mainReady = false;
+
+// Module-scope set of flags that consume their next token as their value.
+// Browser/Electron CLI flags are listed here; add a new one whenever a
+// stray "value" shows up that we'd otherwise try to open as a file. Tests
+// in argvFiles.test.js exercise the consumer-skip logic against synthetic
+// argv payloads.
+const SWITCH_TAKES_VALUE = new Set([
+  "--source-app-id",
+  "--app-user-model-id",
+  "--session-data-dir",
+  "--user-data-dir",
+  "--log-file",
+  "--remote-debugging-port",
+  "--inspect-port",
+  "--inspect",
+  "--js-flags",
+  "--crash-dumps-dir",
+  "--user-agent",
+  "--disk-cache-dir",
+]);
+
+function extractFilePathsFromArgv(argv) {
+  if (!Array.isArray(argv)) return [];
+  const out = [];
+  // Electron (and Chromium it embeds) stuff many switches into argv that
+  // *consume the next token as their value* (e.g. `--source-app-id 1234`).
+  // If we treat that consumed token as a file path, we'd try to open a
+  // random hex string. The SWITCH_TAKES_VALUE list above lets us skip
+  // their values before they're considered for "is this a file?".
+  for (let i = 1; i < argv.length; i++) {
+    const arg = argv[i];
+    if (typeof arg !== "string") continue;
+    if (!arg.startsWith("-")) {
+      try {
+        if (fs.existsSync(arg) && fs.statSync(arg).isFile()) {
+          out.push(path.resolve(arg));
+        }
+      } catch (_) { /* ignore unreadable entries */ }
+      continue;
+    }
+    // This is a flag. Detect consumer form: no `=` AND the bare flag is
+    // known to consume the next token. Pre-bump i so the for-loop's
+    // natural i++ lands us on the token AFTER the consumer value.
+    const equalsIdx = arg.indexOf("=");
+    const bare = equalsIdx >= 0 ? arg.slice(0, equalsIdx) : arg;
+    if (equalsIdx < 0 && SWITCH_TAKES_VALUE.has(bare)) {
+      i += 1;
+    }
+  }
+  return out;
+}
+
+// Collect argv ASAP so we don't miss files provided during cold start.
+pendingFilePaths = extractFilePathsFromArgv(process.argv);
+log.info("main: argv file paths captured", { count: pendingFilePaths.length, paths: pendingFilePaths });
+
+// Single-instance lock. If we can't acquire it, another OpenMe is running
+// and Electron will emit `second-instance` on it with our argv. We quit
+// so the running instance takes over.
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  log.info("main: another instance owns the lock — handing off argv and quitting");
+  app.quit();
+} else {
+  app.on("second-instance", (_event, argv /* argv of the new instance */, _cwd) => {
+    log.info("main: second-instance forwarded", { argv });
+    const forwarded = extractFilePathsFromArgv(argv);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      // Bring the existing window forward.
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+      if (forwarded.length > 0) {
+        mainWindow.webContents.send("openme:initial-files", forwarded);
+      }
+    } else if (forwarded.length > 0) {
+      // Window isn't up yet — buffer the paths so when createWindow()
+      // finishes the renderer will receive them on its initial-files
+      // listener.
+      pendingFilePaths = pendingFilePaths.concat(forwarded);
+      log.info("main: buffered forwarded paths for renderer", { count: pendingFilePaths.length });
+    }
+  });
+}
+
+// macOS-specific: Finder double-click delivers files via `open-file`.
+app.on("will-finish-launching", () => {
+  app.on("open-file", (event, filePath) => {
+    event.preventDefault();
+    log.info("main: open-file event", { filePath });
+    if (typeof filePath !== "string") return;
+    if (mainWindow && !mainWindow.isDestroyed() && mainReady) {
+      mainWindow.webContents.send("openme:initial-files", [filePath]);
+    } else {
+      pendingFilePaths.push(filePath);
+    }
+  });
+});
+
+function flushPendingFilePaths() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (pendingFilePaths.length === 0) return;
+  const payload = pendingFilePaths.slice();
+  pendingFilePaths = [];
+  log.info("main: flushing pending file paths to renderer", { count: payload.length });
+  mainWindow.webContents.send("openme:initial-files", payload);
+}
+
 // Defense-in-depth: apply the same web-contents hardening (CSP, blocked
 // window.open, blocked will-navigate) to ANY web contents the app
 // creates — not just the main window. Without this, a future feature
@@ -588,6 +716,11 @@ function findCadEngine() {
               mainWindow.webContents.on("did-finish-load", () => {
                 if (splashClosed || !splashWindow || splashWindow.isDestroyed()) return;
                 emitSplashSublabel(uiLang === "en" ? "Application bundle loaded" : "应用资源已加载");
+                // The renderer has finished its initial navigation. Now
+                // it's safe to flush any buffered CLI argv paths to its
+                // `openme:initial-files` listener.
+                mainReady = true;
+                flushPendingFilePaths();
               });
             }
 
