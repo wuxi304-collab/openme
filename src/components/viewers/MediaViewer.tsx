@@ -1,27 +1,18 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "../../i18n";
-import { isLosslessExtension } from "../../utils/audioFormat";
 import ViewerError from "../ViewerError";
 import { probeAudioSupport, type AudioProbeResult } from "../../utils/audioCodecSupport";
 import AudioUnsupported from "./AudioUnsupported";
 import "../ViewerError.css";
-import LosslessAudioPlayer from "./LosslessAudioPlayer";
 import "./MediaViewer.css";
 
 interface Props { filePath: string; kind: "audio" | "video"; }
 
 export default function MediaViewer({ filePath, kind }: Props) {
-  // High-fidelity formats get their own dedicated player with cover art,
-  // metadata card, AB loop and queue. Everything else falls through to
-  // the original <audio>/<video> deck. The early return is BEFORE any
-  // hooks so the hook count stays stable across filePath transitions —
-  // React requires that the same component call the same hooks in the
-  // same order on every render, and a hook set that depends on the
-  // extension would otherwise throw "Rendered fewer hooks than expected".
-  if (kind === "audio" && isLosslessExtension(filePath)) {
-    return <LosslessAudioPlayer filePath={filePath} />;
-  }
-
+  // Handles the simple <audio>/<video> deck only. Lossless audio formats
+  // (FLAC / WAV / AIFF / DSF / DFF) are dispatched to <LosslessAudioPlayer>
+  // upstream in ViewerRouter so this component's hook count stays stable
+  // across filePath transitions — see PR #144.
   const { t } = useI18n();
   const [source, setSource] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

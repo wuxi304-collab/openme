@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import type { FileTabState } from "../../types";
 import { getViewerRouteByPath } from "../../viewer-registry";
 import { detectLanguage } from "../../utils/fileTypeDetector";
+import { isLosslessExtension } from "../../utils/audioFormat";
 import { useI18n } from "../../i18n";
 import ErrorBoundary from "../ErrorBoundary";
 import JsonViewer from "./JsonViewer";
@@ -19,6 +20,7 @@ const OfficeViewer = React.lazy(() => import("./OfficeViewer"));
 const ZipViewer = React.lazy(() => import("./ZipViewer"));
 const CadViewer = React.lazy(() => import("./CadViewer"));
 const MediaViewer = React.lazy(() => import("./MediaViewer"));
+const LosslessAudioPlayer = React.lazy(() => import("./LosslessAudioPlayer"));
 const FontViewer = React.lazy(() => import("./FontViewer"));
 const EpubViewer = React.lazy(() => import("./EpubViewer"));
 const DwgViewer = React.lazy(() => import("./DwgViewer"));
@@ -77,8 +79,16 @@ export default function ViewerRouter({ tab, onChange, onRetry }: ViewerRouterPro
         case "epub":
           return <ViewerShell><EpubViewer filePath={tab.path} /></ViewerShell>;
         case "audio":
-        case "video":
-          return <ViewerShell><MediaViewer filePath={tab.path} kind={tab.category} /></ViewerShell>;
+                  // Lossless formats (FLAC / WAV / AIFF / DSF / DFF) get their own
+                  // dedicated high-fidelity player; everything else falls through
+                  // to the simpler MediaViewer deck. The dispatch is routed here
+                  // (upstream of MediaViewer) so the player's hook count stays
+                  // stable across filePath transitions — see PR #144.
+                  return isLosslessExtension(tab.path)
+                    ? <ViewerShell><LosslessAudioPlayer filePath={tab.path} /></ViewerShell>
+                    : <ViewerShell><MediaViewer filePath={tab.path} kind="audio" /></ViewerShell>;
+                case "video":
+                  return <ViewerShell><MediaViewer filePath={tab.path} kind="video" /></ViewerShell>;
         case "font":
           return <ViewerShell>{tab.binaryData ? <FontViewer base64Data={tab.binaryData} fileName={tab.name} /> : <OpenMeRouteCard tab={tab} route={route} title={t("routeFontNoData")} description={t("routeFontNoDataDesc")} onRetry={onRetry} />}</ViewerShell>;
         case "dwg":
