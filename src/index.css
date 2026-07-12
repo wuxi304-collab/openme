@@ -805,6 +805,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
 .tab-main { height:100%; min-width:0; display:flex; align-items:center; gap:7px; padding:0 4px 0 8px; border:0; background:transparent; color:inherit; cursor:pointer; }
 .tab-main > span { max-width:115px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; font-weight:700; }
 .dirty-dot { width:6px; height:6px; border-radius:50%; background:var(--mario-yellow); }
+.tab-loading-spinner { display:inline-flex; align-items:center; justify-content:center; color:var(--mario-yellow); animation:tab-loading-spin 0.8s linear infinite; flex:none; }
+.tab-loading-spinner svg { display:block; }
+.file-tab.is-loading .tab-main { color:#c8c1b4; }
+@keyframes tab-loading-spin { to { transform: rotate(360deg); } }
+.tab-error-mark { width:14px; height:14px; border-radius:50%; background:var(--mario-red); color:#1a0f0f; font-size:10px; font-weight:900; line-height:14px; text-align:center; flex:none; cursor:help; }
+.file-tab.is-error .tab-main { color:#e88a82; }
+@media (prefers-reduced-motion:reduce) { .tab-loading-spinner { animation:none; } }
 .tab-close { width:28px; height:28px; padding:0; border:0; border-radius:5px; background:transparent; color:#777169; font-size:17px; line-height:1; cursor:pointer; display:grid; place-items:center; transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
 .tab-close:active { transform:scale(.94); }
 .tab-close:focus-visible { outline:2px solid var(--mario-yellow); outline-offset:1px; color:#fff; }
