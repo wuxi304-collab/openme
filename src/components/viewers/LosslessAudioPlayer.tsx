@@ -341,101 +341,105 @@ export default function LosslessAudioPlayer({ filePath }: Props) {
       sourceReady: source != null,
     });
 
-  if (error) {
-    return (
-      <ViewerError
-        title={t("mediaAudioErrorTitle")}
-        badge={t("mediaBadgeAudio")}
-        caption={trackDisplayName(filePath, meta?.tag.title)}
-        message={error}
-        action={{ label: t("openInSystem"), onClick: exportTrackToSystem }}
-      />
-    );
-  }
+    // ---- Drag-to-seek hooks (PR #145) ----
+    // The drag-to-seek state, refs, callbacks and the window pointer-listener
+    // effect used to live AFTER the `if (error) return <ViewerError />` early
+    // return below. When `<audio>` fired `error` (Chromium can't decode FLAC),
+    // `error` flipped truthy → next render took the early return → these 9
+    // hooks were skipped → React threw "Rendered fewer hooks than expected".
+    // All hooks now live ABOVE the early return so the hook count stays
+    // stable regardless of whether the error UI is rendered.
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragTime, setDragTime] = useState<number | null>(null);
+    const dragOriginRef = useRef<{ rect: DOMRect } | null>(null);
+    const wasPlayingBeforeDragRef = useRef(false);
 
-  const totalDuration = duration ?? meta?.format.durationSec ?? null;
-  const progress = totalDuration && totalDuration > 0 ? Math.min(100, (currentTime / totalDuration) * 100) : 0;
-  const abProgress = abLoop && totalDuration && totalDuration > 0
-    ? { leftPct: (abLoop.a / totalDuration) * 100, rightPct: (abLoop.b / totalDuration) * 100 }
-    : null;
+    // totalDuration must be computed before the drag-to-seek callbacks
+    // because they reference it in their dependency arrays.
+    const totalDuration = duration ?? meta?.format.durationSec ?? null;
 
-  // ---- Drag-to-seek ----
-  // The progress bar supports clicking *and* dragging the thumb (or
-  // anywhere on the track). We capture the pointer on the bar, then track
-  // pointermove/up on `window` so the drag survives the cursor leaving
-  // the bar bounds. While dragging we display `dragTime` instead of
-  // `currentTime` so the thumb/jump doesn't fight the audio element's
-  // own `timeupdate` (which on some platforms lags 100-200ms).
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragTime, setDragTime] = useState<number | null>(null);
-  const dragOriginRef = useRef<{ rect: DOMRect } | null>(null);
-  const wasPlayingBeforeDragRef = useRef(false);
+    const computeSeekTime = useCallback((clientX: number, rect: DOMRect) => {
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      return ratio * (totalDuration ?? 0);
+    }, [totalDuration]);
 
-  const computeSeekTime = useCallback((clientX: number, rect: DOMRect) => {
-    const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-    return ratio * (totalDuration ?? 0);
-  }, [totalDuration]);
+    const beginSeek = useCallback((clientX: number, target: HTMLDivElement) => {
+      if (!totalDuration) return;
+      const rect = target.getBoundingClientRect();
+      const t = computeSeekTime(clientX, rect);
+      const el = audioRef.current;
+      wasPlayingBeforeDragRef.current = !!(el && !el.paused);
+      if (el && !el.paused) el.pause();
+      dragOriginRef.current = { rect };
+      setDragTime(t);
+      setIsDragging(true);
+      if (el) el.currentTime = t;
+    }, [totalDuration, computeSeekTime]);
 
-  const beginSeek = useCallback((clientX: number, target: HTMLDivElement) => {
-    if (!totalDuration) return;
-    const rect = target.getBoundingClientRect();
-    const t = computeSeekTime(clientX, rect);
-    const el = audioRef.current;
-    wasPlayingBeforeDragRef.current = !!(el && !el.paused);
-    if (el && !el.paused) el.pause();
-    dragOriginRef.current = { rect };
-    setDragTime(t);
-    setIsDragging(true);
-    if (el) el.currentTime = t;
-  }, [totalDuration, computeSeekTime]);
+    const continueSeek = useCallback((clientX: number) => {
+      const origin = dragOriginRef.current;
+      if (!origin) return;
+      const t = computeSeekTime(clientX, origin.rect);
+      setDragTime(t);
+      const el = audioRef.current;
+      if (el) el.currentTime = t;
+    }, [computeSeekTime]);
 
-  const continueSeek = useCallback((clientX: number) => {
-    const origin = dragOriginRef.current;
-    if (!origin) return;
-    const t = computeSeekTime(clientX, origin.rect);
-    setDragTime(t);
-    const el = audioRef.current;
-    if (el) el.currentTime = t;
-  }, [computeSeekTime]);
+    const endSeek = useCallback(() => {
+      if (!isDragging) return;
+      setIsDragging(false);
+      setDragTime(null);
+      dragOriginRef.current = null;
+      if (wasPlayingBeforeDragRef.current) {
+        audioRef.current?.play().catch(() => undefined);
+      }
+    }, [isDragging]);
 
-  const endSeek = useCallback(() => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    setDragTime(null);
-    dragOriginRef.current = null;
-    if (wasPlayingBeforeDragRef.current) {
-      audioRef.current?.play().catch(() => undefined);
-    }
-  }, [isDragging]);
+        // Listen for pointerup on window so the drag survives the cursor leaving
+        // the bar bounds. Without this, dragging past the right edge drops the
+        // event before the audio can update.
+        useEffect(() => {
+          if (!isDragging) return undefined;
+          const onMove = (e: PointerEvent) => continueSeek(e.clientX);
+          const onUp = () => endSeek();
+          window.addEventListener("pointermove", onMove);
+          window.addEventListener("pointerup", onUp);
+          window.addEventListener("pointercancel", onUp);
+          return () => {
+            window.removeEventListener("pointermove", onMove);
+            window.removeEventListener("pointerup", onUp);
+            window.removeEventListener("pointercancel", onUp);
+          };
+        }, [isDragging, continueSeek, endSeek]);
 
-  // Listen for pointerup on window so the drag survives the cursor leaving
-  // the bar bounds. Without this, dragging past the right edge drops the
-  // event before the audio can update.
-  useEffect(() => {
-    if (!isDragging) return undefined;
-    const onMove = (e: PointerEvent) => continueSeek(e.clientX);
-    const onUp = () => endSeek();
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
-    };
-  }, [isDragging, continueSeek, endSeek]);
+        if (error) {
+          return (
+            <ViewerError
+              title={t("mediaAudioErrorTitle")}
+              badge={t("mediaBadgeAudio")}
+              caption={trackDisplayName(filePath, meta?.tag.title)}
+              message={error}
+              action={{ label: t("openInSystem"), onClick: exportTrackToSystem }}
+            />
+          );
+        }
 
-  const cover = meta?.cover?.data ?? null;
+        const progress = totalDuration && totalDuration > 0 ? Math.min(100, (currentTime / totalDuration) * 100) : 0;
+        const abProgress = abLoop && totalDuration && totalDuration > 0
+          ? { leftPct: (abLoop.a / totalDuration) * 100, rightPct: (abLoop.b / totalDuration) * 100 }
+          : null;
 
-  return (
-    <div
-      ref={rootRef}
-      className={`lossless-player is-${tier}${playing ? " is-playing" : ""}${isSurround ? " is-surround" : ""}`}
-      tabIndex={-1}
-      role="region"
-      aria-label={t("losslessPlayerLabel")}
-    >
-      <header className="ll-header">
+        const cover = meta?.cover?.data ?? null;
+
+        return (
+        <div
+          ref={rootRef}
+          className={`lossless-player is-${tier}${playing ? " is-playing" : ""}${isSurround ? " is-surround" : ""}`}
+          tabIndex={-1}
+          role="region"
+          aria-label={t("losslessPlayerLabel")}
+        >
+          <header className="ll-header">
         <div className="ll-header-left">
           <span className="ll-kind">{t("mediaAudioLabel")}</span>
           <span className="ll-filename" title={filePath}>{trackDisplayName(filePath, meta?.tag.title)}</span>
