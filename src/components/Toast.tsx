@@ -46,6 +46,22 @@ const STACK_STEP = 14;
 
 export function ToastStack({ toasts, onDismiss }: Props) {
   const { tf } = useI18n();
+  // Escape dismisses the newest (most recently pushed) toast — matches the
+  // close button (×) which is also a direct onDismiss call without a fade.
+  // Mounted at document-level capture phase so it beats any in-viewer Escape
+  // handler (consistent with Sidebar / Recents / FormatPopover / ViewerError).
+  useEffect(() => {
+    if (toasts.length === 0) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      // Newest is the last entry (App pushes to the end).
+      const newest = toasts[toasts.length - 1];
+      onDismiss(newest.id);
+    };
+    document.addEventListener("keydown", handler, true);
+    return () => document.removeEventListener("keydown", handler, true);
+  }, [toasts, onDismiss]);
   if (toasts.length === 0) return null;
   const visible = toasts.slice(-MAX_VISIBLE);
   const hiddenCount = toasts.length - visible.length;

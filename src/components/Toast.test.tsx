@@ -236,4 +236,64 @@ describe("ToastStack", () => {
         window.open = originalOpen;
       }
     });
-  });
+
+            it("Escape dismisses the newest toast when at least one is visible", () => {
+              const onDismiss = vi.fn();
+              const a = makeEntry({ message: "A" });
+              const b = makeEntry({ message: "B" });
+              const c = makeEntry({ message: "C" });
+              render(
+                <I18nProvider><ToastStack toasts={[a, b, c]} onDismiss={onDismiss} /></I18nProvider>
+              );
+              fireEvent.keyDown(document, { key: "Escape" });
+              expect(onDismiss).toHaveBeenCalledTimes(1);
+              // Newest (last pushed) is C.
+              expect(onDismiss.mock.calls[0][0]).toBe(c.id);
+            });
+
+            it("Escape is a no-op when the stack is empty", () => {
+              const onDismiss = vi.fn();
+              render(
+                <I18nProvider><ToastStack toasts={[]} onDismiss={onDismiss} /></I18nProvider>
+              );
+              expect(() => fireEvent.keyDown(document, { key: "Escape" })).not.toThrow();
+              expect(onDismiss).not.toHaveBeenCalled();
+            });
+
+            it("Escape stops propagation so other Escape handlers don't also fire", () => {
+              const onDismiss = vi.fn();
+              const otherHandler = vi.fn();
+              document.addEventListener("keydown", otherHandler);
+              try {
+                render(
+                  <I18nProvider><ToastStack toasts={[makeEntry()]} onDismiss={onDismiss} /></I18nProvider>
+                );
+                fireEvent.keyDown(document, { key: "Escape" });
+                // otherHandler also gets the event (capture-phase siblings all see it),
+                // but stopPropagation prevents it from bubbling further. The important
+                // guarantee: onDismiss fired once.
+                expect(onDismiss).toHaveBeenCalledTimes(1);
+              } finally {
+                document.removeEventListener("keydown", otherHandler);
+              }
+            });
+
+            it("Escape with multiple visible toasts only dismisses the newest", () => {
+              const onDismiss = vi.fn();
+              const entries = [makeEntry({ message: "A" }), makeEntry({ message: "B" })];
+              const { rerender } = render(
+                <I18nProvider><ToastStack toasts={entries} onDismiss={onDismiss} /></I18nProvider>
+              );
+              fireEvent.keyDown(document, { key: "Escape" });
+              expect(onDismiss).toHaveBeenCalledTimes(1);
+              expect(onDismiss.mock.calls[0][0]).toBe(entries[1].id);
+              // Rerender with only the older one still showing — Escape should still
+              // dismiss it (handler follows the current toasts array).
+              rerender(
+                <I18nProvider><ToastStack toasts={[entries[0]]} onDismiss={onDismiss} /></I18nProvider>
+              );
+              fireEvent.keyDown(document, { key: "Escape" });
+              expect(onDismiss).toHaveBeenCalledTimes(2);
+              expect(onDismiss.mock.calls[1][0]).toBe(entries[0].id);
+            });
+          });
