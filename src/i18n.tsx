@@ -233,6 +233,10 @@ export const translations: Record<string, Record<string, string>> = {
     dropZoneSupportedFormatsAria: "支持的格式示例",
     browseFiles: "选择文件",
     dropOverlayAria: "拖入文件即可在新标签中打开",
+    dropOverlayHint: "松开以打开，按 Esc 取消",
+    dropOverlayHintAria: "松开以打开；按 Esc 键取消拖入",
+    dropOverlayAnnounceOpen: "已准备好接收拖入文件，按 Esc 取消",
+    dropOverlayAnnounceClose: "已取消拖入",
 
         // FileMetadata
     fileInfo: "文件信息",
@@ -1533,6 +1537,10 @@ export const translations: Record<string, Record<string, string>> = {
     dropZoneSupportedFormatsAria: "Supported format examples",
     browseFiles: "Browse files",
     dropOverlayAria: "Drop any file to open it in a new tab",
+    dropOverlayHint: "Release to open. Press Esc to cancel.",
+    dropOverlayHintAria: "Release to open the file. Press Escape to cancel the drop.",
+    dropOverlayAnnounceOpen: "Ready to receive dropped files. Press Escape to cancel.",
+    dropOverlayAnnounceClose: "Drop cancelled.",
 
         // FileMetadata
     fileInfo: "File info",
