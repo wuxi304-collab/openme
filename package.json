@@ -11,7 +11,11 @@
     "preview": "vite preview",
     "electron": "electron .",
     "electron:dev": "concurrently \"vite\" \"electron .\"",
-    "dist": "npm run build && electron-builder",
+    "prepare:dist": "node scripts/prepare-dist.mjs",
+    "dist": "npm run prepare:dist && npm run build && electron-builder",
+    "dist:win": "npm run prepare:dist && npm run build && electron-builder --win",
+    "dist:mac": "npm run prepare:dist && npm run build && electron-builder --mac",
+    "dist:dir": "npm run prepare:dist && npm run build && electron-builder --dir",
     "test": "vitest run",
     "test:watch": "vitest",
     "audit:i18n": "node scripts/audit-i18n.mjs",
@@ -106,6 +110,52 @@
       "multiLanguageInstaller": true,
       "include": "build/installer.nsh",
       "displayLanguageSelector": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "public/icons/icon.icns",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null,
+      "darkModeSupport": true,
+      "extendInfo": {
+        "NSDocumentsFolderUsageDescription": "OpenMe needs to access the documents you explicitly open in the app.",
+        "NSDownloadsFolderUsageDescription": "OpenMe needs to read downloads you choose to open.",
+        "LSApplicationCategoryType": "public.app-category.productivity",
+        "NSHumanReadableCopyright": "Copyright (c) 2026 Gangtie Shuxu. MIT License."
+      }
+    },
+    "dmg": {
+      "title": "${productName} ${version}",
+      "iconSize": 96,
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     },
     "extraResources": [
       {
