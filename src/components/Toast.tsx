@@ -9,10 +9,16 @@ export type ToastKind = "success" | "error" | "info";
 export interface ToastAction {
   /** Visible button label. */
   label: string;
-  /** Where the action sends the user — currently only "external" (open URL). */
-  kind: "external";
-  /** URL to open. Opened via window.open() so Electron handles the protocol. */
-  url: string;
+  /**
+   * Where the action sends the user:
+   * - `external`: opens a URL via `window.open()` (Electron routes protocols)
+   * - `internal`: invokes a callback inside the renderer (retry, dismiss-all, etc.)
+   */
+  kind: "external" | "internal";
+  /** URL to open (kind=external). */
+  url?: string;
+  /** Callback to invoke (kind=internal). The toast is auto-dismissed after. */
+  onSelect?: () => void;
 }
 
 export interface ToastEntry {
@@ -180,19 +186,27 @@ function ToastItem({ entry, stackIndex, onDismiss }: ItemProps) {
                 type="button"
                 className="app-toast-action"
                 onClick={() => {
-                  if (entry.action?.kind === "external") {
-                    try {
-                      window.open(entry.action.url, "_blank", "noopener,noreferrer");
-                    } catch {
-                      /* ignore — popup blockers / no shell */
-                    }
-                  }
-                  onDismiss(entry.id);
-                }}
-              >
-                {entry.action.label}
-              </button>
-            ) : null}
+                        const action = entry.action;
+                        if (!action) return;
+                        if (action.kind === "external" && action.url) {
+                          try {
+                            window.open(action.url, "_blank", "noopener,noreferrer");
+                          } catch {
+                            /* ignore — popup blockers / no shell */
+                          }
+                        } else if (action.kind === "internal") {
+                          try {
+                            action.onSelect?.();
+                          } catch {
+                            /* swallow — toast still dismisses so the user isn't stuck */
+                          }
+                        }
+                        onDismiss(entry.id);
+                      }}
+                    >
+                      {entry.action.label}
+                    </button>
+                  ) : null}
             <button
               type="button"
               className="app-toast-close"
