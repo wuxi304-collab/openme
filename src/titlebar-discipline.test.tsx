@@ -40,7 +40,8 @@ describe("TitleBar discipline (PR #135)", () => {
     const btn = btns[0] as HTMLButtonElement;
     // Default theme is dark → aria-label should advertise the light target
     expect(btn.getAttribute("aria-label")).toBe("切换到明亮主题");
-    expect(btn.title).toBe("切换到明亮主题");
+    // PR #177: native title= replaced by custom Tooltip (no native title attr).
+    expect(btn.title).toBe("");
     expect(btn.getAttribute("aria-pressed")).toBe("true");
   });
 
@@ -49,7 +50,8 @@ describe("TitleBar discipline (PR #135)", () => {
     renderTitleBar();
     const btn = document.querySelector("button.theme-toggle") as HTMLButtonElement;
     expect(btn.getAttribute("aria-label")).toBe("切换到暗色主题");
-    expect(btn.title).toBe("切换到暗色主题");
+    // PR #177: native title= replaced by custom Tooltip.
+    expect(btn.title).toBe("");
     expect(btn.getAttribute("aria-pressed")).toBe("false");
   });
 
@@ -120,3 +122,69 @@ describe("TitleBar discipline (PR #135)", () => {
     expect(settingsBtn.getAttribute("aria-label")).toBe("Open settings");
   });
 });
+
+  describe("TitleBar Tooltip migration (PR #177)", () => {
+    it("does not set native title= on the migrated chrome controls", () => {
+      renderTitleBar();
+      const migratedSelectors = [
+        "button.theme-toggle",
+        "button.settings-info-button",
+        "button.about-info-button:not(.settings-info-button)",
+        ".titlebar-publisher",
+      ];
+      for (const sel of migratedSelectors) {
+        const els = Array.from(document.querySelectorAll(sel));
+        expect(els.length).toBeGreaterThan(0);
+        for (const el of els) {
+          // PR #177: native title= replaced by the Tooltip body (aria-describedby
+          // on hover). The hover copy still surfaces, just via a styled element.
+          expect((el as HTMLElement).title).toBe("");
+        }
+      }
+    });
+
+    it("preserves aria-label on each migrated control (a11y fallback)", () => {
+      renderTitleBar();
+      const themeBtn = document.querySelector("button.theme-toggle") as HTMLButtonElement;
+      const settingsBtn = document.querySelector("button.settings-info-button") as HTMLButtonElement;
+      const buttons = document.querySelectorAll(".about-info-button");
+      const aboutBtn = Array.from(buttons).find((b) => !b.classList.contains("settings-info-button")) as HTMLButtonElement;
+      const publisher = document.querySelector(".titlebar-publisher") as HTMLElement;
+      expect(themeBtn.getAttribute("aria-label")).toBeTruthy();
+      expect(settingsBtn.getAttribute("aria-label")).toBeTruthy();
+      expect(aboutBtn.getAttribute("aria-label")).toBeTruthy();
+      expect(publisher.getAttribute("aria-label")).toBeTruthy();
+    });
+
+    it("opens the theme-toggle Tooltip on hover with the target-state copy", async () => {
+      renderTitleBar();
+      const themeBtn = document.querySelector("button.theme-toggle") as HTMLButtonElement;
+      vi.useFakeTimers();
+      await act(async () => {
+        fireEvent.mouseEnter(themeBtn);
+        vi.runAllTimers();
+      });
+      const describedBy = themeBtn.getAttribute("aria-describedby");
+      expect(describedBy).toBeTruthy();
+      const tooltipBody = document.getElementById(describedBy!);
+      expect(tooltipBody?.textContent).toBe("切换到明亮主题");
+      vi.useRealTimers();
+    });
+
+    it("opens the publisher Tooltip with the tagline copy under en locale", async () => {
+      try { window.localStorage.setItem("openme.lang", "en"); } catch {}
+      renderTitleBar();
+      const publisher = document.querySelector(".titlebar-publisher") as HTMLElement;
+      vi.useFakeTimers();
+      await act(async () => {
+        fireEvent.mouseEnter(publisher);
+        vi.runAllTimers();
+      });
+      const describedBy = publisher.getAttribute("aria-describedby");
+      expect(describedBy).toBeTruthy();
+      const tooltipBody = document.getElementById(describedBy!);
+      // 钢铁私塾旗下产品 · 工业软件 + AI 工具集
+      expect(tooltipBody?.textContent ?? "").toMatch(/Gangtie Shuxu|钢铁私塾/);
+      vi.useRealTimers();
+    });
+  });
