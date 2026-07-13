@@ -161,6 +161,7 @@ export const translations: Record<string, Record<string, string>> = {
             tabDragHandleAria: "拖动以重新排序 {name}",
             tabMovedLeftAnnounce: "已将 {name} 向左移动",
             tabMovedRightAnnounce: "已将 {name} 向右移动",
+            tabDroppedAnnounce: "已将 {name} 拖至第 {position} / {total} 位",
             tabReorderHint: "拖动或使用 Ctrl+Shift+←/→ 重新排序",
 
                 // PR #165 — FileTabs loading/error indicators
@@ -1471,6 +1472,7 @@ export const translations: Record<string, Record<string, string>> = {
         tabDragHandleAria: "Drag to reorder {name}",
         tabMovedLeftAnnounce: "Moved {name} left",
         tabMovedRightAnnounce: "Moved {name} right",
+        tabDroppedAnnounce: "Dropped {name} at position {position} of {total}",
         tabReorderHint: "Drag or use Ctrl+Shift+Left/Right to reorder",
 
             // PR #165 — FileTabs loading/error indicators

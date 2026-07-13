@@ -227,7 +227,126 @@ describe("FileTabs", () => {
     expect(onReorder).not.toHaveBeenCalled();
   });
 
-  it("Ctrl+ArrowLeft moves the focused tab one slot left", () => {
+      // PR #169 — drag-reorder announces the final landing position so screen-
+      // reader / voice-control users get the same feedback as keyboard reorders.
+      // The keyboard path uses tabMovedLeft/RightAnnounce; the drag path now uses
+      // tabDroppedAnnounce with the post-reorder position + total count.
+      describe("drag-reorder announcement (PR #169)", () => {
+        function liveRegion() {
+          const node = document.querySelector(".file-tabs [role='status'][aria-live='polite']");
+          return node?.textContent ?? "";
+        }
+
+        it("announces the new position when a tab is dropped on a later tab", () => {
+          const onReorder = vi.fn();
+          const tabs = [
+            makeTab("a", "alpha.txt"),
+            makeTab("b", "beta.json"),
+            makeTab("c", "gamma.md"),
+          ];
+          const { container } = renderInProviders(
+            <FileTabs
+              tabs={tabs}
+              activeId="a"
+              onSelect={() => {}}
+              onClose={() => {}}
+              onReorder={onReorder}
+            />
+          );
+          const tabNodes = container.querySelectorAll(".file-tab");
+          const dt = mockDataTransfer();
+          fireEvent.dragStart(tabNodes[0], { dataTransfer: dt });
+          fireEvent.dragOver(tabNodes[2], { dataTransfer: dt });
+          fireEvent.drop(tabNodes[2], { dataTransfer: dt });
+          fireEvent.dragEnd(tabNodes[0], { dataTransfer: dt });
+          expect(onReorder).toHaveBeenCalledWith(0, 2);
+          // alpha.txt was dragged from index 0 and lands at index 2 (1-based: 3 of 3).
+          expect(liveRegion()).toMatch(/alpha\.txt/);
+          expect(liveRegion()).toMatch(/3\s*\/\s*3|position\s+3\s+of\s+3/);
+        });
+
+        it("does not announce when a tab is dropped onto itself", () => {
+          const onReorder = vi.fn();
+          const tabs = [makeTab("a", "alpha.txt"), makeTab("b", "beta.json")];
+          const { container } = renderInProviders(
+            <FileTabs
+              tabs={tabs}
+              activeId="a"
+              onSelect={() => {}}
+              onClose={() => {}}
+              onReorder={onReorder}
+            />
+          );
+          const tabNodes = container.querySelectorAll(".file-tab");
+          const dt = mockDataTransfer();
+          fireEvent.dragStart(tabNodes[0], { dataTransfer: dt });
+          fireEvent.dragOver(tabNodes[0], { dataTransfer: dt });
+          fireEvent.drop(tabNodes[0], { dataTransfer: dt });
+          fireEvent.dragEnd(tabNodes[0], { dataTransfer: dt });
+          expect(onReorder).not.toHaveBeenCalled();
+          expect(liveRegion()).toBe("");
+        });
+
+        it("announces the new position when a tab is dropped on an earlier tab", () => {
+          const onReorder = vi.fn();
+          const tabs = [
+            makeTab("a", "alpha.txt"),
+            makeTab("b", "beta.json"),
+            makeTab("c", "gamma.md"),
+          ];
+          const { container } = renderInProviders(
+            <FileTabs
+              tabs={tabs}
+              activeId="c"
+              onSelect={() => {}}
+              onClose={() => {}}
+              onReorder={onReorder}
+            />
+          );
+          const tabNodes = container.querySelectorAll(".file-tab");
+          const dt = mockDataTransfer();
+          // Drag c (index 2) onto a (index 0). With jsdom rect.width = 0 the
+          // midpoint comparison resolves to "after" (raw toIndex = 1) because
+          // clientX (0) is not strictly less than midpoint (0). After the
+          // shift adjustment the final landing position is index 1 (1-based: 2 of 3).
+          fireEvent.dragStart(tabNodes[2], { dataTransfer: dt });
+          fireEvent.dragOver(tabNodes[0], { dataTransfer: dt });
+          fireEvent.drop(tabNodes[0], { dataTransfer: dt });
+          fireEvent.dragEnd(tabNodes[2], { dataTransfer: dt });
+          expect(onReorder).toHaveBeenCalledWith(2, 1);
+          expect(liveRegion()).toMatch(/gamma\.md/);
+          // gamma.md moved from position 3 to position 2 of 3.
+          expect(liveRegion()).toMatch(/2\s*\/\s*3|position\s+2\s+of\s+3/);
+        });
+
+        it("announces in English when the locale is en", () => {
+          try { window.localStorage.setItem("openme.lang", "en"); } catch {}
+          const onReorder = vi.fn();
+          const tabs = [
+            makeTab("a", "alpha.txt"),
+            makeTab("b", "beta.json"),
+          ];
+          const { container } = renderInProviders(
+            <FileTabs
+              tabs={tabs}
+              activeId="a"
+              onSelect={() => {}}
+              onClose={() => {}}
+              onReorder={onReorder}
+            />
+          );
+          const tabNodes = container.querySelectorAll(".file-tab");
+          const dt = mockDataTransfer();
+          fireEvent.dragStart(tabNodes[0], { dataTransfer: dt });
+          fireEvent.dragOver(tabNodes[1], { dataTransfer: dt });
+          fireEvent.drop(tabNodes[1], { dataTransfer: dt });
+          fireEvent.dragEnd(tabNodes[0], { dataTransfer: dt });
+          // alpha.txt from index 0 drops to index 1 (last slot, 1-based: 2 of 2).
+          expect(liveRegion()).toMatch(/Dropped\s+alpha\.txt\s+at\s+position\s+2\s+of\s+2/);
+        });
+      });
+
+      it("Ctrl+ArrowLeft moves the focused tab one slot left", () => {
     const onReorder = vi.fn();
     const tabs = [
       makeTab("a", "alpha.txt"),
