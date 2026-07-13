@@ -167,31 +167,82 @@ function AppShell() {
     }
   }, [hasDirtyTabs]);
 
-  const handleSaveCurrent = useCallback(async () => {
-      const tab = activeTab;
-      if (!tab || !tab.isDirty || tab.content === null) return;
-      const result = await window.electronAPI.saveFile(tab.path, tab.content);
-      if (result.success) {
-        setTabs((prev) => prev.map((t) => t.id === tab.id ? { ...t, isDirty: false } : t));
-        pushToast("success", tf("saveSuccess", { name: tab.name }));
-        } else if (isIpcFailure(result)) {
-          pushToast("error", describeIpcError(t, result), {
-            kind: "internal",
-            label: tf("toastActionRetry"),
-            onSelect: () => { void saveCurrentRef.current(); },
-          });
+  // Save a single tab. Returns true on success, false on failure. Pushes the
+    // per-tab toast (success or error-with-retry) so the caller can focus on
+    // aggregate UX (e.g. the "Save All" summary toast).
+    const saveTab = useCallback(async (tab: FileTabState): Promise<boolean> => {
+        if (!tab.isDirty || tab.content === null) return false;
+        const result = await window.electronAPI.saveFile(tab.path, tab.content);
+        if (result.success) {
+          setTabs((prev) => prev.map((t) => t.id === tab.id ? { ...t, isDirty: false } : t));
+          pushToast("success", tf("saveSuccess", { name: tab.name }));
+          return true;
         }
-        else pushToast("error", result.message ?? tf("saveFailed"), {
+        const message = isIpcFailure(result) ? describeIpcError(t, result) : (result.message ?? tf("saveFailed"));
+        pushToast("error", message, {
           kind: "internal",
           label: tf("toastActionRetry"),
-          onSelect: () => { void saveCurrentRef.current(); },
+          onSelect: () => { void saveTabRef.current(tab.id); },
         });
-      }, [activeTab, t, tf, pushToast]);
+        return false;
+      }, [t, tf, pushToast]);
 
-  // Ref-mirror pattern: lets toast Retry handlers reach the latest save logic
-  // without coupling them to handleSaveCurrent's full dep array.
-  const saveCurrentRef = useRef(handleSaveCurrent);
-  useEffect(() => { saveCurrentRef.current = handleSaveCurrent; }, [handleSaveCurrent]);
+    // Retry from a single-tab toast: re-resolve the tab by id and save it again.
+    // Lives outside the saveTab closure so the ToastAction.onSelect can capture
+    // it stably (the tab reference inside saveTab would be stale by then).
+    const saveTabRef = useRef<(tabId: string) => Promise<void>>(async () => undefined);
+    useEffect(() => {
+      saveTabRef.current = async (tabId: string) => {
+        const target = tabsRef.current.find((t) => t.id === tabId);
+        if (target) await saveTab(target);
+      };
+    }, [saveTab]);
+
+    // Ref-mirror pattern for the active-tab saver: lets toast Retry handlers
+    // reach the latest logic without coupling them to handleSaveCurrent's deps.
+    const handleSaveCurrent = useCallback(async () => {
+        const tab = activeTab;
+        if (!tab || !tab.isDirty || tab.content === null) return;
+        await saveTab(tab);
+      }, [activeTab, saveTab]);
+    const saveCurrentRef = useRef(handleSaveCurrent);
+    useEffect(() => { saveCurrentRef.current = handleSaveCurrent; }, [handleSaveCurrent]);
+
+    // Save every dirty tab serially. Pushes a single summary toast describing
+    // the aggregate outcome — per-tab successes / failures already surface via
+    // saveTab's own toasts, so the summary is purely for the "all done" moment.
+    const handleSaveAll = useCallback(async () => {
+        const dirty = tabs.filter((tab) => tab.isDirty && tab.content !== null);
+        if (dirty.length === 0) return;
+        let saved = 0;
+        for (const tab of dirty) {
+          // Sequential: serial writes keep error attribution clear and avoid
+          // hammering the disk if a user has dozens of tabs open.
+          // eslint-disable-next-line no-await-in-loop
+          const ok = await saveTab(tab);
+          if (ok) saved += 1;
+        }
+        const failed = dirty.length - saved;
+        if (failed === 0) {
+          pushToast("success", tf("saveAllSuccess", { count: saved }));
+        } else if (saved === 0) {
+          pushToast("error", tf("saveAllFailed", { count: failed }));
+        } else {
+          pushToast("info", tf("saveAllPartial", { saved, failed, total: dirty.length }));
+        }
+      }, [tabs, saveTab, tf, pushToast]);
+
+    // Ref-mirror for saveAll so the toast Retry handlers (which are closures
+    // captured at save-time) can reach the latest version. tabs is in deps
+    // anyway, but we keep the same pattern as saveCurrent for consistency.
+    const saveAllRef = useRef(handleSaveAll);
+    useEffect(() => { saveAllRef.current = handleSaveAll; }, [handleSaveAll]);
+
+    // Latest-tabs ref so saveTabRef can look up a tab by id without coupling
+    // the save closure to the tabs array (which would re-create it on every
+    // keystroke in any editor).
+    const tabsRef = useRef(tabs);
+    useEffect(() => { tabsRef.current = tabs; }, [tabs]);
 
   const openFileInTab = useCallback(async (fileInfo: FileInfo) => {
     const existingTab = tabs.find((t) => t.path === fileInfo.path);
@@ -347,7 +398,8 @@ function AppShell() {
     const baseCommands: CommandItem[] = [
       { id: "open", label: t("cmdOpenFile"), detail: t("cmdOpenFileDetail"), shortcut: "Ctrl O", kind: "file", keywords: ["open", "file"], run: handleOpenDialog },
       { id: "save", label: t("cmdSave"), detail: activeTab?.name ?? t("cmdSaveDetailNoFile"), shortcut: "Ctrl S", kind: "file", keywords: ["save"], disabled: !activeTab?.isDirty, run: handleSaveCurrent },
-      { id: "system", label: t("cmdOpenInSystem"), detail: activeTab?.path ?? t("cmdOpenInSystemDetailNoFile"), kind: "system", keywords: ["external", "system"], disabled: !activeTab, run: () => { if (activeTab) window.electronAPI.openInSystem(activeTab.path); } },
+            { id: "save-all", label: t("cmdSaveAll"), detail: hasDirtyTabs ? tf("cmdSaveAllDetail", { count: tabs.filter((tab) => tab.isDirty).length }) : t("cmdSaveAllDetailEmpty"), shortcut: "Ctrl Shift S", kind: "file", keywords: ["save", "all"], disabled: !hasDirtyTabs, run: handleSaveAll },
+            { id: "system", label: t("cmdOpenInSystem"), detail: activeTab?.path ?? t("cmdOpenInSystemDetailNoFile"), kind: "system", keywords: ["external", "system"], disabled: !activeTab, run: () => { if (activeTab) window.electronAPI.openInSystem(activeTab.path); } },
       { id: "next", label: t("cmdNextTab"), detail: tf("cmdTabCountDetail", { count: tabs.length }), shortcut: "Ctrl Tab", kind: "tab", disabled: tabs.length < 2, run: () => activateRelativeTab(1) },
       { id: "prev", label: t("cmdPrevTab"), detail: tf("cmdTabCountDetail", { count: tabs.length }), shortcut: "Ctrl Shift Tab", kind: "tab", disabled: tabs.length < 2, run: () => activateRelativeTab(-1) },
       { id: "close", label: t("cmdCloseTab"), detail: activeTab?.name ?? t("cmdSaveDetailNoFile"), shortcut: "Ctrl W", kind: "tab", disabled: !activeTab, run: () => { if (activeTab) handleCloseTab(activeTab.id); } },
@@ -357,7 +409,7 @@ function AppShell() {
     const tabCommands = tabs.map((tab, index) => ({ id: `tab-${tab.id}`, label: tf("cmdSwitchTab", { name: tab.name }), detail: tab.path, kind: "tab" as const, shortcut: index < 9 ? `Alt ${index + 1}` : undefined, keywords: [tab.category], run: () => setActiveTabId(tab.id) }));
     const recentCommands = recentFiles.slice(0, 8).map((file) => ({ id: `recent-${file.path}`, label: tf("cmdOpenRecent", { name: file.name }), detail: file.path, kind: "recent" as const, keywords: [file.extension, file.file_type], openedAt: file.opened_at, run: () => { void openFileInTab(file); } }));
     return [...baseCommands, ...tabCommands, ...recentCommands];
-  }, [handleOpenDialog, activeTab, tabs, searchQuery, handleSaveCurrent, activateRelativeTab, handleCloseTab, handleCloseAllTabs, recentFiles, openFileInTab, t, tf]);
+  }, [handleOpenDialog, activeTab, tabs, searchQuery, handleSaveCurrent, handleSaveAll, hasDirtyTabs, activateRelativeTab, handleCloseTab, handleCloseAllTabs, recentFiles, openFileInTab, t, tf]);
 
   // Global keyboard shortcuts. Capture phase so the command palette
   // (when open) still respects Esc-to-close and won't double-fire on
@@ -374,7 +426,8 @@ function AppShell() {
         closeDropOverlay();
         return;
       }
-      if (mod && event.key.toLowerCase() === "s") { event.preventDefault(); void handleSaveCurrent(); return; }
+      if (mod && event.shiftKey && event.key.toLowerCase() === "s") { event.preventDefault(); void handleSaveAll(); return; }
+      if (mod && !event.shiftKey && event.key.toLowerCase() === "s") { event.preventDefault(); void handleSaveCurrent(); return; }
       if (mod && event.key.toLowerCase() === "o") { event.preventDefault(); void handleOpenDialog(); return; }
       if (mod && event.key.toLowerCase() === "k") { event.preventDefault(); setCommandOpen((value) => !value); return; }
             // `?` (Shift+/) toggles the global shortcuts overlay. We accept
@@ -395,7 +448,7 @@ function AppShell() {
     };
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
-  }, [handleSaveCurrent, handleOpenDialog, commandOpen, shortcutsOpen, activeTab, handleCloseTab, activateRelativeTab, tabs, dropOverlayActive, closeDropOverlay]);
+  }, [handleSaveCurrent, handleSaveAll, handleOpenDialog, commandOpen, shortcutsOpen, activeTab, handleCloseTab, activateRelativeTab, tabs, dropOverlayActive, closeDropOverlay]);
 
   return (
       <ToastProvider value={{ pushToast }}>
