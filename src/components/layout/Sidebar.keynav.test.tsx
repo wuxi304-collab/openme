@@ -202,3 +202,100 @@ describe("Sidebar listbox keyboard navigation", () => {
       expect(empty?.getAttribute("aria-label")).toBeTruthy();
     });
 });
+
+describe("Sidebar empty-state CTA (PR #172)", () => {
+  it("auto-focuses the Browse button on mount when the recents list is empty", async () => {
+    const onOpenDialog = () => undefined;
+    render(
+      <Providers>
+        <Sidebar
+          files={[]}
+          selectedPath={null}
+          onSelect={() => undefined}
+          onRemove={() => undefined}
+          onOpenDialog={onOpenDialog}
+        />
+      </Providers>,
+    );
+    // Wait for the rAF scheduled inside the auto-focus effect to flush.
+    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    const button = document.querySelector(".sidebar-empty-browse") as HTMLButtonElement;
+    expect(button).toBeTruthy();
+    expect(document.activeElement).toBe(button);
+  });
+
+  it("does NOT steal focus when there are recents (auto-focus is empty-state only)", () => {
+    const onOpenDialog = () => undefined;
+    const files = [makeFile("/a.txt"), makeFile("/b.md")];
+    render(
+      <Providers>
+        <Sidebar
+          files={files}
+          selectedPath="/a.txt"
+          onSelect={() => undefined}
+          onRemove={() => undefined}
+          onOpenDialog={onOpenDialog}
+        />
+      </Providers>,
+    );
+    // With recents present, no element should be auto-focused to a browse button.
+    const browse = document.querySelector(".sidebar-empty-browse");
+    expect(browse).toBeNull();
+  });
+
+  it("renders a visible Enter shortcut chip so keyboard users see the affordance", () => {
+    const onOpenDialog = () => undefined;
+    render(
+      <Providers>
+        <Sidebar
+          files={[]}
+          selectedPath={null}
+          onSelect={() => undefined}
+          onRemove={() => undefined}
+          onOpenDialog={onOpenDialog}
+        />
+      </Providers>,
+    );
+    const kbd = document.querySelector(".sidebar-empty-browse-kbd") as HTMLElement;
+    expect(kbd).toBeTruthy();
+    expect(kbd.tagName.toLowerCase()).toBe("kbd");
+    expect(kbd.textContent).toBe("Enter");
+  });
+
+  it("clicking the Browse button fires onOpenDialog", async () => {
+    let opened = false;
+    const onOpenDialog = () => { opened = true; };
+    render(
+      <Providers>
+        <Sidebar
+          files={[]}
+          selectedPath={null}
+          onSelect={() => undefined}
+          onRemove={() => undefined}
+          onOpenDialog={onOpenDialog}
+        />
+      </Providers>,
+    );
+    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    const button = document.querySelector(".sidebar-empty-browse") as HTMLButtonElement;
+    fireEvent.click(button);
+    expect(opened).toBe(true);
+  });
+
+  it("wraps the empty card with role=group so screen readers treat it as a landmark", () => {
+    const onOpenDialog = () => undefined;
+    render(
+      <Providers>
+        <Sidebar
+          files={[]}
+          selectedPath={null}
+          onSelect={() => undefined}
+          onRemove={() => undefined}
+          onOpenDialog={onOpenDialog}
+        />
+      </Providers>,
+    );
+    const empty = document.querySelector(".sidebar-empty") as HTMLElement;
+    expect(empty.getAttribute("role")).toBe("group");
+  });
+});

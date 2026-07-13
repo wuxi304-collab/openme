@@ -1,4 +1,4 @@
-import { useCallback, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { FileInfo, type FileCategory } from "../../types";
 import { useI18n } from "../../i18n";
 import { detectCategory } from "../../utils/fileTypeDetector";
@@ -36,6 +36,10 @@ export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpe
   const [menuState, setMenuState] = useState<{ file: FileInfo; x: number; y: number } | null>(null);
   const listboxId = useId();
   const listboxRef = useRef<HTMLDivElement | null>(null);
+  // Auto-focus the "Pick files" CTA when the empty state is what the user
+  // first encounters (no recents yet). Power users hit Enter immediately;
+  // screen reader users hear the button label announced on listbox entry.
+  const emptyCtaRef = useRef<HTMLButtonElement | null>(null);
   // Track the visually focused row so ArrowUp/Down/Home/End/Enter work
   // when the user has tabbed into the listbox. We default to the active
   // file (if any) so the keyboard position follows the user's selection.
@@ -98,6 +102,20 @@ export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpe
 
   const closeMenu = useCallback(() => setMenuState(null), []);
 
+  // Focus the empty-state CTA so first-time users have a keyboard escape
+  // hatch without needing to know it exists. rAF defers past the sidebar's
+  // own mount focus so we don't fight whatever was focused before (e.g.
+  // the splash close button).
+  useEffect(() => {
+    if (files.length !== 0) return;
+    const handle = requestAnimationFrame(() => {
+      if (typeof document === "undefined") return;
+      if (document.activeElement && document.activeElement !== document.body) return;
+      emptyCtaRef.current?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(handle);
+  }, [files.length]);
+
   const handleCopyPath = useCallback(async (file: FileInfo): Promise<boolean> => {
     if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) return false;
     try {
@@ -147,7 +165,7 @@ export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpe
       </div>
       <div className="recent-list" role="listbox" aria-label={t("sidebarRecentA11y")} tabIndex={files.length ? 0 : -1} ref={listboxRef} onKeyDown={handleListboxKeyDown} aria-activedescendant={focusedFile ? `sidebar-option-${listboxId}-${safeFocusedIndex}` : undefined}>
         {files.length === 0 ? (
-                <div className="sidebar-empty" aria-label={t("sidebarEmptyA11y")}>
+                <div className="sidebar-empty" aria-label={t("sidebarEmptyA11y")} role="group">
             <span className="mini-question-block" aria-hidden="true">?</span>
             <strong>{t("noFilesYet")}</strong>
             <span>{t("openFileHint")}</span>
@@ -155,10 +173,13 @@ export default function Sidebar({ files, selectedPath, onSelect, onRemove, onOpe
               <>
                 <button
                   type="button"
+                  ref={emptyCtaRef}
                   className="sidebar-empty-browse"
                   onClick={onOpenDialog}
+                  aria-keyshortcuts="Enter"
                 >
                   {t("sidebarEmptyBrowse")}
+                  <kbd aria-hidden="true" className="sidebar-empty-browse-kbd">Enter</kbd>
                 </button>
                 <span className="sidebar-empty-drop-hint">{t("sidebarEmptyDropShort")}</span>
               </>
