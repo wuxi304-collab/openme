@@ -17,7 +17,7 @@ import FileSummaryPanel from "./components/FileSummaryPanel";
 import ViewerRouter from "./components/viewers/ViewerRouter";
 import { ConfirmProvider, useCloseAllConfirm, useCloseTabConfirm } from "./components/useConfirm";
 import { ToastProvider } from "./components/useToast";
-import { ToastStack, nextToastId, type ToastEntry, type ToastKind } from "./components/Toast";
+import { ToastStack, nextToastId, type ToastAction, type ToastEntry, type ToastKind } from "./components/Toast";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import FileDropZone from "./components/FileDropZone";
 import { installErrorCapture } from "./utils/errorLog";
@@ -78,9 +78,9 @@ function AppShell() {
   const [searchQuery, setSearchQuery] = useState("");
   const [toasts, setToasts] = useState<ToastEntry[]>([]);
 
-  const pushToast = useCallback((kind: ToastKind, message: string) => {
+  const pushToast = useCallback((kind: ToastKind, message: string, action?: ToastAction) => {
     const id = nextToastId();
-    setToasts((prev) => [...prev, { id, kind, message, ttlMs: 2600 }]);
+      setToasts((prev) => [...prev, { id, kind, message, ttlMs: 2600, action }]);
   }, []);
 
   const dismissToast = useCallback((id: number) => {
@@ -174,9 +174,24 @@ function AppShell() {
       if (result.success) {
         setTabs((prev) => prev.map((t) => t.id === tab.id ? { ...t, isDirty: false } : t));
         pushToast("success", tf("saveSuccess", { name: tab.name }));
-        } else if (isIpcFailure(result)) pushToast("error", describeIpcError(t, result));
-        else pushToast("error", result.message ?? tf("saveFailed"));
-      }, [activeTab, t, tf]);
+        } else if (isIpcFailure(result)) {
+          pushToast("error", describeIpcError(t, result), {
+            kind: "internal",
+            label: tf("toastActionRetry"),
+            onSelect: () => { void saveCurrentRef.current(); },
+          });
+        }
+        else pushToast("error", result.message ?? tf("saveFailed"), {
+          kind: "internal",
+          label: tf("toastActionRetry"),
+          onSelect: () => { void saveCurrentRef.current(); },
+        });
+      }, [activeTab, t, tf, pushToast]);
+
+  // Ref-mirror pattern: lets toast Retry handlers reach the latest save logic
+  // without coupling them to handleSaveCurrent's full dep array.
+  const saveCurrentRef = useRef(handleSaveCurrent);
+  useEffect(() => { saveCurrentRef.current = handleSaveCurrent; }, [handleSaveCurrent]);
 
   const openFileInTab = useCallback(async (fileInfo: FileInfo) => {
     const existingTab = tabs.find((t) => t.path === fileInfo.path);

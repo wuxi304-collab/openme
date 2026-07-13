@@ -829,6 +829,8 @@ export const translations: Record<string, Record<string, string>> = {
     removeFromRecentToast: "已从最近文件移除 {name}",
     toastClose: "关闭提示",
     toastLimitHint: "{count} 条更早的提示已收起",
+    toastActionRetry: "重试",
+    toastActionDismiss: "知道了",
 
     // Install mode hint (portable → setup)
     installModeHintTitle: "正在使用便携版",
@@ -2140,6 +2142,8 @@ export const translations: Record<string, Record<string, string>> = {
     removeFromRecentToast: "Removed {name} from recent",
     toastClose: "Dismiss notification",
     toastLimitHint: "{count} earlier notifications hidden",
+    toastActionRetry: "Retry",
+    toastActionDismiss: "Dismiss",
 
     // Install mode hint (portable → setup)
     installModeHintTitle: "Running the portable build",

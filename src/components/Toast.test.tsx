@@ -297,3 +297,76 @@ describe("ToastStack", () => {
               expect(onDismiss.mock.calls[1][0]).toBe(entries[0].id);
             });
           });
+
+describe("ToastStack · internal action (PR #170)", () => {
+  it("invokes the onSelect callback when an internal-kind action is clicked", () => {
+    const onSelect = vi.fn();
+    const onDismiss = vi.fn();
+    render(
+      <I18nProvider>
+        <ToastStack
+          toasts={[
+            makeEntry({
+              kind: "error",
+              message: "Save failed",
+              action: { kind: "internal", label: "Retry", onSelect },
+            }),
+          ]}
+          onDismiss={onDismiss}
+        />
+      </I18nProvider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    // Toast is auto-dismissed after the action runs.
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call window.open for internal actions", () => {
+    const openSpy = vi.fn();
+    const originalOpen = window.open;
+    window.open = openSpy;
+    try {
+      render(
+        <I18nProvider>
+          <ToastStack
+            toasts={[
+              makeEntry({
+                action: { kind: "internal", label: "Retry", onSelect: () => undefined },
+              }),
+            ]}
+            onDismiss={() => undefined}
+          />
+        </I18nProvider>
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+      expect(openSpy).not.toHaveBeenCalled();
+    } finally {
+      window.open = originalOpen;
+    }
+  });
+
+  it("swallows errors thrown by the onSelect callback so the toast still dismisses", () => {
+    const onDismiss = vi.fn();
+    render(
+      <I18nProvider>
+        <ToastStack
+          toasts={[
+            makeEntry({
+              action: {
+                kind: "internal",
+                label: "Boom",
+                onSelect: () => { throw new Error("handler exploded"); },
+              },
+            }),
+          ]}
+          onDismiss={onDismiss}
+        />
+      </I18nProvider>
+    );
+    // Clicking should not propagate an unhandled error — the user isn't stuck
+    // with a toast that refuses to go away.
+    expect(() => fireEvent.click(screen.getByRole("button", { name: "Boom" }))).not.toThrow();
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+});
