@@ -115,3 +115,91 @@ OpenMe 是 Windows 桌面通用文件工作台，当前使用 Electron + React +
 6. GitHub 删除需要 `delete_repo` OAuth scope。通过 `gh auth refresh --hostname github.com --scopes delete_repo --clipboard` 获取；浏览器设备码流程可能因网络出现 `EOF`，只允许在确认网络瞬断后有限重试。
 7. 删除时使用 `gh api --method DELETE repos/<owner>/<repo>`，逐项记录成功/失败；结束后再次枚举账户仓库，确认保留集准确。本次已删除 20 个旧仓库，复核结果仅剩公开仓库 `wuxi304-collab/openme`。
 8. 安全底线：聊天、源码、脚本、Git 历史和工具输出中不得出现完整 PAT/OAuth Token。用户粘贴过的 Token 一律视为泄露，要求立即撤销。临时提升的 `delete_repo` 权限完成任务后应尽快移除或撤销对应旧令牌。
+
+---
+
+## 2026-07-08 → 2026-08 中期状态
+
+下面这一段覆盖工具链从 Tauri 切到 Electron + Chrome Tooltip 迁移 + 桌面快捷启动 + Universal Audio Decoder 的阶段。新加进项目的 agent 优先读这一段；上面 2026-07 段是历史背景。
+
+### 技术栈现状
+
+- **Electron 34** 单进程模型，Vite 5 + React 18 + TypeScript 5 渲染器。
+- **ACadSharp 3.6.35** 通过 `cad-host/` 自建 .NET 8 sidecar 提供 DWG/DXF 语义读取与 SVG 工程预览。
+- **ffmpeg-static 5.3.0** 通过 `extraResources` 打入 `resources/ffmpeg/ffmpeg.exe`，主进程 demux/decode 全格式音频（FLAC/ALAC/AIFF/APE/WavPack/TAK/DSD 等）到 f32le 流，渲染端用 Web Audio API 播放。Chromium 43 内置 FFmpeg 不带无损编解码，必须用 ffmpeg-static 兜底。
+- **No Tauri / no WebView2** — 本机 Smart App Control 拦截 Rust 构建脚本，已永久弃用。
+
+### 累计交付指标
+
+- **180+ PRs merged**（含 v0.1.0 release、Chrome Tooltip 迁移、Audio Decoder、桌面快捷启动）。
+- **1182 tests passing**，tsc 0 错，vite build 4.8–6.6 s。
+- **1009 zh / 1009 en i18n keys**，audit:i18n 100% clean。
+- **release/OpenMe-Qiwu-0.1.0-portable-x64.exe** 113 MB（无 ffmpeg）/ 159 MB（含 ffmpeg），SHA256 校验发布。
+
+### Chrome Tooltip 迁移（PR #176 → #179）
+
+每一个顶层 chrome 控件（TitleBar / StatusBar / AboutDialog / SettingsDialog / FileTabs）都改用 `src/components/Tooltip.tsx`（统一 `content` prop、`useId` aria-describedby、auto-flip、viewport clamp、prefers-reduced-motion 跳过动画），不再用原生 `title=`。
+
+- 19 个 use site。
+- **理由**：原生 `title=` 出现慢、OS 风格不一致、SR 不友好；自定义 Tooltip 4 项 UX 改进（自定义延迟、键盘可达、节流 rerender、自定义样式）。
+
+### i18n 模式
+
+- `src/i18n.tsx` 是唯一来源；新增 viewer/key 必须 append 到文件尾，注释按 viewer 分组。
+- `useI18n()` 返回 `{ t, tf, locale, setLocale }`。`t(key)` 走 `formatIcu(key, { ... })`；`tf(key, vars)` 是 `t` 的命名别名。
+- **formatIcu 已知 quirk**：内嵌的 `#` substitution 永远等于外层 plural selector 的值。partial failure 模板要传 `{saved}` 而不是再写一个 `#`。
+- **`scripts/audit-i18n.mjs`** 走 CI 门禁；新增 zh 字符串但缺 en（或反之）会 fail。
+- **`scripts/support:matrix`** 检查所有 level 描述都进了 i18n。
+
+### 工程约束（新增）
+
+- **不要在 chrome 用 `title=` 属性**。统一用 `<Tooltip content={t("...")}>...</Tooltip>`。
+- **不要在 `useCallback` / `useMemo` deps 里塞 `t`/`tf`**，react-hooks/exhaustive-deps 会报警。
+- **从 `useI18n()` 解构时只取实际用到的字段**，否则 TS6133（declared but never read）。
+- **避免按钮 label 和 Tooltip body 完全相同**——`screen.getByText` 会因 strict mode 抛 ambiguous。按钮 label 主动缩短，Tooltip body 放完整描述。
+- **PR body 草稿**用 `Set-Content -Encoding UTF8 -Value @'...'@` 写临时文件，再用 `gh pr create --body-file`，不要把内嵌换行 / 中文直接走 `--body` 字符串。
+- **每个 PR 一个 branch 一个 commit**，命名 `feat(<area>): <slice>`（例：`feat(tabs): add error badge tooltip`）。
+- **CI 失败重试一次**：已知 flake（`AboutDialog.runtime`）；re-run 用 `gh run rerun <run-id> --failed`。
+- **Merge 用 `gh api --method PUT repos/wuxi304-collab/openme/pulls/N/merge --field merge_method=merge`**；squash 不保留工时统计。
+- **Merge 后立刻 `git push origin --delete <branch>`**，不要保留已合并的 remote branch。
+
+### 工作树与 git
+
+- 主 checkout：`C:\Users\wuxi3\Tools\openme`（main）
+- 其他 session worktree：`C:\Users\wuxi3\Tools\copilot-worktrees\openme\wuxi304-collab-*`
+- PR 用的 worktree branch 一律 `wuxi304-collab-<short-slug>`，merge 后保留在 main checkout
+- **不要在 main 上直接开发**。每个 PR 前先 `git fetch origin main && git reset --hard origin/main`，再开新 worktree / new branch
+- **`git branch -d` 在 stale remote tracking 时会拒绝**（squash merge 后 force-push）。若本地 tip 已被 main 包含，用 `git branch -D` 兜底
+
+### 启动脚本
+
+桌面 Windows 启动脚本全部在 `scripts/windows/`：
+
+| 脚本 | 作用 |
+|---|---|
+| `start-openme.cmd` | 一键启动（npx electron → portable → win-unpacked 三级回退） |
+| `deploy-branded.cmd` | 打 钢铁私塾 品牌包 |
+| `install-cad-engine.cmd` | 装 .NET 8 + 构建 ACadSharp sidecar |
+| `cleanup-project.cmd` | 一次性 Tauri 弃用清理脚本（已无用，可保留作历史） |
+
+桌面快捷启动：`powershell -ExecutionPolicy Bypass -File scripts\windows\install-desktop-shortcut.ps1 -Force`，把 `OpenMe 旗悟.lnk` 放到 `%USERPROFILE%\Desktop\`，支持拖文件自动打开。
+
+### 给未来 agent 的工作协议
+
+1. **开 PR 前**：用 `git status` 确认在 feature branch；用 `npm run test` 跑基线；`git fetch origin main` 同步远端。
+2. **实现**：每个 chrome 控件查 `title=` → 改 `<Tooltip content>`；新 viewer 查硬编码中文 → 走 `useI18n`；新功能先写 1-2 个 i18n key 进 `i18n.tsx` 再 wire。
+3. **测试**：vitest + RTL；chrome 行为断言用 `screen.getByRole` / `screen.getByText`；用户态断言 `screen.getByText` + `expect(button.textContent)`（避 ambiguous）。
+4. **验证 gate**（PR push 前必跑）：
+   - `npx tsc --noEmit` → 0 错
+   - `npm run test` → 全部绿
+   - `npm run audit:i18n` → 1009 zh / 1009 en
+   - `npm run build` → 干净 vite build
+5. **PR body**：写英文，按「What / Why / How / Test plan / English copy review」五段；`English copy review` 段是新 i18n 字符串必经评审入口。
+6. **Merge 后**：`git fetch origin main && git reset --hard origin/main`，保留 main 在工作区干净状态。
+7. **不要做的事**：
+   - 不要把 DWG SVG 描述成"精准预览"
+   - 不要把 Toasts 的 internal action 接 synchronous window.open（要 `internal` kind + onSelect）
+   - 不要给 IRREVERSIBLE 操作（关未保存标签、清空 recents、删除文件）省掉 confirm dialog
+   - 不要把 chrome modal 的 `tabIndex={-1}` 设到非根节点（会破坏 focus trap）
+
+

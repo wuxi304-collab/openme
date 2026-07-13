@@ -16,8 +16,10 @@ Thumbs.db
 cad-host/previews/
 .tmp/
 
+# Session / checkpoint cache (created by Copilot CLI)
 .copilot-checkpoints/
 .copilot-sessions/
+.session-state/
 
 # pnpm transient files (project uses npm)
 pnpm-lock.yaml
@@ -26,3 +28,27 @@ pnpm-workspace.yaml
 # Per-PR scratch body files (created while drafting gh pr create)
 .pr*-body.md
 
+# CI / build scratch
+build-renderer.log
+build-*.log
+*.tsbuildinfo
+
+# OS scratch at the project root (startup script capture, etc.)
+openme-*.log
+openme-*.err.log
+openme-*.out.log
+electron-*.log
+electron-*.err.log
+electron-*.out.log
+test-cmd.*.log
+
+# Editor / IDE scratch
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# Local desktop shortcut installers (PowerShell script drops them at root)
+shortcut-*.lnk
