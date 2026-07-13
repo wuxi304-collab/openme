@@ -6,6 +6,7 @@ import { useSettings } from "../../settings";
 import { useToast } from "../useToast";
 import { SunIcon, MoonIcon } from "../icons/TitleBarIcons";
 import StatusBarFormatPopover from "./StatusBarFormatPopover";
+import Tooltip from "../Tooltip";
 
 interface Props {
   activeTab: {
@@ -254,17 +255,18 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
           <i aria-hidden="true" />
           {activeTab?.isDirty ? t("modified") : t("ready")}
         </span>
-        <button
-                  ref={filenameRef}
-                  type="button"
-                  className={`status-file status-filename-button${copiedPath ? " is-copied" : ""}`}
-                  title={activeTab?.path ?? t("statusFilenameCopyHint")}
+        <Tooltip content={activeTab?.path ?? t("statusFilenameCopyHint")} delay={200}>
+                        <button
+                          ref={filenameRef}
+                          type="button"
+                          className={`status-file status-filename-button${copiedPath ? " is-copied" : ""}`}
                   aria-label={copiedPath ? t("statusFilenameCopied") : t("statusFilenameCopy")}
                   onClick={handleCopyPath}
                   disabled={!activeTab?.path}
                 >
                   {copiedPath ? t("statusFilenameCopied") : (activeTab?.name ?? t("waitingForFile"))}
                 </button>
+                      </Tooltip>
         {!activeTab && (
           <span className="status-idle-hint" aria-label={t("statusIdleHintAria")}>
             {t("statusIdleHint")}
@@ -295,14 +297,15 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
           />
         )}
         {format && (
-          <span
-            className="status-format-chip"
-            title={tf("statusFormatAria", { name: format.name })}
-            aria-label={tf("statusFormatAria", { name: format.name })}
-          >
-            {tf("statusFormatLabel", { name: format.name })}
-          </span>
-        )}
+                  <Tooltip content={tf("statusFormatAria", { name: format.name })}>
+                    <span
+                      className="status-format-chip"
+                      aria-label={tf("statusFormatAria", { name: format.name })}
+                    >
+                      {tf("statusFormatLabel", { name: format.name })}
+                    </span>
+                  </Tooltip>
+                )}
         {isBinary && <span className="status-binary-chip">{t("statusBinaryLabel")}</span>}
         {showRiskChip && (
           <span
@@ -330,24 +333,26 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
                   </span>
                 )}
         {showTextStats && charCount > 0 && (
-          <span
-            className="status-meta status-char-count"
-            title={tf("statusCharCountAria", { count: charCount.toLocaleString() })}
-            aria-label={tf("statusCharCountAria", { count: charCount.toLocaleString() })}
-          >
-            {tf("statusCharCountShort", { count: charCount.toLocaleString() })}
-          </span>
-        )}
-        {showTextStats && (
-          <span
-            className="status-meta status-word-count"
-            title={tf("statusWordCountAria", { count: wordCount.toLocaleString() })}
-            aria-label={tf("statusWordCountAria", { count: wordCount.toLocaleString() })}
-          >
-            {wordCount === 0 ? t("statusWordCountEmpty") : tf("statusWordCountShort", { count: wordCount.toLocaleString() })}
-          </span>
-        )}
-      </div>
+                  <Tooltip content={tf("statusCharCountAria", { count: charCount.toLocaleString() })}>
+                    <span
+                      className="status-meta status-char-count"
+                      aria-label={tf("statusCharCountAria", { count: charCount.toLocaleString() })}
+                    >
+                      {tf("statusCharCountShort", { count: charCount.toLocaleString() })}
+                    </span>
+                  </Tooltip>
+                )}
+                {showTextStats && (
+                  <Tooltip content={tf("statusWordCountAria", { count: wordCount.toLocaleString() })}>
+                    <span
+                      className="status-meta status-word-count"
+                      aria-label={tf("statusWordCountAria", { count: wordCount.toLocaleString() })}
+                    >
+                                        {wordCount === 0 ? t("statusWordCountEmpty") : tf("statusWordCountShort", { count: wordCount.toLocaleString() })}
+                                      </span>
+                                    </Tooltip>
+                                  )}
+                        </div>
       <div className="status-right">
         {showTabPosition && (
           <span
@@ -360,26 +365,30 @@ export default function StatusBar({ activeTab, activePosition, totalTabs, onOpen
         {activeTab?.isDirty && <span className="status-pill" aria-hidden="true">{t("saveShortcut")}</span>}
         <span className="status-meta-text">{t("localFirst")}</span>
         <span className="status-meta-text status-line-ending">
-          <span
-            className="status-meta-subdued"
-                      title={encoding ? t("statusEncodingLabel") : t("statusEncodingDefault")}
-                      aria-label={encoding ? t("statusEncodingLabel") : t("statusEncodingDefault")}
-          >
+                  <Tooltip content={t("statusEncodingLabel")}>
+                    <span
+                      className="status-meta-subdued"
+                      aria-label={t("statusEncodingLabel")}
+                    >
                       {encoding ? t(encodingKey(encoding)) : t("statusEncodingDefault")}
-          </span>
-          <span aria-hidden="true">·</span>
-          <span title={t("statusLineEndingLabel")}>{t(statusLineEndingKey(lineEnding))}</span>
-        </span>
-        <button
-          type="button"
-          className={`status-theme-pill is-${settings.theme}`}
-          onClick={cycleTheme}
-                  aria-label={settings.theme === "dark" ? t("statusThemeToggleToLight") : t("statusThemeToggleToDark")}
-                  aria-pressed={settings.theme === "dark"}
-                          title={settings.theme === "dark" ? t("statusThemeToggleToLight") : t("statusThemeToggleToDark")}
-                >
-                  {settings.theme === "dark" ? <MoonIcon /> : <SunIcon />}
-                </button>
+                    </span>
+                  </Tooltip>
+                  <span aria-hidden="true">·</span>
+                  <Tooltip content={t("statusLineEndingLabel")}>
+                    <span aria-label={t("statusLineEndingLabel")}>{t(statusLineEndingKey(lineEnding))}</span>
+                  </Tooltip>
+                </span>
+                <Tooltip content={settings.theme === "dark" ? t("statusThemeToggleToLight") : t("statusThemeToggleToDark")}>
+                  <button
+                    type="button"
+                    className={`status-theme-pill is-${settings.theme}`}
+                    onClick={cycleTheme}
+                    aria-label={settings.theme === "dark" ? t("statusThemeToggleToLight") : t("statusThemeToggleToDark")}
+                    aria-pressed={settings.theme === "dark"}
+                  >
+                    {settings.theme === "dark" ? <MoonIcon /> : <SunIcon />}
+                  </button>
+                </Tooltip>
       </div>
               <div className="status-sr-announcer" role="status" aria-live="polite">
                 {copyAnnouncement}
@@ -419,18 +428,19 @@ function SupportBadge({
 }) {
   const description = t(SUPPORT_LEVEL_DESC_KEYS[level]);
   return (
-    <button
-      ref={buttonRef}
-      type="button"
-      className={`status-support-badge support-${level.replace("+", "plus")} is-button`}
-      title={`${label} · ${description}`}
-      aria-label={tf("statusSupportBadgeAria", { level, description })}
-      aria-expanded={isActive}
-      aria-haspopup="dialog"
-      onClick={onClick}
-    >
-      {tf("statusSupportBadge", { level })}
-    </button>
+    <Tooltip content={`${label} · ${description}`}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className={`status-support-badge support-${level.replace("+", "plus")} is-button`}
+        aria-label={tf("statusSupportBadgeAria", { level, description })}
+        aria-expanded={isActive}
+        aria-haspopup="dialog"
+        onClick={onClick}
+      >
+        {tf("statusSupportBadge", { level })}
+      </button>
+    </Tooltip>
   );
 }
 

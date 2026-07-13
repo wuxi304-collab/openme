@@ -145,7 +145,7 @@ describe("StatusBar — encoding detection (PR #94)", () => {
     expect(cluster?.textContent ?? "").not.toMatch(/UTF-16|Unknown/);
   });
 
-  it("uses English encoding label under en locale", () => {
+  it("uses English encoding label under en locale", async () => {
     try { window.localStorage.setItem("openme.lang", "en"); } catch {}
     const content = "\uFEFFhi";
     renderInProviders(
@@ -155,6 +155,10 @@ describe("StatusBar — encoding detection (PR #94)", () => {
     );
     const enc = screen.getByText("UTF-8 (BOM)");
     expect(enc).toBeTruthy();
-    expect(enc.getAttribute("title") ?? "").toMatch(/File encoding/);
-  });
+      // PR #176: native title= replaced by custom Tooltip (aria-describedby on hover).
+      expect(enc.getAttribute("title") ?? "").toBe("");
+      // The encoding chip advertises "File encoding" via aria-label so screen
+      // readers still announce the same context the native title used to give.
+      expect(enc.getAttribute("aria-label") ?? "").toMatch(/File encoding/);
+    });
 });

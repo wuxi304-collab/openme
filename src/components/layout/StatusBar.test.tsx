@@ -12,6 +12,7 @@ import { ToastProvider } from "../useToast";
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   try {
     window.localStorage.removeItem("openme.lang");
     window.localStorage.removeItem("openme.settings.v1");
@@ -24,6 +25,29 @@ beforeEach(() => {
     window.localStorage.removeItem("openme.settings.v1");
   } catch {}
 });
+
+// PR #176 — open the Tooltip wrapper attached to a trigger so tests can
+// assert against [role="tooltip"] content instead of the removed title attr.
+async function openTooltipFor(trigger: HTMLElement) {
+  vi.useFakeTimers();
+  await act(async () => {
+    fireEvent.mouseEnter(trigger);
+  });
+  // Default Tooltip delay is 400ms — bump past it.
+  await act(async () => {
+    vi.advanceTimersByTime(500);
+  });
+}
+
+// PR #176 — read the Tooltip body for a specific trigger via its
+// aria-describedby association. querySelector('[role="tooltip"]') picks the
+// first tooltip in DOM order, but StatusBar mounts many — we need the one
+// wired to the trigger we hovered.
+function tooltipFor(trigger: HTMLElement): HTMLElement | null {
+  const id = trigger.getAttribute("aria-describedby");
+  if (!id) return null;
+  return document.getElementById(id);
+}
 
 function renderInProviders(ui: React.ReactElement) {
   return render(
@@ -385,31 +409,35 @@ describe("StatusBar", () => {
 
   // PR #95 — Support-level chip in StatusBar surfaces HonestSupportLevel
   // (A+/A/B/C/D/E/F) as a colored letter-only pill that opens the format
-  // popover when clicked.
-  describe("Support badge chip", () => {
-    it("renders the level-prefixed chip body and the format-name tooltip for a D-level file (.psd)", () => {
-      renderInProviders(
-        <StatusBar activeTab={{ name: "hero.psd", path: String.raw`C:\demo\hero.psd` }} />
-      );
-      const chip = document.querySelector(".status-support-badge") as HTMLButtonElement | null;
-      expect(chip).toBeTruthy();
-          expect(chip?.textContent?.trim()).toBe("等级 D");
-      expect(chip?.className).toContain("support-D");
-          const title = chip?.getAttribute("title") ?? "";
-          expect(title).toContain("Photoshop Document");
-          // Default locale is zh; description should be in Chinese.
-          expect(title).toMatch(/识别但无内置渲染|Recognised, no built-in render/);
-        });
+    // popover when clicked. PR #176 replaced the native title= with our custom
+    // Tooltip component, so the description now lives in [role="tooltip"].
+    describe("Support badge chip", () => {
+      it("renders the level-prefixed chip body and the format-name tooltip for a D-level file (.psd)", async () => {
+        renderInProviders(
+          <StatusBar activeTab={{ name: "hero.psd", path: String.raw`C:\demo\hero.psd` }} />
+        );
+        const chip = document.querySelector(".status-support-badge") as HTMLButtonElement | null;
+        expect(chip).toBeTruthy();
+            expect(chip?.textContent?.trim()).toBe("等级 D");
+        expect(chip?.className).toContain("support-D");
+        await openTooltipFor(chip!);
+        const tip = tooltipFor(chip!);
+        expect(tip?.textContent ?? "").toContain("Photoshop Document");
+        // Default locale is zh; description should be in Chinese.
+        expect(tip?.textContent ?? "").toMatch(/识别但无内置渲染|Recognised, no built-in render/);
+          });
 
-    it("uses the localised description in the title under en locale", () => {
-      try { window.localStorage.setItem("openme.lang", "en"); } catch {}
-      renderInProviders(
-        <StatusBar activeTab={{ name: "hero.psd", path: String.raw`C:\demo\hero.psd` }} />
-      );
-      const chip = document.querySelector(".status-support-badge") as HTMLButtonElement | null;
-          expect(chip?.textContent?.trim()).toBe("Level D");
-          expect(chip?.getAttribute("title") ?? "").toContain("Recognised, no built-in render");
-        });
+      it("uses the localised description in the title under en locale", async () => {
+        try { window.localStorage.setItem("openme.lang", "en"); } catch {}
+        renderInProviders(
+          <StatusBar activeTab={{ name: "hero.psd", path: String.raw`C:\demo\hero.psd` }} />
+        );
+        const chip = document.querySelector(".status-support-badge") as HTMLButtonElement | null;
+            expect(chip?.textContent?.trim()).toBe("Level D");
+        await openTooltipFor(chip!);
+        const tip = tooltipFor(chip!);
+        expect(tip?.textContent ?? "").toContain("Recognised, no built-in render");
+          });
 
     it("reflects the registry's support level — B for .txt, A for .json and .png", () => {
       renderInProviders(
