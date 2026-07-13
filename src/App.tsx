@@ -287,7 +287,16 @@ function AppShell() {
   // when the count reaches 0/1. The overlay itself is pointer-events:none
   // (see FileDropZone overlay variant), so it never disturbs the counter.
   const [dropOverlayActive, setDropOverlayActive] = useState(false);
+  const [dropOverlayAnnounce, setDropOverlayAnnounce] = useState("");
   const dropCounterRef = useRef(0);
+  // Announce overlay open/close to assistive tech. Screen readers get a
+  // short, polite status message instead of having to discover the region
+  // via the live `aria-label`.
+  useEffect(() => {
+    setDropOverlayAnnounce(dropOverlayActive ? t("dropOverlayAnnounceOpen") : t("dropOverlayAnnounceClose"));
+    const timer = window.setTimeout(() => setDropOverlayAnnounce(""), 1600);
+    return () => window.clearTimeout(timer);
+  }, [dropOverlayActive, t]);
   const onWorkspaceDragEnter = useCallback((event: React.DragEvent) => {
     if (!event.dataTransfer.types || !Array.from(event.dataTransfer.types).includes("Files")) return;
     event.preventDefault();
@@ -334,6 +343,15 @@ function AppShell() {
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       const mod = event.ctrlKey || event.metaKey;
+      // Escape closes the drop overlay (when active). We capture this BEFORE
+      // the command/shortcuts early-return so users can always cancel a
+      // pending drag even when another modal is open.
+      if (event.key === "Escape" && dropOverlayActive) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeDropOverlay();
+        return;
+      }
       if (mod && event.key.toLowerCase() === "s") { event.preventDefault(); void handleSaveCurrent(); return; }
       if (mod && event.key.toLowerCase() === "o") { event.preventDefault(); void handleOpenDialog(); return; }
       if (mod && event.key.toLowerCase() === "k") { event.preventDefault(); setCommandOpen((value) => !value); return; }
@@ -355,7 +373,7 @@ function AppShell() {
     };
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
-  }, [handleSaveCurrent, handleOpenDialog, commandOpen, shortcutsOpen, activeTab, handleCloseTab, activateRelativeTab, tabs]);
+  }, [handleSaveCurrent, handleOpenDialog, commandOpen, shortcutsOpen, activeTab, handleCloseTab, activateRelativeTab, tabs, dropOverlayActive, closeDropOverlay]);
 
   return (
       <ToastProvider value={{ pushToast }}>
@@ -397,6 +415,7 @@ function AppShell() {
             <ToastStack toasts={toasts} onDismiss={dismissToast} />
             <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
             <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+            <div role="status" aria-live="polite" className="sr-only">{dropOverlayAnnounce}</div>
             {dropOverlayActive ? (
               <FileDropZone
                 variant="overlay"

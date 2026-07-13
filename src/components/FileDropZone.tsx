@@ -84,7 +84,7 @@ export default function FileDropZone({ onFileDrop, onOpenDialog, variant = "fill
       <div
         role="region"
         aria-label={t("dropOverlayAria")}
-        aria-describedby="file-drop-overlay-hint"
+          aria-describedby="file-drop-overlay-hint file-drop-overlay-hint-aria"
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
@@ -115,8 +115,14 @@ export default function FileDropZone({ onFileDrop, onOpenDialog, variant = "fill
             id="file-drop-overlay-hint"
             className="file-drop-overlay-subtitle"
           >
-            {t("dropHint")}
+              {t("dropOverlayHint")}
           </p>
+            <p
+              id="file-drop-overlay-hint-aria"
+              className="sr-only"
+            >
+              {t("dropOverlayHintAria")}
+            </p>
           <ul
             aria-label={t("dropZoneSupportedFormatsAria")}
             className="file-drop-overlay-chips"

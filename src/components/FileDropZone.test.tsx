@@ -134,3 +134,46 @@ describe("FileDropZone overlay variant (PR #154)", () => {
     expect(onFileDrop).toHaveBeenCalledWith(["/tmp/a.txt", "/tmp/b.zip"]);
   });
 });
+
+  describe("FileDropZone overlay polish (PR #167)", () => {
+    it("overlay subtitle mentions Escape cancel hint (visible copy)", () => {
+      render(
+        <I18nProvider>
+          <FileDropZone variant="overlay" onFileDrop={() => undefined} />
+        </I18nProvider>
+      );
+      expect(screen.getByText("Release to open. Press Esc to cancel.")).toBeTruthy();
+    });
+
+    it("overlay subtitle has the right id for aria-describedby", () => {
+      const { container } = render(
+        <I18nProvider>
+          <FileDropZone variant="overlay" onFileDrop={() => undefined} />
+        </I18nProvider>
+      );
+      const visibleHint = document.getElementById("file-drop-overlay-hint");
+      expect(visibleHint).toBeTruthy();
+      expect(visibleHint?.textContent ?? "").toContain("Press Esc");
+      // The sr-only hint for screen readers carries a separate id, since the
+      // visible copy includes the key glyph Esc (screen readers should hear
+      // the spelled-out "Escape").
+      const srHint = document.getElementById("file-drop-overlay-hint-aria");
+      expect(srHint).toBeTruthy();
+      expect(srHint?.textContent ?? "").toContain("Press Escape");
+      // It must be visually hidden.
+      expect(srHint?.className ?? "").toContain("sr-only");
+      // aria-describedby lists both ids.
+      const region = container.querySelector(".file-drop-overlay");
+      expect(region?.getAttribute("aria-describedby")).toBe("file-drop-overlay-hint file-drop-overlay-hint-aria");
+    });
+
+    it("zh locale overlay subtitle also mentions Esc 取消", () => {
+      try { window.localStorage.setItem("openme.lang", "zh"); } catch {}
+      render(
+        <I18nProvider>
+          <FileDropZone variant="overlay" onFileDrop={() => undefined} />
+        </I18nProvider>
+      );
+      expect(screen.getByText("松开以打开，按 Esc 取消")).toBeTruthy();
+    });
+  });
