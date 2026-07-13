@@ -33,7 +33,46 @@ describe("fuzzyScore", () => {
     expect(fuzzyScore("save current", "save file")).toBe(-1);
     expect(fuzzyScore("save current", "save current file")).toBeGreaterThan(0);
   });
-});
+
+    // Char-level fallback (PR #174) ---------------------------------------
+
+    it("matches a typo via character-level fuzzy ('sve' finds 'save')", () => {
+      const score = fuzzyScore("sve", "save current file");
+      expect(score).toBeGreaterThan(0);
+    });
+
+    it("matches scattered needle chars in haystack order ('clor' finds 'color')", () => {
+      const score = fuzzyScore("clor", "background color");
+      expect(score).toBeGreaterThan(0);
+    });
+
+    it("rejects when a needle char is missing entirely", () => {
+      expect(fuzzyScore("sve", "open recent")).toBe(-1);
+    });
+
+    it("scores exact substring match higher than char-level fuzzy", () => {
+      const exact = fuzzyScore("save", "save current file");
+      const fuzzy = fuzzyScore("svae", "save current file"); // 4-char typo still in order
+      expect(exact).toBeGreaterThan(fuzzy);
+    });
+
+    it("scores consecutive char runs higher than scattered ones", () => {
+      // 'col' as a contiguous substring of 'color' should score higher than
+      // 'col' scattered across 'console override log'.
+      const consecutive = fuzzyScore("col", "color picker");
+      const scattered = fuzzyScore("col", "console output log");
+      expect(consecutive).toBeGreaterThan(scattered);
+    });
+
+    it("multi-occurrence substring gets a bonus over a single occurrence", () => {
+      // Both haystacks start the match at the same word-boundary position so
+      // the start-of-string bonus is constant — the only difference must come
+      // from the extra occurrence.
+      const once = fuzzyScore("save", "auto save file");
+      const twice = fuzzyScore("save", "auto save and save file");
+      expect(twice).toBeGreaterThan(once);
+    });
+  });
 
 describe("rankByFuzzy", () => {
   const items = [
