@@ -817,6 +817,16 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
 .tab-close:active { transform:scale(.94); }
 .tab-close:focus-visible { outline:2px solid var(--mario-yellow); outline-offset:1px; color:#fff; }
 
+/* Trailing "+" button on the FileTabs nav — keyboard-equivalent affordance
+ * for "open another file" when the workspace already has tabs and the
+ * EmptyState's big "Open file" button is hidden. Mirrors Ctrl+O. */
+.file-tabs-open-button { flex:none; width:26px; height:26px; padding:0; border:1px solid transparent; border-radius:6px; background:transparent; color:#89837b; display:grid; place-items:center; cursor:pointer; transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .file-tabs-open-button:hover { background:#292622; border-color:rgba(255,255,255,.08); color:#f1ece4; }
+}
+.file-tabs-open-button:active { transform:scale(.94); }
+.file-tabs-open-button:focus-visible { outline:2px solid var(--mario-yellow); outline-offset:1px; color:#fff; }
+
 /* landing workspace */
 .empty-workspace { flex:1; min-height:0; position:relative; display:grid; place-items:center; overflow:hidden; background:linear-gradient(180deg, #609ed1 0%, #79b6dc 53%, #cce7e0 53.2%, #d9eee7 100%); }
 .sky-grid { position:absolute; inset:0 0 18%; opacity:.9; background-image:linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px); background-size:32px 32px; }

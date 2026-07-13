@@ -10,11 +10,18 @@ interface Props {
   onSelect: (id: string) => void;
   onClose: (id: string) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
+  /**
+   * Invoked when the user clicks the trailing "+" button (or its keyboard
+   * equivalent) to open another file from the file picker. The keyboard
+   * shortcut Ctrl+O already exists in App.tsx; this button is the
+   * discoverable on-screen affordance for users who don't know the shortcut.
+   */
+  onOpenDialog: () => void;
 }
 
 type DropEdge = "before" | "after" | null;
 
-export default function FileTabs({ tabs, activeId, onSelect, onClose, onReorder }: Props) {
+export default function FileTabs({ tabs, activeId, onSelect, onClose, onReorder, onOpenDialog }: Props) {
   const { t, tf } = useI18n();
   const draggingIdRef = useRef<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -220,12 +227,23 @@ export default function FileTabs({ tabs, activeId, onSelect, onClose, onReorder 
           );
         })}
       </div>
-      <span id="file-tabs-reorder-hint" className="sr-only">
-        {t("tabReorderHint")}
-      </span>
-      <span role="status" aria-live="polite" className="sr-only">
-        {reorderAnnouncement.current}
-      </span>
-    </nav>
-  );
-}
+            <button
+              type="button"
+              className="file-tabs-open-button"
+              aria-label={t("fileTabsOpenButtonAria")}
+              title={t("fileTabsOpenButtonTitle")}
+              onClick={onOpenDialog}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                <path d="M6 1.5v9M1.5 6h9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+              </svg>
+            </button>
+            <span id="file-tabs-reorder-hint" className="sr-only">
+              {t("tabReorderHint")}
+            </span>
+            <span role="status" aria-live="polite" className="sr-only">
+              {reorderAnnouncement.current}
+            </span>
+          </nav>
+        );
+      }

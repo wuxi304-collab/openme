@@ -60,6 +60,7 @@ describe("FileTabs", () => {
         onSelect={() => {}}
         onClose={() => {}}
         onReorder={() => {}}
+      onOpenDialog={() => {}}
       />
     );
     expect(container.querySelector(".file-tabs")).toBeNull();
@@ -77,6 +78,7 @@ describe("FileTabs", () => {
         onSelect={() => {}}
         onClose={() => {}}
         onReorder={() => {}}
+      onOpenDialog={() => {}}
       />
     );
     const tabButtons = screen.getAllByRole("tab");
@@ -95,6 +97,7 @@ describe("FileTabs", () => {
         onSelect={() => {}}
         onClose={() => {}}
         onReorder={() => {}}
+      onOpenDialog={() => {}}
       />
     );
     const tabButtons = screen.getAllByRole("tab");
@@ -112,6 +115,7 @@ describe("FileTabs", () => {
         onSelect={onSelect}
         onClose={() => {}}
         onReorder={() => {}}
+      onOpenDialog={() => {}}
       />
     );
     fireEvent.click(screen.getAllByRole("tab")[1]);
@@ -128,6 +132,7 @@ describe("FileTabs", () => {
         onSelect={() => {}}
         onClose={onClose}
         onReorder={() => {}}
+      onOpenDialog={() => {}}
       />
     );
     const closeButtons = document.querySelectorAll(".tab-close");
@@ -145,6 +150,7 @@ describe("FileTabs", () => {
         onSelect={() => {}}
         onClose={onClose}
         onReorder={() => {}}
+      onOpenDialog={() => {}}
       />
     );
     fireEvent(
@@ -164,6 +170,7 @@ describe("FileTabs", () => {
         onSelect={() => {}}
         onClose={onClose}
         onReorder={() => {}}
+      onOpenDialog={() => {}}
       />
     );
     fireEvent(
@@ -192,6 +199,7 @@ describe("FileTabs", () => {
         onSelect={() => {}}
         onClose={() => {}}
         onReorder={onReorder}
+        onOpenDialog={() => {}}
       />
     );
     const tabNodes = container.querySelectorAll(".file-tab");
@@ -216,6 +224,7 @@ describe("FileTabs", () => {
         onSelect={() => {}}
         onClose={() => {}}
         onReorder={onReorder}
+        onOpenDialog={() => {}}
       />
     );
     const tabNodes = container.querySelectorAll(".file-tab");
@@ -251,6 +260,7 @@ describe("FileTabs", () => {
               onSelect={() => {}}
               onClose={() => {}}
               onReorder={onReorder}
+              onOpenDialog={() => {}}
             />
           );
           const tabNodes = container.querySelectorAll(".file-tab");
@@ -275,6 +285,7 @@ describe("FileTabs", () => {
               onSelect={() => {}}
               onClose={() => {}}
               onReorder={onReorder}
+              onOpenDialog={() => {}}
             />
           );
           const tabNodes = container.querySelectorAll(".file-tab");
@@ -301,6 +312,7 @@ describe("FileTabs", () => {
               onSelect={() => {}}
               onClose={() => {}}
               onReorder={onReorder}
+              onOpenDialog={() => {}}
             />
           );
           const tabNodes = container.querySelectorAll(".file-tab");
@@ -333,6 +345,7 @@ describe("FileTabs", () => {
               onSelect={() => {}}
               onClose={() => {}}
               onReorder={onReorder}
+              onOpenDialog={() => {}}
             />
           );
           const tabNodes = container.querySelectorAll(".file-tab");
@@ -360,6 +373,7 @@ describe("FileTabs", () => {
         onSelect={() => {}}
         onClose={() => {}}
         onReorder={onReorder}
+        onOpenDialog={() => {}}
       />
     );
     const tabButtons = screen.getAllByRole("tab");
@@ -381,6 +395,7 @@ describe("FileTabs", () => {
         onSelect={() => {}}
         onClose={() => {}}
         onReorder={onReorder}
+        onOpenDialog={() => {}}
       />
     );
     const tabButtons = screen.getAllByRole("tab");
@@ -399,6 +414,7 @@ describe("FileTabs", () => {
         onSelect={onSelect}
         onClose={() => {}}
         onReorder={onReorder}
+        onOpenDialog={() => {}}
       />
     );
     fireEvent.keyDown(screen.getAllByRole("tab")[0], { key: "ArrowRight" });
@@ -415,6 +431,7 @@ describe("FileTabs", () => {
         onSelect={() => {}}
         onClose={() => {}}
         onReorder={() => {}}
+      onOpenDialog={() => {}}
       />
     );
     const list = document.querySelector('[role="tablist"]');
@@ -439,6 +456,7 @@ describe("FileTabs", () => {
           onSelect={() => {}}
           onClose={() => {}}
           onReorder={() => {}}
+        onOpenDialog={() => {}}
         />
       );
       const tabButtons = screen.getAllByRole("tab");
@@ -462,6 +480,7 @@ describe("FileTabs", () => {
           onSelect={() => {}}
           onClose={() => {}}
           onReorder={() => {}}
+        onOpenDialog={() => {}}
         />
       );
       const tabButtons = screen.getAllByRole("tab");
@@ -486,6 +505,7 @@ describe("FileTabs", () => {
           onSelect={() => {}}
           onClose={() => {}}
           onReorder={() => {}}
+        onOpenDialog={() => {}}
         />
       );
       const tabNodes = container.querySelectorAll(".file-tab");
@@ -504,9 +524,99 @@ describe("FileTabs", () => {
           onSelect={() => {}}
           onClose={() => {}}
           onReorder={() => {}}
+        onOpenDialog={() => {}}
         />
       );
       const errorMark = document.querySelector(".tab-error-mark");
       expect(errorMark?.getAttribute("aria-label") ?? "").toMatch(/alpha\.txt/);
     });
   });
+
+        describe("open-file button (PR #175)", () => {
+          it("renders a '+' button next to the tab strip when tabs exist", () => {
+            const tabs = [makeTab("a", "alpha.txt")];
+            renderInProviders(
+              <FileTabs
+                tabs={tabs}
+                activeId="a"
+                onSelect={() => {}}
+                onClose={() => {}}
+                onReorder={() => {}}
+                onOpenDialog={() => {}}
+              />
+            );
+            const btn = document.querySelector(".file-tabs-open-button");
+            expect(btn).not.toBeNull();
+            expect(btn?.tagName).toBe("BUTTON");
+          });
+
+          it("does not render the '+' button when there are no tabs", () => {
+            renderInProviders(
+              <FileTabs
+                tabs={[]}
+                activeId={null}
+                onSelect={() => {}}
+                onClose={() => {}}
+                onReorder={() => {}}
+                onOpenDialog={() => {}}
+              />
+            );
+            const btn = document.querySelector(".file-tabs-open-button");
+            expect(btn).toBeNull();
+          });
+
+          it("invokes onOpenDialog when the '+' button is clicked", () => {
+            const onOpenDialog = vi.fn();
+            const tabs = [makeTab("a", "alpha.txt")];
+            renderInProviders(
+              <FileTabs
+                tabs={tabs}
+                activeId="a"
+                onSelect={() => {}}
+                onClose={() => {}}
+                onReorder={() => {}}
+                onOpenDialog={onOpenDialog}
+              />
+            );
+            const btn = document.querySelector(".file-tabs-open-button");
+            expect(btn).not.toBeNull();
+            fireEvent.click(btn!);
+            expect(onOpenDialog).toHaveBeenCalledTimes(1);
+          });
+
+          it("gives the '+' button an accessible aria-label (Chinese)", () => {
+            const tabs = [makeTab("a", "alpha.txt")];
+            renderInProviders(
+              <FileTabs
+                tabs={tabs}
+                activeId="a"
+                onSelect={() => {}}
+                onClose={() => {}}
+                onReorder={() => {}}
+                onOpenDialog={() => {}}
+              />
+            );
+            const btn = document.querySelector(".file-tabs-open-button");
+            expect(btn).not.toBeNull();
+            const aria = btn!.getAttribute("aria-label") ?? "";
+            expect(aria.length).toBeGreaterThan(0);
+            // Chinese locale — should contain a non-ASCII character (CJK)
+            expect(aria).toMatch(/[\u4e00-\u9fff]/);
+          });
+
+          it("renders a non-empty title attribute for hover tooltip", () => {
+            const tabs = [makeTab("a", "alpha.txt")];
+            renderInProviders(
+              <FileTabs
+                tabs={tabs}
+                activeId="a"
+                onSelect={() => {}}
+                onClose={() => {}}
+                onReorder={() => {}}
+                onOpenDialog={() => {}}
+              />
+            );
+            const btn = document.querySelector(".file-tabs-open-button") as HTMLButtonElement | null;
+            expect(btn?.getAttribute("title")).toBeTruthy();
+          });
+        });

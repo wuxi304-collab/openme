@@ -456,7 +456,7 @@ function AppShell() {
           <div className="flex flex-col mario-world" style={{ height: "100vh" }}>
             <a href="#main-content" className="skip-link">{t("skipToContent")}</a>
             <TitleBar />
-            <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} onReorder={handleReorderTabs} />
+            <FileTabs tabs={tabs} activeId={activeTabId} onSelect={setActiveTabId} onClose={handleCloseTab} onReorder={handleReorderTabs} onOpenDialog={handleOpenDialog} />
             <div className="flex flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
               <Sidebar files={filteredFiles} selectedPath={activeTab?.path ?? null} onSelect={handleSelectFile} onRemove={handleRemoveRecent} onOpenDialog={handleOpenDialog} searchValue={searchQuery} onSearchChange={setSearchQuery} totalCount={recentFiles.length} onReveal={handleRevealRecent} onOpenInSystem={handleOpenRecentInSystem} />
               <main id="main-content" role="main" aria-label={t("appMainAria")} tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden focus:outline-none" onDrop={handleDrop} onDragOver={onWorkspaceDragOver} onDragEnter={onWorkspaceDragEnter} onDragLeave={onWorkspaceDragLeave}>

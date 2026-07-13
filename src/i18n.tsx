@@ -172,6 +172,10 @@ export const translations: Record<string, Record<string, string>> = {
                 tabStateLoadingAria: "正在加载 {name}",
                 tabStateErrorAria: "{name} 加载失败",
 
+                                // PR #175 — FileTabs "+" open-button (workspace a11y)
+                                fileTabsOpenButtonAria: "打开其他文件",
+                                fileTabsOpenButtonTitle: "打开其他文件（Ctrl+O）",
+
                 // PR #94 — StatusBar polish v3 (char/word count + BOM detection)
     statusCharCount: "{count} 个字符",
     statusCharCountShort: "{count} 字符",
@@ -1491,6 +1495,10 @@ export const translations: Record<string, Record<string, string>> = {
             tabErrorAriaSuffix: "(load failed)",
             tabStateLoadingAria: "Loading {name}",
             tabStateErrorAria: "Failed to load {name}",
+
+                        // PR #175 — FileTabs "+" open-button (workspace a11y)
+                        fileTabsOpenButtonAria: "Open another file",
+                        fileTabsOpenButtonTitle: "Open another file (Ctrl+O)",
 
             // PR #94 — StatusBar polish v3 (char/word count + BOM detection)
     statusCharCount: "{count} characters",
