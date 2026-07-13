@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { I18nProvider } from "../i18n";
 import { SettingsProvider } from "../settings";
 import { ToastProvider } from "./useToast";
@@ -400,4 +400,65 @@ describe("SettingsDialog", () => {
               expect(hiddenSections.length).toBe(4);
             });
           });
+
+              describe("SettingsDialog Tooltip migration (PR #178)", () => {
+                it("does not set native title= on the migrated close button", () => {
+                  renderDialog();
+                  const closeBtn = document.querySelector(
+                    ".settings-dialog-close",
+                  ) as HTMLButtonElement | null;
+                  expect(closeBtn).toBeTruthy();
+                  expect(closeBtn!.title).toBe("");
+                });
+
+                it("opens the close-button Tooltip with the close copy", async () => {
+                  renderDialog();
+                  const closeBtn = document.querySelector(
+                    ".settings-dialog-close",
+                  ) as HTMLButtonElement;
+                  expect(closeBtn).toBeTruthy();
+                  vi.useFakeTimers();
+                  await act(async () => {
+                    fireEvent.mouseEnter(closeBtn);
+                    vi.runAllTimers();
+                  });
+                  const describedBy = closeBtn.getAttribute("aria-describedby");
+                  expect(describedBy).toBeTruthy();
+                  const tooltipBody = document.getElementById(describedBy!);
+                  expect(tooltipBody?.textContent).toBe("Close settings");
+                  vi.useRealTimers();
+                });
+
+                it("renders the storage-path section without native title= on the migrated copy/reveal buttons", async () => {
+                  // The copy + reveal buttons (chrome controls) lost their native title=
+                  // via the Tooltip migration in PR #178. The inline <code> element
+                  // intentionally retains native title= for full-path-on-hover (truncation
+                  // pattern, not an explanation), but that's conditional on the IPC
+                  // returning a real path — in this mocked env we only get the "unavailable"
+                  // fallback, so we just verify the migrated buttons have no title attr.
+                  renderDialog();
+                  await waitFor(() => {
+                    // Storage-path section always renders one of two branches:
+                    // a) <code> with the path (when IPC ok)
+                    // b) the "unavailable" message (when IPC fails / not present)
+                    const block = document.querySelector(".settings-storage-path");
+                    expect(block).toBeTruthy();
+                  });
+                  // In the mocked env the IPC fails, so we get the unavailable branch —
+                  // which means there's no <code> with title=. Instead verify that the
+                  // migrated chrome controls have no title= at all.
+                  const closeBtn = document.querySelector(
+                    ".settings-dialog-close",
+                  ) as HTMLButtonElement;
+                  expect(closeBtn.title).toBe("");
+                  // The storage-path block in the unavailable branch should not contain
+                  // any element with a non-empty title attribute (no chrome-control Tooltip
+                  // candidate leaked into this branch).
+                  const block = document.querySelector(".settings-storage-path") as HTMLElement;
+                  const titled = Array.from(
+                    block.querySelectorAll<HTMLElement>("[title]"),
+                  ).filter((el) => (el.getAttribute("title") ?? "").length > 0);
+                  expect(titled.length).toBe(0);
+                });
+              });
         });

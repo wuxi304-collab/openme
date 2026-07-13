@@ -143,8 +143,10 @@ describe("AboutDialog runtime sections", () => {
     expect(payload).toContain("chromium: 128.0.6613.114");
     expect(payload).toContain("os: Windows NT 10.0.22631");
     expect(payload).toContain("arch: x64");
-    // After clicking, the button label flips to the "Copied" copy.
-    expect(screen.getByText(/Runtime details copied/i)).toBeTruthy();
+        // After clicking, the button label flips to the "Copied" copy. PR #178
+        // also mounts the same copy inside a Tooltip, so assert against the
+        // button element specifically.
+        expect(button.textContent ?? "").toMatch(/Runtime details copied/i);
   });
 
   it("flips the version copy button icon to a checkmark after success", async () => {

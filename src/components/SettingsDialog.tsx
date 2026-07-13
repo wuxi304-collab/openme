@@ -4,6 +4,7 @@ import { useSettings, type LineNumbersChoice, type RecentLimit, type TabSize, ty
 import { useToast } from "./useToast";
 import { useConfirm } from "./useConfirm";
 import { isIpcFailure, describeIpcError } from "../core/ipcError";
+import Tooltip from "./Tooltip";
 import "./SettingsDialog.css";
 
 interface Props {
@@ -327,17 +328,18 @@ export default function SettingsDialog({ open, onClose }: Props) {
             <h2 id="settings-dialog-title" className="settings-dialog-title">{t("settingsTitle")}</h2>
             <p className="settings-dialog-tagline">{t("settingsTagline")}</p>
           </div>
-          <button
-            type="button"
-            className="settings-dialog-close"
-            aria-label={t("settingsCloseAria")}
-            title={t("settingsCloseAria")}
-            onClick={onClose}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-              <path d="M3 3 L11 11 M11 3 L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-            </svg>
-          </button>
+          <Tooltip content={t("settingsCloseAria")}>
+                      <button
+                        type="button"
+                        className="settings-dialog-close"
+                        aria-label={t("settingsCloseAria")}
+                        onClick={onClose}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                          <path d="M3 3 L11 11 M11 3 L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                        </svg>
+                      </button>
+                    </Tooltip>
         </header>
 
         <div className="settings-dialog-body">
@@ -540,28 +542,30 @@ export default function SettingsDialog({ open, onClose }: Props) {
                             {storagePath ?? t("settingsStoragePathUnknown")}
                           </code>
                           <div className="settings-storage-path-actions">
-                            <button
-                              type="button"
-                              className="settings-dialog-secondary settings-storage-path-action"
-                              onClick={handleCopyStoragePath}
-                              disabled={!storagePath}
+                                                      <Tooltip content={t("settingsStoragePathCopyAria")}>
+                                                        <button
+                                                          type="button"
+                                                          className="settings-dialog-secondary settings-storage-path-action"
+                                                          onClick={handleCopyStoragePath}
+                                                          disabled={!storagePath}
                                                           data-copied={copied ? "true" : "false"}
                                                           aria-label={t("settingsStoragePathCopyAria")}
-                                                          title={t("settingsStoragePathCopyAria")}
                                                         >
                                                           {copied ? t("settingsStoragePathCopied") : t("settingsStoragePathCopy")}
                                                         </button>
-                            <button
-                              type="button"
-                              className="settings-dialog-secondary settings-storage-path-action"
-                              onClick={handleRevealStorage}
-                              disabled={!storagePath}
-                              aria-label={t("settingsStoragePathRevealAria")}
-                              title={t("settingsStoragePathRevealAria")}
-                            >
-                              {t("settingsStoragePathReveal")}
-                            </button>
-                          </div>
+                                                      </Tooltip>
+                                                      <Tooltip content={t("settingsStoragePathRevealAria")}>
+                                                        <button
+                                                          type="button"
+                                                          className="settings-dialog-secondary settings-storage-path-action"
+                                                          onClick={handleRevealStorage}
+                                                          disabled={!storagePath}
+                                                          aria-label={t("settingsStoragePathRevealAria")}
+                                                        >
+                                                          {t("settingsStoragePathReveal")}
+                                                        </button>
+                                                      </Tooltip>
+                                                    </div>
                         </div>
                         <p id="settings-storage-path-hint" className="settings-storage-path-hint">
                           {t("settingsStoragePathHint")}
