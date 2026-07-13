@@ -780,9 +780,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
   );
 }
 .sidebar-empty strong { color:#b9b2a8; font-size:12px; }
-.sidebar-empty-browse { margin-top:6px; padding:6px 12px; border:1px solid rgba(255,255,255,.08); border-radius:7px; background:#292622; color:#f1ece4; font:700 11px/1 var(--font-mono); cursor:pointer; transition:background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+.sidebar-empty-browse { margin-top:6px; padding:8px 14px; border:1px solid rgba(255,255,255,.12); border-radius:7px; background:#292622; color:#f1ece4; font:700 12px/1 var(--font-mono); cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
+.sidebar-empty-browse-kbd { font:600 10px/1 var(--font-mono); padding:3px 6px; border-radius:4px; background:rgba(255,255,255,.08); color:#b9b2a8; border:1px solid rgba(255,255,255,.06); }
 @media (hover: hover) and (pointer: fine) {
-  .sidebar-empty-browse:hover { background:#3a3531; border-color:rgba(255,255,255,.14); }
+  .sidebar-empty-browse:hover { background:#3a3531; border-color:rgba(255,255,255,.18); }
 }
 .sidebar-empty-browse:focus-visible { outline:2px solid var(--mario-yellow); outline-offset:1px; }
 .sidebar-empty-browse:active { transform:translateY(1px); }
