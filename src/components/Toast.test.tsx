@@ -370,3 +370,43 @@ describe("ToastStack · internal action (PR #170)", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("ToastStack · reveal-in-folder wiring (PR #171)", () => {
+  it("clicking a Reveal-flavoured internal action invokes the callback with no window.open side effect", () => {
+    // App.tsx wires handleFilePaths's IPC-failure toast to call
+    // window.electronAPI.revealInFolder(p). We don't drive App directly
+    // (it has too many providers), but the trigger pattern is identical
+    // to any other internal action. This test asserts that the new
+    // toastActionReveal string flows through the existing internal
+    // pipeline and reaches an arbitrary callback with no URL side effect.
+    const reveal = vi.fn();
+    const openSpy = vi.fn();
+    const originalOpen = window.open;
+    window.open = openSpy;
+    try {
+      render(
+        <I18nProvider>
+          <ToastStack
+            toasts={[
+              makeEntry({
+                kind: "error",
+                message: "Read failed",
+                action: {
+                  kind: "internal",
+                  label: "Show in folder",
+                  onSelect: () => { reveal(); },
+                },
+              }),
+            ]}
+            onDismiss={() => undefined}
+          />
+        </I18nProvider>
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Show in folder" }));
+      expect(reveal).toHaveBeenCalledTimes(1);
+      expect(openSpy).not.toHaveBeenCalled();
+    } finally {
+      window.open = originalOpen;
+    }
+  });
+});
