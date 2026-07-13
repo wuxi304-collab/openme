@@ -23,3 +23,6 @@ cad-host/previews/
 pnpm-lock.yaml
 pnpm-workspace.yaml
 
+# Per-PR scratch body files (created while drafting gh pr create)
+.pr*-body.md
+

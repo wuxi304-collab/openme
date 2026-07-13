@@ -831,6 +831,7 @@ export const translations: Record<string, Record<string, string>> = {
     toastLimitHint: "{count} 条更早的提示已收起",
     toastActionRetry: "重试",
     toastActionDismiss: "知道了",
+    toastActionReveal: "在文件夹中显示",
 
     // Install mode hint (portable → setup)
     installModeHintTitle: "正在使用便携版",
@@ -2144,6 +2145,7 @@ export const translations: Record<string, Record<string, string>> = {
     toastLimitHint: "{count} earlier notifications hidden",
     toastActionRetry: "Retry",
     toastActionDismiss: "Dismiss",
+    toastActionReveal: "Show in folder",
 
     // Install mode hint (portable → setup)
     installModeHintTitle: "Running the portable build",

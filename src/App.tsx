@@ -253,12 +253,19 @@ function AppShell() {
     const handleFilePaths = useCallback(async (paths: string[]) => {
       for (const p of paths) {
         const fileInfo = await window.electronAPI.getFileInfo(p);
-        if (isIpcFailure(fileInfo)) { pushToast("error", describeIpcError(t, fileInfo)); continue; }
+        if (isIpcFailure(fileInfo)) {
+          pushToast("error", describeIpcError(t, fileInfo), {
+            kind: "internal",
+            label: tf("toastActionReveal"),
+            onSelect: () => { void window.electronAPI.revealInFolder(p).catch(() => undefined); },
+          });
+          continue;
+        }
         fileInfo.file_type = detectCategory(p);
         await addToRecent(fileInfo);
         await openFileInTab(fileInfo);
       }
-    }, [addToRecent, openFileInTab, t]);
+    }, [addToRecent, openFileInTab, t, tf]);
     // Desktop launch wiring. The main process forwards `OpenMe.exe <files>`
     // argv (or second-instance hand-off, or macOS Finder `open-file`) to
     // here once the renderer is ready. We route through the same
