@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import FileTabs from "./FileTabs";
 import { I18nProvider } from "../../i18n";
 
@@ -530,7 +530,35 @@ describe("FileTabs", () => {
       const errorMark = document.querySelector(".tab-error-mark");
       expect(errorMark?.getAttribute("aria-label") ?? "").toMatch(/alpha\.txt/);
     });
-  });
+
+        it("error mark opens a Tooltip body on hover (PR #179 migration)", async () => {
+          const tabs = [makeTab("a", "alpha.txt", { error: "boom" })];
+          localStorage.setItem("openme.lang", "en");
+          renderInProviders(
+            <FileTabs
+              tabs={tabs}
+              activeId="a"
+              onSelect={() => {}}
+              onClose={() => {}}
+              onReorder={() => {}}
+              onOpenDialog={() => {}}
+            />
+          );
+          const errorMark = document.querySelector(".tab-error-mark") as HTMLElement;
+          expect(errorMark).toBeTruthy();
+          expect(errorMark.getAttribute("title") ?? "").toBe("");
+          vi.useFakeTimers();
+          await act(async () => {
+            fireEvent.mouseEnter(errorMark);
+            vi.runAllTimers();
+          });
+          const describedBy = errorMark.getAttribute("aria-describedby");
+          expect(describedBy).toBeTruthy();
+          const body = document.getElementById(describedBy!);
+          expect(body?.textContent).toBe("Error");
+          vi.useRealTimers();
+        });
+      });
 
         describe("open-file button (PR #175)", () => {
           it("renders a '+' button next to the tab strip when tabs exist", () => {
@@ -604,19 +632,34 @@ describe("FileTabs", () => {
             expect(aria).toMatch(/[\u4e00-\u9fff]/);
           });
 
-          it("renders a non-empty title attribute for hover tooltip", () => {
-            const tabs = [makeTab("a", "alpha.txt")];
-            renderInProviders(
-              <FileTabs
-                tabs={tabs}
-                activeId="a"
-                onSelect={() => {}}
-                onClose={() => {}}
-                onReorder={() => {}}
-                onOpenDialog={() => {}}
-              />
-            );
-            const btn = document.querySelector(".file-tabs-open-button") as HTMLButtonElement | null;
-            expect(btn?.getAttribute("title")).toBeTruthy();
-          });
+          it("opens a Tooltip body on hover (PR #179 migration)", async () => {
+                      // PR #179 replaced the native title= with the custom Tooltip
+                      // component. Verify the trigger no longer has a title attribute
+                      // and instead wires up aria-describedby when hovered.
+                      const tabs = [makeTab("a", "alpha.txt")];
+                      localStorage.setItem("openme.lang", "en");
+                      renderInProviders(
+                        <FileTabs
+                          tabs={tabs}
+                          activeId="a"
+                          onSelect={() => {}}
+                          onClose={() => {}}
+                          onReorder={() => {}}
+                          onOpenDialog={() => {}}
+                        />
+                      );
+                      const btn = document.querySelector(".file-tabs-open-button") as HTMLButtonElement | null;
+                      expect(btn).toBeTruthy();
+                      expect(btn!.getAttribute("title") ?? "").toBe("");
+                      vi.useFakeTimers();
+                      await act(async () => {
+                        fireEvent.mouseEnter(btn!);
+                        vi.runAllTimers();
+                      });
+                      const describedBy = btn!.getAttribute("aria-describedby");
+                      expect(describedBy).toBeTruthy();
+                      const body = document.getElementById(describedBy!);
+                      expect(body?.textContent).toBe("Open another file (Ctrl+O)");
+                      vi.useRealTimers();
+                    });
         });

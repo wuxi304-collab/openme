@@ -3,6 +3,7 @@ import { FileTabState } from "../../types";
 import { useI18n } from "../../i18n";
 import { detectCategory } from "../../utils/fileTypeDetector";
 import FileTypeIcon from "../FileTypeIcon";
+import Tooltip from "../Tooltip";
 
 interface Props {
   tabs: FileTabState[];
@@ -201,15 +202,16 @@ export default function FileTabs({ tabs, activeId, onSelect, onClose, onReorder,
                   </span>
                 )}
                 {errored && (
-                  <span
-                    className="tab-error-mark"
-                    role="img"
-                    aria-label={tf("tabStateErrorAria", { name: tab.name })}
-                    title={t("tabErrorBadge")}
-                  >
-                    !
-                  </span>
-                )}
+                                  <Tooltip content={t("tabErrorBadge")}>
+                                    <span
+                                      className="tab-error-mark"
+                                      role="img"
+                                      aria-label={tf("tabStateErrorAria", { name: tab.name })}
+                                    >
+                                      !
+                                    </span>
+                                  </Tooltip>
+                                )}
                 {tab.isDirty && <i className="dirty-dot" aria-label={t("unsaved")} />}
               </button>
               <button
@@ -227,17 +229,18 @@ export default function FileTabs({ tabs, activeId, onSelect, onClose, onReorder,
           );
         })}
       </div>
-            <button
-              type="button"
-              className="file-tabs-open-button"
-              aria-label={t("fileTabsOpenButtonAria")}
-              title={t("fileTabsOpenButtonTitle")}
-              onClick={onOpenDialog}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-                <path d="M6 1.5v9M1.5 6h9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-            </button>
+            <Tooltip content={t("fileTabsOpenButtonTitle")}>
+                          <button
+                            type="button"
+                            className="file-tabs-open-button"
+                            aria-label={t("fileTabsOpenButtonAria")}
+                            onClick={onOpenDialog}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                              <path d="M6 1.5v9M1.5 6h9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                            </svg>
+                          </button>
+                        </Tooltip>
             <span id="file-tabs-reorder-hint" className="sr-only">
               {t("tabReorderHint")}
             </span>
