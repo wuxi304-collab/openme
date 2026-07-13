@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import AboutDialog from "./AboutDialog";
 import { I18nProvider } from "../i18n";
 
@@ -8,6 +8,7 @@ afterEach(() => {
   cleanup();
   localStorage.clear();
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 // Mock the i18n provider so tests don't depend on the real dict shape.
@@ -130,7 +131,9 @@ describe("AboutDialog", () => {
       const button = screen.getByRole("button", { name: "Copy WeChat ID" });
       fireEvent.click(button);
       await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith("wuxi3042205"));
-      await vi.waitFor(() => expect(screen.getByText("Copied")).toBeTruthy());
+            // PR #178: the same "Copied" copy now appears as the Tooltip body, so we
+            // assert the button label specifically rather than the document text.
+            await vi.waitFor(() => expect(button.textContent ?? "").toMatch(/Copied/i));
     });
   });
 
@@ -215,3 +218,55 @@ describe("AboutDialog", () => {
       expect(allButtons.length).toBeLessThanOrEqual(6);
     });
   });
+
+        describe("AboutDialog Tooltip migration (PR #178)", () => {
+          it("does not set native title= on the migrated chrome controls", () => {
+            render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+            const migratedSelectors = [
+              ".about-dialog-close",
+              ".about-dialog-copy",
+              ".about-dialog-copy-button",
+            ];
+            for (const sel of migratedSelectors) {
+              const els = Array.from(document.querySelectorAll(sel));
+              expect(els.length).toBeGreaterThan(0);
+              for (const el of els) {
+                // PR #178: native title= replaced by custom Tooltip body.
+                expect((el as HTMLElement).title).toBe("");
+              }
+            }
+          });
+
+          it("opens the close-button Tooltip with the close copy under en locale", async () => {
+            localStorage.setItem("openme.lang", "en");
+            render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+            const closeBtn = document.querySelector(".about-dialog-close") as HTMLButtonElement;
+            expect(closeBtn).toBeTruthy();
+            vi.useFakeTimers();
+            await act(async () => {
+              fireEvent.mouseEnter(closeBtn);
+              vi.runAllTimers();
+            });
+            const describedBy = closeBtn.getAttribute("aria-describedby");
+            expect(describedBy).toBeTruthy();
+            const tooltipBody = document.getElementById(describedBy!);
+            expect(tooltipBody?.textContent).toBe("Close");
+            vi.useRealTimers();
+          });
+
+          it("opens the version-copy Tooltip with the pre-click copy", async () => {
+            localStorage.setItem("openme.lang", "en");
+            render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+            const copyBtn = document.querySelector(".about-dialog-copy") as HTMLButtonElement;
+            expect(copyBtn).toBeTruthy();
+            vi.useFakeTimers();
+            await act(async () => {
+              fireEvent.mouseEnter(copyBtn);
+              vi.runAllTimers();
+            });
+            const describedBy = copyBtn.getAttribute("aria-describedby");
+            const tooltipBody = document.getElementById(describedBy!);
+            expect(tooltipBody?.textContent).toBe("Copy version info");
+            vi.useRealTimers();
+          });
+        });

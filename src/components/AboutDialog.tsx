@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 import type { ElectronAPI, RuntimeInfo } from "../types/electron-api";
 import { getRecentReleases } from "../data/releases";
+import Tooltip from "./Tooltip";
 import "./AboutDialog.css";
 
 interface Props {
@@ -264,9 +265,11 @@ export default function AboutDialog({ open, onClose }: Props) {
             <h2 id="about-dialog-title" className="about-dialog-title">{t("aboutTitle")}</h2>
             <p className="about-dialog-tagline">{t("aboutTagline")}</p>
           </div>
-          <button type="button" className="about-dialog-close" aria-label={t("aboutClose")} title={t("aboutClose")} onClick={onClose}>
-            <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6m0-6-6 6" /></svg>
-          </button>
+          <Tooltip content={t("aboutClose")}>
+                      <button type="button" className="about-dialog-close" aria-label={t("aboutClose")} onClick={onClose}>
+                        <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6m0-6-6 6" /></svg>
+                      </button>
+                    </Tooltip>
         </header>
 
         <section className="about-dialog-section" aria-label={t("aboutVersion")}>
@@ -276,24 +279,25 @@ export default function AboutDialog({ open, onClose }: Props) {
               <dt>{t("aboutVersion")}</dt>
               <dd>
                 <span className="about-dialog-version-value">{versionDisplay}</span>
-                <button
-                  type="button"
-                  className={`about-dialog-copy${copyState === "version" ? " is-copied" : ""}`}
-                  aria-label={t("aboutCopyVersion")}
-                  title={copyState === "version" ? t("aboutCopiedAria") : t("aboutCopyVersion")}
-                  onClick={handleCopyVersion}
-                >
-                  {copyState === "version" ? (
-                    <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true">
-                      <path d="m2.5 6.2 2.4 2.4 4.6-4.8" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  ) : (
-                    <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true">
-                      <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1" fill="none" stroke="currentColor" />
-                      <path d="M2 8.5V2.5h6" fill="none" stroke="currentColor" />
-                    </svg>
-                  )}
-                </button>
+                <Tooltip content={copyState === "version" ? t("aboutCopiedAria") : t("aboutCopyVersion")}>
+                                  <button
+                                    type="button"
+                                    className={`about-dialog-copy${copyState === "version" ? " is-copied" : ""}`}
+                                    aria-label={t("aboutCopyVersion")}
+                                    onClick={handleCopyVersion}
+                                  >
+                                    {copyState === "version" ? (
+                                      <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true">
+                                        <path d="m2.5 6.2 2.4 2.4 4.6-4.8" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                      </svg>
+                                    ) : (
+                                      <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true">
+                                        <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1" fill="none" stroke="currentColor" />
+                                        <path d="M2 8.5V2.5h6" fill="none" stroke="currentColor" />
+                                      </svg>
+                                    )}
+                                  </button>
+                                </Tooltip>
               </dd>
             </div>
             <div className="about-dialog-info-row">
@@ -326,15 +330,16 @@ export default function AboutDialog({ open, onClose }: Props) {
             </div>
           </dl>
           <div className="about-dialog-copy-row">
-            <button
-              type="button"
-              className={`about-dialog-copy-button${copyState === "runtime" ? " is-copied" : ""}`}
-              onClick={handleCopyRuntime}
-              title={copyState === "runtime" ? t("aboutCopyRuntimeCopiedAria") : t("aboutCopyRuntime")}
-            >
-              {copyState === "runtime" ? t("aboutCopyRuntimeCopied") : t("aboutCopyRuntime")}
-            </button>
-          </div>
+                      <Tooltip content={copyState === "runtime" ? t("aboutCopyRuntimeCopiedAria") : t("aboutCopyRuntime")}>
+                        <button
+                          type="button"
+                          className={`about-dialog-copy-button${copyState === "runtime" ? " is-copied" : ""}`}
+                          onClick={handleCopyRuntime}
+                        >
+                          {copyState === "runtime" ? t("aboutCopyRuntimeCopied") : t("aboutCopyRuntime")}
+                        </button>
+                      </Tooltip>
+                    </div>
         </section>
 
         <section className="about-dialog-section" aria-label={t("aboutSystemTitle")}>
@@ -423,15 +428,16 @@ export default function AboutDialog({ open, onClose }: Props) {
                   <div className="about-dialog-contact-row">
                     <span className="about-dialog-contact-label">{t("aboutContactWechatLabel")}</span>
                     <code className="about-dialog-contact-id">{t("aboutContactWechatId")}</code>
-                    <button
-                      type="button"
-                      className={`about-dialog-copy-button${copyState === "wechat" ? " is-copied" : ""}`}
-                      onClick={handleCopyWechat}
-                      aria-label={t("aboutContactWechatCopy")}
-                      title={copyState === "wechat" ? t("aboutContactWechatCopied") : t("aboutContactWechatCopy")}
+                    <Tooltip content={copyState === "wechat" ? t("aboutContactWechatCopied") : t("aboutContactWechatCopy")}>
+                                        <button
+                                          type="button"
+                                          className={`about-dialog-copy-button${copyState === "wechat" ? " is-copied" : ""}`}
+                                          onClick={handleCopyWechat}
+                                          aria-label={t("aboutContactWechatCopy")}
                     >
                       {copyState === "wechat" ? t("aboutContactWechatCopied") : t("aboutContactWechatCopy")}
                     </button>
+                                      </Tooltip>
                   </div>
                 </section>
 
