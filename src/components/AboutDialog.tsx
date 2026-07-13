@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 import type { ElectronAPI, RuntimeInfo } from "../types/electron-api";
+import { getRecentReleases } from "../data/releases";
 import "./AboutDialog.css";
 
 interface Props {
@@ -196,6 +197,12 @@ export default function AboutDialog({ open, onClose }: Props) {
       copyTimer.current = null;
     }, 1400);
   }, []);
+
+  // Curated changelog shown inside the dialog. getRecentReleases() already
+  // culls anything beyond LATEST_LIMIT so we don't repeat the slice here.
+  // Memoised on lang because downstream t() calls in the render closure
+  // would otherwise re-render on every locale change without reason.
+  const recentReleases = useMemo(() => getRecentReleases(), []);
 
     const handleCopyWechat = useCallback(async () => {
       const ok = await copyToClipboard(PUBLISHER_WECHAT);
@@ -426,6 +433,32 @@ export default function AboutDialog({ open, onClose }: Props) {
                       {copyState === "wechat" ? t("aboutContactWechatCopied") : t("aboutContactWechatCopy")}
                     </button>
                   </div>
+                </section>
+
+                <section className="about-dialog-section about-dialog-release" aria-label={t("aboutReleaseTitle")}>
+                  <h3 className="about-dialog-section-title">{t("aboutReleaseTitle")}</h3>
+                  <p className="about-dialog-section-desc">{t("aboutReleaseSubtitle")}</p>
+                  <ol className="about-dialog-release-list">
+                    {recentReleases.map((entry, idx) => (
+                      <li key={entry.id} className="about-dialog-release-item">
+                        <header className="about-dialog-release-header">
+                          <span className="about-dialog-release-version">
+                            {entry.version}
+                            {idx === 0 && (
+                              <span className="about-dialog-release-new-badge">{t("aboutReleaseNewBadge")}</span>
+                            )}
+                          </span>
+                          <span className="about-dialog-release-date">{t("aboutReleaseDateLabel")} · {entry.date}</span>
+                        </header>
+                        <p className="about-dialog-release-headline">{t(entry.headlineKey)}</p>
+                        <ul className="about-dialog-release-bullets">
+                          {entry.bulletKeys.map((bulletKey) => (
+                            <li key={bulletKey} className="about-dialog-release-bullet">{t(bulletKey)}</li>
+                          ))}
+                        </ul>
+                      </li>
+                    ))}
+                  </ol>
                 </section>
 
         <footer className="about-dialog-footer">

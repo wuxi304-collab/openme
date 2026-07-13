@@ -1077,6 +1077,45 @@ export const translations: Record<string, Record<string, string>> = {
                 aboutContactWechatCopied: "已复制",
                 aboutContactIntro: "如需定制开发、技术合作或问题反馈，欢迎添加微信交流",
 
+                // Release notes — section header + each release's headline and bullets
+                aboutReleaseTitle: "版本更新",
+                aboutReleaseSubtitle: "近期发布的改动与新功能",
+                aboutReleaseDateLabel: "发布于",
+                aboutReleaseNewBadge: "新",
+                // v0.1.0 (latest)
+                aboutReleaseHeadlineV010: "首个公开版本 · v0.1.0",
+                aboutReleaseV010Bullet1: "万能文件打开器首发：覆盖文档、表格、图片、音视频、压缩包等 70+ 格式",
+                aboutReleaseV010Bullet2: "智能分诊 · 每种格式走最适合的查看器，无需手动选择",
+                aboutReleaseV010Bullet3: "中英双语界面 · 设置实时切换，所有功能都已本地化",
+                aboutReleaseV010Bullet4: "无障碍优先 · 键盘可达、屏幕阅读器友好、Reduced Motion 兜底",
+                aboutReleaseV010Bullet5: "便携版 + 安装版双形态 · 一份下载，本机即用",
+                aboutReleaseV010Bullet6: "钢铁私塾出品 · 工业软件 + AI 工具集首发作品",
+                // v0.0.7
+                aboutReleaseHeadlineV007: "完整无障碍扫描 + 命令面板打磨",
+                aboutReleaseV007Bullet1: "侧栏与最近文件菜单支持完整键盘导航（方向键/Home/End/Enter）",
+                aboutReleaseV007Bullet2: "Esc 统一关闭对话框、Toast、错误遮罩、格式气泡",
+                aboutReleaseV007Bullet3: "焦点陷阱补全 SettingsDialog、ConfirmDialog、StatusBarFormatPopover",
+                aboutReleaseV007Bullet4: "Tab 拖拽重排 + Ctrl+方向键重排 + 中键关闭 Tab",
+                // v0.0.6
+                aboutReleaseHeadlineV006: "音频解码器全面升级",
+                aboutReleaseV006Bullet1: "内置 ffmpeg，解码 FLAC、ALAC、AIFF、APE、WavPack、TAK 等无损格式",
+                aboutReleaseV006Bullet2: "音乐元信息完整展示：码率、采样率、位深、声道、时长",
+                aboutReleaseV006Bullet3: "解码失败时 Toast 提示 + 一键复制错误详情",
+                // v0.0.5
+                aboutReleaseHeadlineV005: "StatusBar 三态打磨",
+                aboutReleaseV005Bullet1: "字符数 / 词数 chip（CJK-aware，每个汉字计 1 词）",
+                aboutReleaseV005Bullet2: "编码自动识别：UTF-8 / UTF-8 (BOM) / UTF-16 LE/BE",
+                aboutReleaseV005Bullet3: "格式支持等级气泡 · 点开查看详情与建议外部应用",
+                // v0.0.4
+                aboutReleaseHeadlineV004: "Markdown 编辑器与代码编辑器 v2",
+                aboutReleaseV004Bullet1: "MarkdownViewer 完整工具栏 + 复制为 HTML + 字数统计",
+                aboutReleaseV004Bullet2: "CodeEditor 接入 Monaco · 缩进、行号、自动换行可在设置中切换",
+                aboutReleaseV004Bullet3: "HexViewer 兜底 · 任何二进制都能 hex dump + ASCII 搜索",
+                // v0.0.3
+                aboutReleaseHeadlineV003: "工程基线",
+                aboutReleaseV003Bullet1: "Chrome 全量 i18n：标题栏 / 侧栏 / 状态栏 / Toast / 命令面板",
+                aboutReleaseV003Bullet2: "9 大查看器全部走 useI18n · 含 Plural 复数与插值",
+
                 // Splash / startup screen
                 splashTitle: "OpenMe Qiwu",
                 splashTagline: "万能文件打开器 · 钢铁私塾出品",
@@ -2337,6 +2376,45 @@ export const translations: Record<string, Record<string, string>> = {
                 aboutContactWechatCopy: "Copy WeChat ID",
                 aboutContactWechatCopied: "Copied",
                 aboutContactIntro: "For custom development, technical collaboration or feedback, add the WeChat below",
+
+                // Release notes — section header + each release's headline and bullets
+                aboutReleaseTitle: "Release notes",
+                aboutReleaseSubtitle: "Recent changes and new features",
+                aboutReleaseDateLabel: "Released",
+                aboutReleaseNewBadge: "New",
+                // v0.1.0 (latest)
+                aboutReleaseHeadlineV010: "First public release · v0.1.0",
+                aboutReleaseV010Bullet1: "Universal file opener debuts — covers 70+ formats across documents, spreadsheets, images, audio, video and archives",
+                aboutReleaseV010Bullet2: "Smart triage · every format lands in the right viewer automatically, no manual switching",
+                aboutReleaseV010Bullet3: "Bilingual (zh + en) interface · switch instantly in Settings, every feature is localised",
+                aboutReleaseV010Bullet4: "Accessibility first · full keyboard reach, screen-reader friendly, Reduced Motion fallback",
+                aboutReleaseV010Bullet5: "Portable + installer builds · one download, ready to run",
+                aboutReleaseV010Bullet6: "A product of Gangtie Shuxu — the first release in our industrial software + AI tooling line",
+                // v0.0.7
+                aboutReleaseHeadlineV007: "Full accessibility pass + Command Palette polish",
+                aboutReleaseV007Bullet1: "Sidebar and recent-file menu gain full keyboard navigation (arrow / Home / End / Enter)",
+                aboutReleaseV007Bullet2: "Escape uniformly dismisses dialogs, toasts, error overlays and format popovers",
+                aboutReleaseV007Bullet3: "Focus traps added to Settings, Confirm and Format popover dialogs",
+                aboutReleaseV007Bullet4: "Tab drag-to-reorder + Ctrl+Arrow reorder + middle-click close",
+                // v0.0.6
+                aboutReleaseHeadlineV006: "Audio decoder overhaul",
+                aboutReleaseV006Bullet1: "Bundled ffmpeg decodes FLAC, ALAC, AIFF, APE, WavPack, TAK and other lossless formats",
+                aboutReleaseV006Bullet2: "Full metadata display: bitrate, sample rate, bit depth, channels, duration",
+                aboutReleaseV006Bullet3: "Decode failures surface as toasts with one-click error copy",
+                // v0.0.5
+                aboutReleaseHeadlineV005: "StatusBar three-pane polish",
+                aboutReleaseV005Bullet1: "Character and word chips (CJK-aware — every Han character counts as one word)",
+                aboutReleaseV005Bullet2: "Auto-detected encoding chip: UTF-8 / UTF-8 (BOM) / UTF-16 LE/BE",
+                aboutReleaseV005Bullet3: "Format support-level badge · click for details and suggested native apps",
+                // v0.0.4
+                aboutReleaseHeadlineV004: "Markdown editor and code editor v2",
+                aboutReleaseV004Bullet1: "MarkdownViewer gains a full toolbar, copy-as-HTML and live word count",
+                aboutReleaseV004Bullet2: "CodeEditor now runs on Monaco · indent, line numbers and word wrap are configurable",
+                aboutReleaseV004Bullet3: "HexViewer fallback · any binary can be hex-dumped with ASCII search",
+                // v0.0.3
+                aboutReleaseHeadlineV003: "Engineering baseline",
+                aboutReleaseV003Bullet1: "Full chrome i18n — titlebar, sidebar, status bar, toasts and command palette",
+                aboutReleaseV003Bullet2: "Nine viewers wired to useI18n · including ICU plurals and interpolation",
 
                 // Splash / startup screen
                 splashTitle: "OpenMe Qiwu",
