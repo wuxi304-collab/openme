@@ -827,6 +827,19 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
 .file-tabs-open-button:active { transform:scale(.94); }
 .file-tabs-open-button:focus-visible { outline:2px solid var(--mario-yellow); outline-offset:1px; color:#fff; }
 
+/* Custom Tooltip component (PR #176). Replaces native title= for richer
+ * positioning + fade animation + a11y. Uses position:fixed; the StatusBar
+ * never scrolls, so we don't need a portal here. */
+.app-tooltip { z-index:9999; max-width:240px; padding:5px 8px; border:1px solid var(--shell-border); border-radius:6px; background:var(--shell-panel); color:var(--shell-text); box-shadow:0 6px 20px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.04) inset; font:700 10px/1.35 var(--font-mono); letter-spacing:.02em; pointer-events:none; opacity:0; transform:translateY(2px); transition: opacity 140ms var(--ease-out), transform 140ms var(--ease-out); }
+.app-tooltip.is-open { opacity:1; transform:translateY(0); }
+.app-tooltip::before { content:""; position:absolute; left:50%; transform:translateX(-50%); width:0; height:0; border:5px solid transparent; }
+.app-tooltip-top::before { bottom:-9px; border-top-color:var(--shell-panel); }
+.app-tooltip-bottom::before { top:-9px; border-bottom-color:var(--shell-panel); }
+@keyframes app-tooltip-fade-in { from { opacity:0; transform:translateY(2px); } to { opacity:1; transform:translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .app-tooltip { transition:none; animation:none; opacity:1; transform:none; }
+}
+
 /* landing workspace */
 .empty-workspace { flex:1; min-height:0; position:relative; display:grid; place-items:center; overflow:hidden; background:linear-gradient(180deg, #609ed1 0%, #79b6dc 53%, #cce7e0 53.2%, #d9eee7 100%); }
 .sky-grid { position:absolute; inset:0 0 18%; opacity:.9; background-image:linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px); background-size:32px 32px; }

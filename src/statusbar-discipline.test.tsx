@@ -47,8 +47,10 @@ describe("StatusBar transient polish (PR #132) -- theme aria-label flips with st
     const btn = document.querySelector(".status-theme-pill") as HTMLButtonElement | null;
     expect(btn).toBeTruthy();
     expect(btn?.getAttribute("aria-label")).toBe("切换到浅色主题");
-    expect(btn?.getAttribute("title")).toBe("切换到浅色主题");
-  });
+      // PR #176: native title= replaced by custom Tooltip (still exposes the
+      // same copy via aria-describedby when hovered).
+      expect(btn?.getAttribute("title")).toBeNull();
+    });
 
   it("advertises Switch to dark after clicking from light mode (en)", () => {
     try { window.localStorage.setItem("openme.lang", "en"); } catch {}
