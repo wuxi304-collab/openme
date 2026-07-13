@@ -340,14 +340,17 @@ function getMimeType(ext) {
 
 function getCadHostPath() {
   const base = app.isPackaged ? process.resourcesPath : path.join(__dirname, "..");
-  return path.join(base, "cad-host", app.isPackaged ? "CadHost.exe" : path.join("publish", "CadHost.exe"));
+  const exeName = process.platform === "win32" ? "CadHost.exe" : "CadHost";
+  return path.join(base, "cad-host", app.isPackaged ? exeName : path.join("publish", exeName));
 }
 
 function inspectCadDocument(filePath) {
   const executable = getCadHostPath();
   if (!fs.existsSync(executable)) return Promise.resolve(ipcError("CADHOST_NOT_BUILT"));
   return new Promise((resolve) => {
-    execFile(executable, ["--inspect", filePath], { windowsHide: true, timeout: 120000, maxBuffer: 32 * 1024 * 1024 }, (error, stdout, stderr) => {
+    const options = { timeout: 120000, maxBuffer: 32 * 1024 * 1024 };
+    if (process.platform === "win32") options.windowsHide = true;
+    execFile(executable, ["--inspect", filePath], options, (error, stdout, stderr) => {
       if (error) return resolve(ipcError("CADHOST_RENDER_FAILED", { message: stderr.trim() || error.message }));
       try { resolve({ success: true, document: JSON.parse(stdout) }); }
       catch (parseError) { resolve(ipcError("CADHOST_INVALID_DATA", { message: parseError.message })); }
@@ -358,7 +361,9 @@ function renderCadDocument(filePath) {
   const executable = getCadHostPath();
   if (!fs.existsSync(executable)) return Promise.resolve(ipcError("CADHOST_NOT_BUILT"));
   return new Promise((resolve) => {
-    execFile(executable, ["--render-svg", filePath], { windowsHide: true, timeout: 120000, maxBuffer: 128 * 1024 * 1024, encoding: "buffer" }, (error, stdout, stderr) => {
+    const options = { timeout: 120000, maxBuffer: 128 * 1024 * 1024, encoding: "buffer" };
+    if (process.platform === "win32") options.windowsHide = true;
+    execFile(executable, ["--render-svg", filePath], options, (error, stdout, stderr) => {
       const decode = (value) => {
         try { return new TextDecoder("utf-8", { fatal: true }).decode(value); }
         catch { return new TextDecoder("gbk").decode(value); }
@@ -393,6 +398,18 @@ function findCadEngine() {
         }
       }
     } catch {}
+  }
+
+  // macOS / Linux: scan the user-writable app dirs and Homebrew for ODA.
+  if (process.platform !== "win32") {
+    const macCandidates = [
+      "/Applications/ODAFileConverter.app/Contents/MacOS/ODAFileConverter",
+      "/usr/local/bin/ODAFileConverter",
+      "/opt/homebrew/bin/ODAFileConverter",
+    ];
+    for (const exe of macCandidates) {
+      candidates.push({ kind: "oda", name: "ODA File Converter", nameCode: "dwgEngineOda", executable: exe, capabilities: ["convert"] });
+    }
   }
 
   const engine = candidates.find((item) => fs.existsSync(item.executable));

@@ -66,3 +66,48 @@ jobs:
       - name: Dependency audit
         run: npm audit --omit=dev
         continue-on-error: true
+
+  macos-build:
+    name: macOS package build
+    runs-on: macos-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build CAD host (osx-x64)
+        run: dotnet publish cad-host/CadHost.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=false -p:DebugType=None -o cad-host/publish-osx-x64
+
+      - name: Build CAD host (osx-arm64)
+        run: dotnet publish cad-host/CadHost.csproj -c Release -r osx-arm64 --self-contained true -p:PublishSingleFile=false -p:DebugType=None -o cad-host/publish-osx-arm64
+
+      - name: Build Electron app (mac, unsigned)
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npx electron-builder --mac --x64 --arm64 --publish never
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openme-macos
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/mac*
+          if-no-files-found: warn
+
