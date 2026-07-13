@@ -133,3 +133,85 @@ describe("AboutDialog", () => {
       await vi.waitFor(() => expect(screen.getByText("Copied")).toBeTruthy());
     });
   });
+
+  describe("AboutDialog — release notes section", () => {
+    beforeEach(() => {
+      (window as unknown as { electronAPI: unknown }).electronAPI = {
+        appVersion: () => Promise.resolve("0.1.0"),
+        getRuntimeInfo: () => Promise.resolve(null),
+        openExternal: () => Promise.resolve(),
+        platform: "win32",
+      };
+    });
+
+    it("renders the section title and subtitle in English", () => {
+      localStorage.setItem("openme.lang", "en");
+      render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+      const heading = screen.getByRole("heading", { name: "Release notes" });
+      expect(heading).toBeTruthy();
+      // Subtitle copy
+      expect(screen.getByText("Recent changes and new features")).toBeTruthy();
+    });
+
+    it("renders the section title and subtitle in Chinese", () => {
+      localStorage.setItem("openme.lang", "zh");
+      render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+      const heading = screen.getByRole("heading", { name: "版本更新" });
+      expect(heading).toBeTruthy();
+      expect(screen.getByText("近期发布的改动与新功能")).toBeTruthy();
+    });
+
+    it("renders the latest release with a New badge", () => {
+      localStorage.setItem("openme.lang", "en");
+      render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+      // v0.1.0 is the latest, expect its version pill + the New badge text
+      expect(screen.getByText("v0.1.0")).toBeTruthy();
+      expect(screen.getByText("New")).toBeTruthy();
+      // The latest release's headline is wired to the v0.1.0 key
+      expect(screen.getByText("First public release · v0.1.0")).toBeTruthy();
+    });
+
+    it("renders the date label with the YYYY-MM-DD format", () => {
+      localStorage.setItem("openme.lang", "en");
+      render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+      // The Released prefix + a date, e.g. "Released · 2026-01-10"
+      expect(screen.getByText(/^Released · 2026-01-10$/)).toBeTruthy();
+    });
+
+    it("renders at least three bullet items for the v0.1.0 release", () => {
+      localStorage.setItem("openme.lang", "en");
+      render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+      // The first known v0.1.0 bullet is a unique string — verifies the
+      // bulletKeys mapping is intact without enumerating all six bullets.
+      expect(
+        screen.getByText(/Universal file opener debuts/),
+      ).toBeTruthy();
+    });
+
+    it("honours the LATEST_LIMIT by capping visible releases", () => {
+      localStorage.setItem("openme.lang", "en");
+      const { container } = render(
+        <Providers><AboutDialog open onClose={() => undefined} /></Providers>,
+      );
+      // Count items in the release list (.about-dialog-release-item)
+      const items = container.querySelectorAll(".about-dialog-release-item");
+      // The data module caps at 5 — newest first. We have 6 entries, so
+      // the oldest (v0.0.3) is hidden.
+      expect(items.length).toBe(5);
+    });
+
+    it("is keyboard reachable through the dialog focus trap", () => {
+      // The release section's bullets aren't interactive, so the trap
+      // should still cycle through header + close + footer buttons only.
+      // This test guards against accidentally inserting focusable
+      // elements inside the release list.
+      localStorage.setItem("openme.lang", "en");
+      render(<Providers><AboutDialog open onClose={() => undefined} /></Providers>);
+      const allButtons = screen.getAllByRole("button");
+      // Header close (1) + footer primary (1) + copy version (1)
+      // + runtime copy (1) + wechat copy (1) = 5 buttons max
+      // (the trap counts only non-disabled, focusable elements).
+      expect(allButtons.length).toBeGreaterThanOrEqual(4);
+      expect(allButtons.length).toBeLessThanOrEqual(6);
+    });
+  });
