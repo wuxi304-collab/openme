@@ -97,11 +97,20 @@ export default function FileTabs({ tabs, activeId, onSelect, onClose, onReorder 
     const edge: DropEdge = event.clientX < midpoint ? "before" : "after";
     let toIndex = edge === "after" ? index + 1 : index;
     if (toIndex > fromIndex) toIndex -= 1;
-    if (toIndex !== fromIndex) onReorder(fromIndex, toIndex);
-    draggingIdRef.current = null;
-    setDraggingId(null);
-    setDropTarget(null);
-  };
+      draggingIdRef.current = null;
+      setDraggingId(null);
+      setDropTarget(null);
+      if (toIndex === fromIndex) return;
+      const movedName = tabs[fromIndex].name;
+      onReorder(fromIndex, toIndex);
+      // Announce the final landing position so screen-reader / voice-control
+      // users hear where the tab ended up after the drag completes. Matches
+      // the keyboard reorder path (tabMovedLeft/RightAnnounce) so both input
+      // modalities give equivalent feedback.
+      announce(
+        tf("tabDroppedAnnounce", { name: movedName, position: toIndex + 1, total: tabs.length })
+      );
+    };
 
   const handleDragEnd = () => {
     draggingIdRef.current = null;
