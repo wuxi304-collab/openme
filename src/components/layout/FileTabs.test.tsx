@@ -306,4 +306,88 @@ describe("FileTabs", () => {
       document.getElementById("file-tabs-reorder-hint")?.textContent || ""
     ).toMatch(/drag|Ctrl/);
   });
-});
+
+    // PR #165 — loading / error state indicators
+    it("renders a spinner and aria-busy on tabs whose isLoading is true", () => {
+      const tabs = [
+        makeTab("a", "alpha.txt", { isLoading: true }),
+        makeTab("b", "beta.json"),
+      ];
+      renderInProviders(
+        <FileTabs
+          tabs={tabs}
+          activeId="a"
+          onSelect={() => {}}
+          onClose={() => {}}
+          onReorder={() => {}}
+        />
+      );
+      const tabButtons = screen.getAllByRole("tab");
+      expect(tabButtons[0].getAttribute("aria-busy")).toBe("true");
+      expect(tabButtons[1].hasAttribute("aria-busy")).toBe(false);
+      expect(tabButtons[0].querySelector(".tab-loading-spinner")).toBeTruthy();
+      expect(tabButtons[1].querySelector(".tab-loading-spinner")).toBeNull();
+      // aria-label includes the loading suffix so SR users hear the state
+      expect(tabButtons[0].getAttribute("aria-label")).toMatch(/\(loading\)|（正在加载）/);
+    });
+
+    it("renders an error mark and aria-invalid on tabs whose error is set", () => {
+      const tabs = [
+        makeTab("a", "alpha.txt"),
+        makeTab("b", "beta.json", { error: "decode failed" }),
+      ];
+      renderInProviders(
+        <FileTabs
+          tabs={tabs}
+          activeId="a"
+          onSelect={() => {}}
+          onClose={() => {}}
+          onReorder={() => {}}
+        />
+      );
+      const tabButtons = screen.getAllByRole("tab");
+      expect(tabButtons[1].getAttribute("aria-invalid")).toBe("true");
+      expect(tabButtons[0].hasAttribute("aria-invalid")).toBe(false);
+      expect(tabButtons[1].querySelector(".tab-error-mark")).toBeTruthy();
+      expect(tabButtons[0].querySelector(".tab-error-mark")).toBeNull();
+      // aria-label includes the load-failed suffix
+      expect(tabButtons[1].getAttribute("aria-label")).toMatch(/\(load failed\)|（加载失败）/);
+    });
+
+    it("adds is-loading / is-error class modifiers on the tab container", () => {
+      const tabs = [
+        makeTab("a", "alpha.txt", { isLoading: true }),
+        makeTab("b", "beta.json", { error: "boom" }),
+        makeTab("c", "gamma.md"),
+      ];
+      const { container } = renderInProviders(
+        <FileTabs
+          tabs={tabs}
+          activeId="c"
+          onSelect={() => {}}
+          onClose={() => {}}
+          onReorder={() => {}}
+        />
+      );
+      const tabNodes = container.querySelectorAll(".file-tab");
+      expect(tabNodes[0].classList.contains("is-loading")).toBe(true);
+      expect(tabNodes[1].classList.contains("is-error")).toBe(true);
+      expect(tabNodes[2].classList.contains("is-loading")).toBe(false);
+      expect(tabNodes[2].classList.contains("is-error")).toBe(false);
+    });
+
+    it("error mark carries an aria-label naming the failing file", () => {
+      const tabs = [makeTab("a", "alpha.txt", { error: "boom" })];
+      renderInProviders(
+        <FileTabs
+          tabs={tabs}
+          activeId="a"
+          onSelect={() => {}}
+          onClose={() => {}}
+          onReorder={() => {}}
+        />
+      );
+      const errorMark = document.querySelector(".tab-error-mark");
+      expect(errorMark?.getAttribute("aria-label") ?? "").toMatch(/alpha\.txt/);
+    });
+  });

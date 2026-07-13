@@ -118,13 +118,23 @@ export default function FileTabs({ tabs, activeId, onSelect, onClose, onReorder 
           const dragging = tab.id === draggingId;
           const dropBefore = dropTarget?.index === index && dropTarget.edge === "before";
           const dropAfter = dropTarget?.index === index && dropTarget.edge === "after";
+          const loading = !!tab.isLoading;
+          const errored = !!tab.error;
           const tabClass = [
             "file-tab",
             active ? "is-active" : "",
             dragging ? "is-dragging" : "",
+            loading ? "is-loading" : "",
+            errored ? "is-error" : "",
             dropBefore ? "drop-before" : "",
             dropAfter ? "drop-after" : "",
           ].filter(Boolean).join(" ");
+          // aria-label appends a state hint so screen-reader users hear
+          // "Drag to reorder X (loading)" / "(load failed)" rather than
+          // having to guess why the active tab is showing the loading card.
+          let ariaLabel = tf("tabDragHandleAria", { name: tab.name });
+          if (loading) ariaLabel += " " + t("tabLoadingAriaSuffix");
+          else if (errored) ariaLabel += " " + t("tabErrorAriaSuffix");
           return (
             <div
               key={tab.id}
@@ -142,8 +152,10 @@ export default function FileTabs({ tabs, activeId, onSelect, onClose, onReorder 
                 role="tab"
                 className="tab-main"
                 aria-selected={active}
+                aria-busy={loading || undefined}
+                aria-invalid={errored || undefined}
                 aria-grabbed={dragging || undefined}
-                aria-label={tf("tabDragHandleAria", { name: tab.name })}
+                aria-label={ariaLabel}
                 tabIndex={active ? 0 : -1}
                 onKeyDown={(event) => {
                   if (event.key === "ArrowRight") moveTab(index, 1, event);
@@ -161,6 +173,27 @@ export default function FileTabs({ tabs, activeId, onSelect, onClose, onReorder 
               >
                 <FileTypeIcon type={detectCategory(tab.path)} size={17} extension={tab.sourceFile?.extension} />
                 <span>{tab.name}</span>
+                {loading && (
+                  <span
+                    className="tab-loading-spinner"
+                    role="presentation"
+                    aria-hidden="true"
+                  >
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                      <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.4" strokeDasharray="6 22" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                )}
+                {errored && (
+                  <span
+                    className="tab-error-mark"
+                    role="img"
+                    aria-label={tf("tabStateErrorAria", { name: tab.name })}
+                    title={t("tabErrorBadge")}
+                  >
+                    !
+                  </span>
+                )}
                 {tab.isDirty && <i className="dirty-dot" aria-label={t("unsaved")} />}
               </button>
               <button

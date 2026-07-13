@@ -163,7 +163,15 @@ export const translations: Record<string, Record<string, string>> = {
             tabMovedRightAnnounce: "已将 {name} 向右移动",
             tabReorderHint: "拖动或使用 Ctrl+Shift+←/→ 重新排序",
 
-    // PR #94 — StatusBar polish v3 (char/word count + BOM detection)
+                // PR #165 — FileTabs loading/error indicators
+                tabLoadingBadge: "加载中",
+                tabLoadingAriaSuffix: "（正在加载）",
+                tabErrorBadge: "错误",
+                tabErrorAriaSuffix: "（加载失败）",
+                tabStateLoadingAria: "正在加载 {name}",
+                tabStateErrorAria: "{name} 加载失败",
+
+                // PR #94 — StatusBar polish v3 (char/word count + BOM detection)
     statusCharCount: "{count} 个字符",
     statusCharCountShort: "{count} 字符",
     statusCharCountAria: "文件共 {count} 个字符",
@@ -1416,7 +1424,15 @@ export const translations: Record<string, Record<string, string>> = {
         tabMovedRightAnnounce: "Moved {name} right",
         tabReorderHint: "Drag or use Ctrl+Shift+Left/Right to reorder",
 
-    // PR #94 — StatusBar polish v3 (char/word count + BOM detection)
+            // PR #165 — FileTabs loading/error indicators
+            tabLoadingBadge: "Loading",
+            tabLoadingAriaSuffix: "(loading)",
+            tabErrorBadge: "Error",
+            tabErrorAriaSuffix: "(load failed)",
+            tabStateLoadingAria: "Loading {name}",
+            tabStateErrorAria: "Failed to load {name}",
+
+            // PR #94 — StatusBar polish v3 (char/word count + BOM detection)
     statusCharCount: "{count} characters",
     statusCharCountShort: "{count} chars",
     statusCharCountAria: "File has {count} characters",
