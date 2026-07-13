@@ -1580,6 +1580,19 @@ main:focus { outline: none; }
 }
 .shortcuts-overlay-close:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
 .shortcuts-overlay-body { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; padding:18px; overflow:auto; }
+.shortcuts-overlay-search { display:flex; align-items:center; gap:10px; padding:12px 18px 0; }
+.shortcuts-overlay-search-input { flex:1; min-width:0; padding:7px 11px; border:1px solid #ffffff1f; border-radius:8px; color:#f5f1ea; background:#211f1b; font:500 12px/1.2 var(--font-ui); outline:none; transition:border-color var(--dur-fast) var(--ease-out),background-color var(--dur-fast) var(--ease-out); }
+.shortcuts-overlay-search-input::placeholder { color:#79736a; }
+@media (hover: hover) and (pointer: fine) {
+  .shortcuts-overlay-search-input:hover { border-color:#ffffff2e; }
+}
+.shortcuts-overlay-search-input:focus-visible { border-color:var(--accent); background:#28251e; outline:2px solid var(--accent); outline-offset:1px; }
+.shortcuts-overlay-search-hint { flex:none; padding:3px 8px; border-radius:999px; color:#a9a39a; background:#ffffff08; font:600 10px/1 var(--font-ui); letter-spacing:.04em; }
+.shortcuts-overlay-summary { padding:6px 18px 0; color:#a9a39a; font:500 11px/1.4 var(--font-ui); }
+.shortcuts-overlay-no-results { padding:28px 18px; display:flex; flex-direction:column; align-items:center; gap:8px; color:#a9a39a; font:500 12px/1.5 var(--font-ui); text-align:center; }
+.shortcuts-overlay-no-results-text { margin:0; color:#d5cfc4; }
+.shortcuts-overlay-no-results-hint { margin:0; color:#79736a; font-size:11px; }
+@media (prefers-reduced-motion:reduce) { .shortcuts-overlay-search-input { transition:none; } }
 .shortcuts-group { display:flex; flex-direction:column; gap:8px; min-width:0; }
 .shortcuts-group-title { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 2px; color:#d9aa35; font:600 11px/1 var(--font-ui); letter-spacing:.06em; text-transform:uppercase; }
 .shortcuts-group-name { letter-spacing:inherit; text-transform:inherit; }
