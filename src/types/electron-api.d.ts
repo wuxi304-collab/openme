@@ -32,6 +32,11 @@ export interface ElectronAPI {
   readFileContent: (path: string, maxSize?: number) => Promise<{ type: string; data?: string; mimeType?: string; message?: string }>;
   saveFile: (path: string, content: string) => Promise<{ success: boolean; message?: string }>;
   readBinary: (path: string, maxSize?: number) => Promise<{ success: boolean; data?: string; message?: string }>;
+  /**
+   * Reads only the head of a file. Used by the DWG preflight to get the
+   * six-byte version signature without pulling a 200 MB drawing into memory.
+   */
+  readFileHeader: (path: string, headerBytes?: number) => Promise<FileHeaderResult | IpcFailureResult>;
   convertDocx: (path: string) => Promise<{ success: boolean; html?: string; message?: string }>;
   convertExcel: (path: string) => Promise<{ success: boolean; sheets?: unknown[]; message?: string }>;
   openFileDialog: () => Promise<string[]>;
@@ -218,11 +223,38 @@ export interface CadEngineStatus {
   messageParams?: Record<string, string | number>;
 }
 
+/** Facts read from a file's head without loading the whole file. */
+export interface FileHeaderResult {
+  success: boolean;
+  /** Six-byte DWG signature when the head is printable ASCII, else null. */
+  signature: string | null;
+  sizeBytes: number;
+  mtimeMs: number;
+  readOnly: boolean;
+}
+
 export interface CadInspectionResult {
   success: boolean;
   document?: {
-    document?: { entityCount?: number; layerCount?: number; blockCount?: number };
+    /**
+     * Mirrors the `document` object emitted by `cad-host --inspect`. Every field
+     * is optional because the sidecar is built separately from the renderer and
+     * the two can be a version apart — the renderer must not assume a field is
+     * present just because the current Program.cs writes it.
+     */
+    document?: {
+      /** ACadSharp's reported version. Null in practice on real drawings. */
+      version?: string | null;
+      units?: string | null;
+      entityCount?: number;
+      layerCount?: number;
+      blockCount?: number;
+    };
     entityTypes?: Record<string, number>;
+    /** Layer names. XREF-dependent names look like `0-XREF-A` or `...$0$...`. */
+    layers?: string[];
+    blocks?: string[];
+    warnings?: string[];
   };
   message?: string;
 }

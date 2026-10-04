@@ -240,4 +240,33 @@ OpenMe 是 Windows 桌面通用文件工作台，当前使用 Electron + React +
   - **MTEXT 格式码泄漏（2026-09-14）**：ACadSharp 的 `SvgWriter` 原样输出 MTEXT 内联格式码，且丢掉反斜杠 —— 图纸标题栏里的 `\W0.75;结  构` 在屏幕上显示为字面量 `W0.75;结  构`，用户会误报"中文乱码"。中文解码其实完全正常。`normalizeCadSvg.ts` 的 `stripMtextFormatting()` 处理带反斜杠与不带反斜杠两种形态，只改元素文本、不碰属性。新增格式码时在这里补。
   - **CAD 视图缩放下限（2026-09-14）**：`MIN_SCALE` 必须足够小。XREF 重的图纸 viewBox 可达 7600 单位宽，竖版画布仅约 430 px，fit 需要约 0.05；历史上 `MIN_SCALE = 0.1` 把 fit 抬高 2 倍导致图纸溢出并贴边。现为 `MIN_SCALE = 0.002` / `MAX_SCALE = 64` / `FIT_FLOOR = 1e-4`，并抽出 `applyCentredScale()` 让 fit / 适应宽度 / 适应高度 / 1:1 共用居中换算。
 
+---
+
+## 2026-10-04 DWG 写回基础设施（Phase 0）
+
+写回路线仍是"先建立能正确拒绝的能力，再谈能写"。本轮只落地可测的核心层 —— **默认判定是「不可编辑」**，因为计划书 §4.5 的往返探测还没跑（需要 .NET SDK）。UI 外壳留到应用能真正启动、能看到之后再接。
+
+### 新增模块
+
+- `src/cad/dwgVersion.ts` — 解析 DWG 头 6 字节签名，解析版本能力矩阵。
+- `src/cad/cadWriteEngine.ts` — 唯一引擎接缝。不可用引擎是**一等对象**（不是 null），三个动词全部带原因地拒绝。
+- `src/cad/preflight.ts` — 纯函数预检，输出 `CAD_PREFLIGHT_*` 稳定 code。
+- `src/cad/exportCadText.ts` — 标签清单导出 CSV/JSON，每份带来源声明。
+- `scripts/cad-host-parity.mjs` / `scripts/build-cad-host.cmd` — md5 一致性闸门 + 可复现构建。
+
+### 必须守住的约定
+
+- **`claimedWritable` ≠ 可以写。** 前者是 ACadSharp **自己声称**的支持（上游 README 的兼容表），后者需要 `probeVerified`，而 `probeVerified` 目前**对所有版本恒为 false**。谁把 `probeVerified` 改成 true 而没跑探测，`dwgVersion.test.ts` 会红。
+- **版本矩阵是事故级数据。** `KNOWN_DWG_VERSIONS` 的集合是从随包 `ACadSharp.dll` 字符串表里读出来的（**注意没有 AC1001**），读写格子逐格对过上游兼容表。**新增条目必须先核实，不要凭记忆写。** `MATRIX` 里漏一个 key 会静默走默认值 `{readable:false}` —— AC1018 就这样漏过一次，被测试当场抓出来。
+- **不写 AutoCAD 发布版本名。** 只有 AC1018 有仓库内实测过的映射（计划书 §0 记录了样本首 6 字节为 `AC1018`），半张表比没有表更糟。CAD 用户说「AC1018」。
+- **AC1021（AutoCAD 2007）是能读不能写**，有独立 code `CAD_PREFLIGHT_VERSION_WRITE_UNSUPPORTED`，不是"未知版本"。把用户的 2007 图纸悄悄转成别的版本不该我们擅自决定。
+- **绝不降版本写出。** `checkWriteVersionInvariants` 拒绝任何低于源版本的输出（ACadSharp #956：低于 AC1018 会触发 AutoCAD 的 recover 对话框）。
+- **`allowUnverifiedProbe` 不是后门。** 它只把探测项从 blocker 降为 warning；引擎不可用仍然阻断。
+
+### 测试约定
+
+- **新测试必须确认真的被收集**：跑一次并在输出里看到文件名。`vitest.config.ts` 的 `include` 曾经只含 `src/**`，导致 `scripts/audit-i18n.test.ts` 从未运行（CI 跑同一个 `npm test`，同样漏）。`scripts/` 现已纳入。
+- **用子进程测脚本时，脚本必须真的读 cwd/参数。** `audit-i18n.mjs` 曾按自身 `__dirname` 解析路径、完全忽略 cwd，使那条"负例"永远审计真实文件、永不失败。现已支持可选路径参数，测试显式传 fixture。
+- **安全关键断言要做反向验证**：故意破坏 → 必须变红 → 还原 → **比哈希确认还原**。本轮实测：强制预检忽略引擎可用性 → 2 条红；把 md5 比换成比文件大小 → 1 条红。只看"现在绿"等于没验。
+
 

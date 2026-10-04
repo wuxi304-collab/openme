@@ -23,7 +23,12 @@ const REAL_ROOT = path.join(__dirname, "..");
 const TMP_ROOT = path.join(REAL_ROOT, "node_modules", ".audit-i18n-tmp");
 
 function runAuditFromRoot(root: string) {
-  return spawnSync("node", [SCRIPT], { cwd: root });
+  // Pass the fixture explicitly. Spawning with `cwd` alone does not work: the
+  // audit resolves its target from its own __dirname, so a cwd-only change left
+  // this negative case auditing the real (clean) i18n.tsx and it could never
+  // fail. That is also why this file has to be inside the vitest `include` list
+  // — see vitest.config.ts.
+  return spawnSync("node", [SCRIPT, path.join(root, "src", "i18n.tsx")], { cwd: root });
 }
 
 const MINIMAL_DUPLICATE = `import React, { createContext, useContext, useEffect, useState } from "react";

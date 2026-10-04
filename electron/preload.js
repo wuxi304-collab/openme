@@ -69,6 +69,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   readFileContent: (path, maxSize) => ipcRenderer.invoke("read-file-content", path, maxSize),
   saveFile: (path, content) => ipcRenderer.invoke("save-file", path, content),
   readBinary: (path, maxSize) => ipcRenderer.invoke("read-binary", path, maxSize),
+  readFileHeader: (path, headerBytes) => ipcRenderer.invoke("read-file-header", path, headerBytes),
   convertDocx: (path) => ipcRenderer.invoke("convert-docx", path),
   convertExcel: (path) => ipcRenderer.invoke("convert-excel", path),
   listZipContents: (path) => ipcRenderer.invoke("list-zip-contents", path),
