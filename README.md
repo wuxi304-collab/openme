@@ -90,7 +90,7 @@ boundary
 不能承诺什么？
 ```
 
-当前注册中心覆盖 **270+** 种扩展名，面向真实工作流，而不是只覆盖演示样例。
+当前注册中心覆盖 **367** 种扩展名，面向真实工作流，而不是只覆盖演示样例。
 
 | 维度 | 覆盖范围 |
 | --- | --- |
@@ -296,7 +296,7 @@ supportLevel
 boundary
 ```
 
-OpenMe Qiwu currently registers **270+** extensions across real-world work categories.
+OpenMe Qiwu currently registers **367** extensions across real-world work categories.
 
 | Area | Coverage |
 | --- | --- |

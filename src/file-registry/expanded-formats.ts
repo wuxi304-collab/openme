@@ -24,8 +24,10 @@ export const EXPANDED_FILE_FORMATS: FileFormatDefinition[] = [
 
   { extension: ".oga", name: "Ogg Audio", category: "audio", capabilities: [...route], supportLevel: "D", boundary: "Recognized audio container; playback depends on runtime codec support." },
   { extension: ".weba", name: "WebM Audio", category: "audio", capabilities: [...route], supportLevel: "D", boundary: "Recognized audio container; playback depends on runtime codec support." },
-  { extension: ".aiff", name: "AIFF Audio", category: "audio", capabilities: [...route], supportLevel: "D", boundary: "Recognized audio file; playback depends on runtime codec support." },
-  { extension: ".aif", name: "AIFF Audio", category: "audio", capabilities: [...route], supportLevel: "D", boundary: "Recognized audio file; playback depends on runtime codec support." },
+  // .aif / .aiff are deliberately absent: formats.ts already registers them with
+  // mime + isLossless + level C, and BASE_FILE_FORMATS is merged first, so an
+  // entry here would be silently discarded by dedupeByExtension while still
+  // tripping the raw-source duplicate check.
   { extension: ".alac", name: "Apple Lossless Audio", category: "audio", capabilities: [...route], supportLevel: "D", boundary: "Recognized audio file; playback depends on runtime codec support." },
   { extension: ".amr", name: "AMR Audio", category: "audio", capabilities: [...route], supportLevel: "D", boundary: "Recognized telephony audio; playback is not guaranteed." },
   { extension: ".m2ts", name: "M2TS Video", category: "video", capabilities: [...route], supportLevel: "D", boundary: "Recognized video container; codec support is not guaranteed." },

@@ -1050,8 +1050,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
 .dwg-canvas-host { flex:1; min-height:0; position:relative; overflow:hidden; background:#101110; }
 .dwg-canvas-host canvas { display:block; width:100%!important; height:100%!important; }
 .dwg-canvas-host.is-hidden { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
-.dwg-native-canvas { flex:1; min-height:0; display:grid; place-items:center; overflow:auto; background:#f2f1ed; padding:24px; }
-.dwg-native-canvas img { display:block; width:100%; height:100%; object-fit:contain; }
 .dwg-toolbar .dwg-engine-switch { color:#f5c84c; border-color:#6d5420; background:#2d2718; }
 .dwg-overlay { position:absolute; inset:42px 0 0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:#d8d1c8; background:rgba(12,12,11,.88); backdrop-filter:blur(3px); }
 .dwg-overlay strong { font-size:13px; }.dwg-overlay small,.dwg-overlay p { max-width:420px; color:#777168; font-size:10px; line-height:1.55; text-align:center; }
@@ -1059,6 +1057,99 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mario-yello
 .dwg-error button { min-height:36px; padding:0 13px; border:0; border-radius:7px; color:white; background:var(--mario-red); font-size:10px; font-weight:800; cursor:pointer; }
 @keyframes dwg-spin { to { transform:rotate(360deg); } }
 @media (hover:hover) and (pointer:fine) { .dwg-toolbar button:hover:not(:disabled) { color:#eee8df; background:#282521; } }
+
+/* Sanitised ACadSharp SVG canvas (replaces the old <img> based dwg-native-canvas). */
+.cad-svg-canvas { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; background:#f2f1ed; }
+.cad-svg-toolbar { height:42px; flex:none; padding:0 10px; display:flex; align-items:center; justify-content:space-between; color:#a9a39a; background:#171614; border-bottom:1px solid var(--shell-border); }
+.cad-svg-label { min-width:0; display:flex; align-items:center; gap:7px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; font-weight:750; }
+.cad-svg-label i { width:7px; height:7px; flex:none; border-radius:2px; background:#e98331; }
+.cad-svg-label em { margin-left:4px; padding:2px 6px; border:1px solid #315f3b; border-radius:999px; color:#82cc91; background:#16251a; font-size:8px; font-style:normal; font-weight:800; }
+.cad-svg-label em.is-fallback { border-color:#725329; color:#eab76c; background:#2a2115; }
+.cad-svg-toolbar-group { display:flex; align-items:center; gap:3px; }
+.cad-svg-toolbar button { height:28px; padding:0 9px; border:1px solid transparent; border-radius:6px; color:#948d84; background:transparent; font-size:10px; font-weight:750; cursor:pointer; transition:color var(--dur-fast) var(--ease-out),background-color var(--dur-fast) var(--ease-out),transform var(--dur-press) var(--ease-out); }
+.cad-svg-toolbar button:disabled { opacity:.35; cursor:not-allowed; }
+.cad-svg-toolbar button:active:not(:disabled) { transform:scale(.96); }
+.cad-svg-toolbar button[aria-pressed="true"] { color:#f5c84c; border-color:#6d5420; background:#2d2718; }
+.cad-svg-tool-separator { width:1px; height:16px; margin:0 4px; background:var(--shell-border); }
+.cad-svg-zoom-readout { margin-left:6px; min-width:48px; text-align:right; color:#777168; font-size:10px; font-variant-numeric:tabular-nums; }
+.cad-svg-host { flex:1; min-height:0; position:relative; overflow:hidden; cursor:grab; touch-action:none; user-select:none; }
+.cad-svg-host:active { cursor:grabbing; }
+.cad-svg-host.is-light { background:#f2f1ed; }
+.cad-svg-host.is-dark { background:#0f1115; }
+.cad-svg-stage { position:absolute; left:0; top:0; }
+.cad-svg-stage svg { display:block; }
+.cad-svg-image { position:absolute; left:0; top:0; display:block; max-width:none; transform-origin:0 0; }
+.cad-svg-host:focus-visible { outline:2px solid var(--mario-yellow); outline-offset:-2px; }
+/* Paper mode: the host becomes a centred sheet that floats on the dark canvas,
+   so a DWG reads like a real A4/A3/A2 print instead of a drawing bleeding to
+   the window edges. Explicit pixel size comes from inline style (pageStyle);
+   here we only add the sheet styling. The page colour matches the drawing's
+   own background rect (#f7f5f0 light / #0f1115 dark) so there is no seam. */
+.cad-svg-host.is-page {
+  flex:0 0 auto;
+  margin:auto;
+  border-radius:2px;
+  background:#f7f5f0;
+  border:1px solid rgba(0,0,0,.22);
+  box-shadow:0 10px 30px rgba(0,0,0,.5), 0 2px 7px rgba(0,0,0,.4);
+}
+.cad-svg-host.is-page.is-dark { background:#0f1115; }
+.cad-svg-statusbar { flex:none; height:26px; padding:0 10px; display:flex; align-items:center; gap:8px; color:#8d867e; background:#171614; border-top:1px solid var(--shell-border); font-size:10px; font-variant-numeric:tabular-nums; overflow:hidden; white-space:nowrap; }
+.cad-svg-statusbar-sep { width:1px; height:12px; flex:none; background:var(--shell-border); }
+.cad-svg-statusbar-hint { margin-left:auto; color:#66605a; }
+.cad-svg-body { flex:1; min-height:0; display:flex; }
+.cad-svg-main { flex:1; min-width:0; display:flex; flex-direction:column; }
+.cad-text-panel { flex:none; width:236px; display:flex; flex-direction:column; min-height:0; background:#171614; border-right:1px solid var(--shell-border); }
+.cad-text-panel-head { flex:none; padding:8px; display:flex; flex-direction:column; gap:6px; }
+.cad-text-search { width:100%; height:28px; padding:0 8px; border:1px solid var(--shell-border); border-radius:6px; background:#0f0e0d; color:#e6e0d8; font-size:11px; }
+.cad-text-search:focus-visible { outline:1px solid var(--mario-yellow); }
+.cad-text-count { color:#777168; font-size:10px; }
+.cad-text-items { flex:1; min-height:0; overflow-y:auto; margin:0; padding:0 4px 8px; list-style:none; }
+.cad-text-item { width:100%; margin:0 0 2px; padding:5px 7px; border:0; border-radius:5px; background:transparent; color:#c8c2ba; font-size:11px; text-align:left; line-height:1.35; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+@media (hover: hover) and (pointer: fine) { .cad-text-item:hover { background:#252320; color:#f0eae2; } }
+.cad-text-item.is-active { background:#3a3324; color:var(--mario-yellow); }
+.cad-text-empty { padding:8px 7px; color:#66605a; font-size:10px; }
+.cad-text-findrow { display:flex; align-items:center; gap:5px; }
+.cad-text-btn { flex:none; height:26px; padding:0 8px; border:1px solid var(--shell-border); border-radius:5px; background:#232120; color:#c8c2ba; font-size:10px; cursor:pointer; }
+@media (hover: hover) and (pointer: fine) { .cad-text-btn:hover:not(:disabled) { background:#2f2c2a; color:#f0eae2; } }
+.cad-text-btn:disabled { opacity:.4; cursor:not-allowed; }
+.cad-text-warning { margin:2px 0 0; padding:6px 7px; border:1px solid #5a4a1e; border-radius:5px; background:#2a2314; color:#d8b667; font-size:9px; line-height:1.45; }
+.cad-text-item.is-edited { color:#8fd0a0; }
+.cad-text-dot { display:inline-block; width:5px; height:5px; margin-right:5px; border-radius:50%; background:#5fbf7a; vertical-align:middle; }
+/* Type badge: TEXT/MTEXT/ATTDEF/ATTRIB or "—" when the writer emitted no marker. */
+.cad-text-kind {
+  flex:none;
+  display:inline-block;
+  margin-right:6px;
+  padding:1px 5px;
+  border:1px solid var(--shell-border);
+  border-radius:3px;
+  color:#8d867e;
+  font-size:9px;
+  font-weight:600;
+  letter-spacing:.04em;
+  vertical-align:1px;
+}
+.cad-text-kind.is-unknown { color:#66605a; border-color:#2a2723; }
+/* Highlight the active label on the canvas. Applied to the inlined <text>
+   node (inline path) via a layout effect. */
+.cad-svg-host svg text[data-cad-text-id].is-cad-active {
+  outline:1.5px solid var(--mario-yellow);
+  outline-offset:1px;
+  paint-order:stroke fill;
+}
+/* Bitmap-fallback highlight: an absolutely positioned div sized from the
+   label's captured geometry, since there are no DOM nodes to class. */
+.cad-text-marker {
+  position:absolute;
+  pointer-events:none;
+  border:1.5px solid var(--mario-yellow);
+  border-radius:2px;
+  box-shadow:0 0 0 1px rgba(0,0,0,.35) inset;
+  display:none;
+}
+.cad-svg-label em.cad-svg-note { border-color:#3c5a73; color:#8fd0f0; background:#16232b; }
+@media (hover:hover) and (pointer:fine) { .cad-svg-toolbar button:hover:not(:disabled) { color:#eee8df; background:#282521; } }
 
 /* Q-style collectible file blocks */
 .filetype-cute {

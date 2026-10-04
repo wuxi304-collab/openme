@@ -52,3 +52,7 @@ test-cmd.*.log
 
 # Local desktop shortcut installers (PowerShell script drops them at root)
 shortcut-*.lnk
+SUPPORT_MATRIX.generated.md
+# Agent working state (per-machine session notes). Durable project conventions
+# live in AGENTS.md; un-ignore this if you want the memory shared with the repo.
+.workbuddy-ai/

@@ -3,23 +3,10 @@ import type { Translator } from "../i18n";
 
 export type { FileCategory };
 
-export function detectFileType(extension: string): FileCategory {
-  const ext = extension.toLowerCase();
-  const map: Record<string, FileCategory> = {
-    ".pdf": "pdf",
-    ".png": "image", ".jpg": "image", ".jpeg": "image", ".gif": "image", ".bmp": "image", ".webp": "image",
-    ".svg": "svg",
-    ".txt": "code", ".md": "code", ".json": "json", ".csv": "csv",
-    ".xml": "code", ".yml": "code", ".yaml": "code", ".ini": "code", ".log": "code",
-    ".js": "code", ".ts": "code", ".jsx": "code", ".tsx": "code",
-    ".py": "code", ".rs": "code", ".go": "code", ".java": "code",
-    ".c": "code", ".cpp": "code", ".h": "code", ".css": "code", ".html": "code",
-    ".doc": "office", ".docx": "office", ".xls": "office", ".xlsx": "office", ".ppt": "office", ".pptx": "office",
-    ".zip": "archive", ".rar": "archive", ".7z": "archive", ".tar": "archive", ".gz": "archive",
-    ".epub": "epub",
-  };
-  return map[ext] ?? "other";
-}
+// NOTE: do not add a per-extension detection map here. The File Registry
+// (`src/file-registry`) is the single source of truth for category detection; use
+// `detectCategory()` from `./fileTypeDetector` instead. Keeping a second map caused
+// real drift (e.g. `.md` was classified as "code" rather than "markdown").
 
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B";
