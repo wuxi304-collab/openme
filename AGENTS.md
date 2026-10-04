@@ -85,6 +85,7 @@ OpenMe 是 Windows 桌面通用文件工作台，当前使用 Electron + React +
 ## 2026-07-07 性能与数据安全打磨
 
 - 重型查看器全部改为 React 按需加载：首页 JavaScript 从约 956 KB 降至约 229 KB（gzip 约 72 KB）；Monaco、Markdown、CSV、PDF、Office、ZIP、3D、EPUB、媒体、字体仅在首次打开对应格式时加载。
+  - **2026-09-13 复测修正**：实测 `index` chunk 为 **323 KB（gzip 约 89 KB）**，与上面 229 KB / 72 KB 的旧数字不符（该数字应为早期某次构建或不同统计口径）。后续引用包体积请以 `vite build` 实际输出为准，不要沿用旧值。
 - XLSX 工作表改为每页 500 行，补充行号、粘性表头与空工作表状态，避免大表一次创建数万 DOM 节点。
 - 新增主进程级未保存状态保护：关闭按钮、Alt+F4 和系统窗口关闭都会提示，避免文本/代码/Markdown 修改丢失。
 - EPUB 在当前应用会话中记住每本书的章节位置，并显示章节阅读进度。
@@ -201,5 +202,42 @@ OpenMe 是 Windows 桌面通用文件工作台，当前使用 Electron + React +
    - 不要把 Toasts 的 internal action 接 synchronous window.open（要 `internal` kind + onSelect）
    - 不要给 IRREVERSIBLE 操作（关未保存标签、清空 recents、删除文件）省掉 confirm dialog
    - 不要把 chrome modal 的 `tabIndex={-1}` 设到非根节点（会破坏 focus trap）
+
+---
+
+## 2026-09-13 全面审计 + CAD 渲染迭代
+
+### 审计修复
+
+- **`.ts` 扩展名歧义**：移除 `MPEG Transport Stream` 注册，TypeScript 独占 `.ts`。在 `src/file-registry/index.ts` 增加文本/代码优先的去重策略，并新增 `dedupeByExtension` 单元测试覆盖双向顺序。
+- **`normalizeCadSvg` 与 `viewBox` 性能**：扩展名查找改为模块级预计算 `sortedExtensions`（去重后 367 个键），`getFileFormatByPath` 不再每次重新排序。
+- **`openme-media://` 协议任意文件读取**：`electron/main.js` 引入 `MEDIA_EXTENSIONS` 白名单与 `isServableMediaPath()`，渲染进程只能引用 34 个已知音视频扩展名的真实文件。
+- **依赖漏洞**：`package.json` 加入 `overrides` 强制 `lodash-es ^4.18.1`、`dompurify ^3.4.15`，消除 2 高 3 中危。
+- **`sandbox: false`**：经 A/B 实验确认可用，改为 `sandbox: true`。
+- **状态栏误报**：`StatusBar.tsx` 二进制文件不再显示 "UTF-8"。
+- **`detectFileType` 三重定义**：清理 `main.js` 与 `fileUtils.ts` 中的两套过时映射，渲染层 `detectCategory` 成为唯一入口。
+- **EOL/LF/CRLF 噪声**：补 `.gitattributes`，仓库统一 LF；`.cmd`/`.bat` 保留 CRLF。
+- **Lockfile 与 CI**：`package-lock.json` 落后于 `package.json`（缺少整棵 vitest 依赖树）。必须先提交 lockfile 再把 CI 改为 `npm ci`。
+- **构建体积引用必须实测**：包体积数字以 `vite build` 当前输出为准；本节首页的 229 KB / 323 KB 历史值都曾过期，引用前必须重新构建一次，不要沿用旧值。
+
+### CAD 渲染迭代
+
+- 新增 `src/cad/normalizeCadSvg.ts`（13 项单元测试）：在 ACadSharp `SvgWriter` 输出进入 DOM 之前修补四项已知缺陷（mm 笔画宽度 → px；`font:Npx` 简写（含 SHX 字体名 `TXT/MONOTXT/...`） → 合法 CSS；ACI 7 白色/黑色笔画按底图重映射；根 `width`/`height` → `100%` + `xMidYMid meet`）；同时剥除 `<script>`、`<foreignObject>`、内嵌 iframe、事件处理器、非片段 `href`/远程 URL，保证内联安全。
+- 内层内容统一包裹在 `<g class="cad-svg-stage-g">`，将平移/缩放 CSS 变换挂在 `<g>` 上而非 `<svg>`，避免覆盖 ACadSharp 在根节点上的 `transform="scale(1,-1)"` Y- 翻转。
+- 新增 `src/components/viewers/CadSvgCanvas.tsx`：替换原来 `<img src={objectUrl}>`，提供滚轮缩放（鼠标锚点）、拖拽平移、Fit / 1:1、浅色/深色底图切换、缩放百分比读数；尺寸调整（`ResizeObserver`）自动重 fit。
+- `DwgViewer.tsx` 不再创建 ObjectURL，直接持有 SVG 文本并交给 `CadSvgCanvas`。
+- 三张真实回归样本（`93204-2507832板06.dwg`、`93204-2614887锥筒02-01.dwg`、`93204-2614888锥筒03-01.dwg`）均经 Electron 探针截图验证：轮廓可见、中文正常、视图完整、深色底图/缩放交互均正确。截图存于 `.tmp/cad-render-probe/shot2*.png`。
+- 仍保留 LibreDWG Web 兼容画布作为回退入口（顶部“兼容画布”按钮）。无 .NET SDK 环境下 `cad-host` sidecar 无法重新编译，所有 CAD 改进都在渲染侧落地。
+- **2026-09-13 加固**：
+  - LibreDWG 兼容画布改为**懒初始化**（`DwgViewer.tsx` 在 `viewMode === "compat"` 时才创建 `AcApDocManager` 并主线程解析 DWG）。打开"工程预览"不再额外付一次 LibreDWG 解析代价；大图纸在工程预览模式下也不会因为占位初始化而吃满内存。
+  - **大图纸位图守卫**（`shouldInlineCadSvg` / `CAD_SVG_INLINE_BYTE_LIMIT = 1_000_000`，在 `normalizeCadSvg.ts`）：超过 1 MB 的 ACadSharp 输出自动走 `<img src={blobURL}>` + CSS transform 路径，工具栏出现「**大图位图模式**」徽标。理由：6 MB / 7k 节点的内联子树做 CSS 合成层，沙箱 GPU 命中 `gles2_cmd_decoder FATAL` 会让整 app 退出；位图只需一张合成层，缩放平移仍可用。XREF 重的工程图常见千万级远端基点 + 单条 polyline 几十 KB 字符串，`normalizeCadSvg` 不改坐标量级，因此按原始字节数守卫。3 项单元测试覆盖临界值（边界、边界+1、6.5 MB 实际案例）。
+  - **兼容画布错误不再污染原生模式**（`DwgViewer.tsx`）：loading/error 遮罩都加了 `viewMode === "compat"` 门控，并在 `viewMode` 切换、`nativeSvg` 就绪时清空。此前兼容画布的 WebGL 失败会留下一个不绑定 viewMode 的错误遮罩，把正常渲染的原生画布整个盖住。
+  - **`cad-host/publish/` 会静默过期（重要）**：dev 下 `getCadHostPath()` 取的是 `cad-host/publish/CadHost.exe`，而本地重新构建只会更新 `cad-host/bin/Release/net8.0/win-x64/`。本机**无 .NET SDK，无法 `dotnet publish`**，因此必须手动同步：
+    ```
+    cp cad-host/bin/Release/net8.0/win-x64/CadHost.dll cad-host/publish/CadHost.dll
+    ```
+    过期的 `publish/CadHost.dll` 表现为 `--render-svg` **退出码 0 但 stdout 为 0 字节**（`--inspect` 仍正常，所以语义面板看起来没问题）。这会让 viewer 误判为渲染失败并退回 WebGL 兼容画布，用户看到的是误导性的 `Error creating WebGL context`。`renderCadDocument()` 现在会把空输出直接判为失败并给出指向该原因的提示，避免再次误诊。**改 CadHost 后务必同时核对两个目录的 `CadHost.dll` md5 一致。**
+  - **MTEXT 格式码泄漏（2026-09-14）**：ACadSharp 的 `SvgWriter` 原样输出 MTEXT 内联格式码，且丢掉反斜杠 —— 图纸标题栏里的 `\W0.75;结  构` 在屏幕上显示为字面量 `W0.75;结  构`，用户会误报"中文乱码"。中文解码其实完全正常。`normalizeCadSvg.ts` 的 `stripMtextFormatting()` 处理带反斜杠与不带反斜杠两种形态，只改元素文本、不碰属性。新增格式码时在这里补。
+  - **CAD 视图缩放下限（2026-09-14）**：`MIN_SCALE` 必须足够小。XREF 重的图纸 viewBox 可达 7600 单位宽，竖版画布仅约 430 px，fit 需要约 0.05；历史上 `MIN_SCALE = 0.1` 把 fit 抬高 2 倍导致图纸溢出并贴边。现为 `MIN_SCALE = 0.002` / `MAX_SCALE = 64` / `FIT_FLOOR = 1e-4`，并抽出 `applyCentredScale()` 让 fit / 适应宽度 / 适应高度 / 1:1 共用居中换算。
 
 

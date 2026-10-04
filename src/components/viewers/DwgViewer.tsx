@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 // Type-only import: the runtime values AcApDocManager / AcEdOpenMode are pulled
 // in via a dynamic import() inside the open-drawing effect so the ~2 MB
 // @mlightcad/cad-simple-viewer bundle (and its lodash-es dependency) is loaded
@@ -10,6 +10,7 @@ import { describeIpcError, isIpcFailure } from "../../core/ipcError";
 import ViewerError from "../ViewerError";
 import "../ViewerError.css";
 import "./DwgViewer.css";
+import CadSvgCanvas from "./CadSvgCanvas";
 
 interface Props { filePath: string; fileName: string; }
 
@@ -43,153 +44,91 @@ function localizeEngineField(
 export default function DwgViewer({ filePath, fileName }: Props) {
   const { t, tf } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
-  const nativeCanvasRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [manager, setManager] = useState<AcApDocManager | null>(null);
   const [engineName, setEngineName] = useState(t("dwgEngineDetecting"));
   const [fallbackEngine, setFallbackEngine] = useState(false);
   const [cadSummary, setCadSummary] = useState<string | null>(null);
-  const [nativeSvgUrl, setNativeSvgUrl] = useState<string | null>(null);
+  // Raw SVG *text*, not a blob URL. CadSvgCanvas parses the markup to build the
+  // label inventory and owns the paper sheet / pan / zoom rendering, so handing it
+  // an <img> src would throw away the thing it exists to show.
+  const [nativeSvg, setNativeSvg] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"native" | "compat">("native");
-
-  // ---- Interactive SVG (native-mode) state ----
-  // Pan + zoom is implemented by setting a CSS `transform: translate() scale()`
-  // on the SVG's <img>. Mouse drag updates `viewPan`, wheel adjusts
-  // `viewZoom`. We compute `viewTransform` so the UI can show "120%" / etc.
-  // The `fitToWindow` button resets both to a layout-aware default.
-  const [viewZoom, setViewZoom] = useState(1);
-  const [viewPan, setViewPan] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const svgDragOriginRef = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null);
-
-  // Reset pan/zoom when a new file opens (URL change) so a smaller file
-  // doesn't inherit the previous file's camera offset.
-  useEffect(() => {
-    setViewZoom(1);
-    setViewPan({ x: 0, y: 0 });
-  }, [nativeSvgUrl]);
-
-  const beginSvgPan = useCallback((clientX: number, clientY: number) => {
-    svgDragOriginRef.current = {
-      startX: clientX,
-      startY: clientY,
-      startPanX: viewPan.x,
-      startPanY: viewPan.y,
-    };
-    setIsPanning(true);
-  }, [viewPan]);
-
-  const continueSvgPan = useCallback((clientX: number, clientY: number) => {
-    const origin = svgDragOriginRef.current;
-    if (!origin) return;
-    setViewPan({ x: origin.startPanX + (clientX - origin.startX), y: origin.startPanY + (clientY - origin.startY) });
-  }, []);
-
-  const endSvgPan = useCallback(() => {
-    if (!isPanning) return;
-    svgDragOriginRef.current = null;
-    setIsPanning(false);
-  }, [isPanning]);
-
-  // Track pan drag on window so it survives the cursor leaving the canvas.
-  useEffect(() => {
-    if (!isPanning) return undefined;
-    const onMove = (e: PointerEvent) => continueSvgPan(e.clientX, e.clientY);
-    const onUp = () => endSvgPan();
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
-    };
-  }, [isPanning, continueSvgPan, endSvgPan]);
-
-  const fitToWindow = useCallback(() => {
-    const host = nativeCanvasRef.current;
-    if (!host) return;
-    // Measure the host pane, then center the SVG inside it at the largest
-    // scale that still keeps the entire image visible.
-    const rect = host.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) {
-      // Container not laid out yet — defer to next frame.
-      requestAnimationFrame(fitToWindow);
-      return;
-    }
-    const img = host.querySelector("img") as HTMLImageElement | null;
-    if (img && img.naturalWidth > 0 && img.naturalHeight > 0) {
-      const ratio = Math.min(rect.width / img.naturalWidth, rect.height / img.naturalHeight);
-      const nextZoom = Math.max(0.1, Math.min(8, ratio));
-      setViewZoom(nextZoom);
-      setViewPan({ x: 0, y: 0 });
-      return;
-    }
-    // Image metadata not loaded yet — fall back to identity.
-    setViewZoom(1);
-    setViewPan({ x: 0, y: 0 });
-  }, []);
-
-  const setZoomClamped = useCallback((next: number) => {
-    setViewZoom(Math.max(0.1, Math.min(8, next)));
-  }, []);
-
-  const zoomByStep = useCallback((direction: 1 | -1) => {
-    setZoomClamped(viewZoom * (direction > 0 ? 1.2 : 1 / 1.2));
-  }, [viewZoom, setZoomClamped]);
 
   useEffect(() => {
     let cancelled = false;
     window.electronAPI.getCadEngineStatus().then((engine) => {
       if (cancelled) return;
-        const resolved = localizeEngineField(t, tf, {
-          code: engine.nameCode,
-          params: engine.nameParams,
-          fallback: engine.name,
-        });
-        setEngineName(resolved || t("dwgEngineDetecting"));
-        setFallbackEngine(!!engine.fallback);
-        const engineNote = localizeEngineField(t, tf, {
-          code: engine.messageCode,
-          params: engine.messageParams,
-          fallback: engine.message,
-        });
-        if (engine.kind === "acadsharp") {
-          window.electronAPI.inspectCadDocument(filePath).then((result) => {
-            if (cancelled) return;
-            const info = result.document?.document;
-            if (result.success && info) {
-              const summary = tf("dwgEntityLayerSummary", {
-                entities: info.entityCount ?? 0,
-                layers: info.layerCount ?? 0,
-              });
-              setCadSummary(engineNote ? `${engineNote} · ${summary}` : summary);
-            }
-          }).catch(() => undefined);
-        } else if (engineNote) setCadSummary(engineNote);
-        else setCadSummary(null);
-      }).catch(() => {
-        if (cancelled) return;
-        setEngineName(t("dwgEngineLibreDwg"));
-        setFallbackEngine(true);
+      const resolved = localizeEngineField(t, tf, {
+        code: engine.nameCode,
+        params: engine.nameParams,
+        fallback: engine.name,
       });
-      return () => { cancelled = true; };
-    }, [filePath, t, tf]);
+      setEngineName(resolved || t("dwgEngineDetecting"));
+      setFallbackEngine(!!engine.fallback);
+      const engineNote = localizeEngineField(t, tf, {
+        code: engine.messageCode,
+        params: engine.messageParams,
+        fallback: engine.message,
+      });
+      if (engine.kind === "acadsharp") {
+        window.electronAPI.inspectCadDocument(filePath).then((result) => {
+          if (cancelled) return;
+          const info = result.document?.document;
+          if (result.success && info) {
+            const summary = tf("dwgEntityLayerSummary", {
+              entities: info.entityCount ?? 0,
+              layers: info.layerCount ?? 0,
+            });
+            setCadSummary(engineNote ? `${engineNote} · ${summary}` : summary);
+          }
+        }).catch(() => undefined);
+      } else if (engineNote) setCadSummary(engineNote);
+      else setCadSummary(null);
+    }).catch(() => {
+      if (cancelled) return;
+      setEngineName(t("dwgEngineLibreDwg"));
+      setFallbackEngine(true);
+    });
+    return () => { cancelled = true; };
+  }, [filePath, t, tf]);
 
   useEffect(() => {
     let disposed = false;
-    let objectUrl: string | null = null;
     window.electronAPI.renderCadDocument(filePath).then((result) => {
       if (disposed) return;
       if (!result.success || !result.svg) { setViewMode("compat"); return; }
-      objectUrl = URL.createObjectURL(new Blob([result.svg], { type: "image/svg+xml" }));
-      setNativeSvgUrl(objectUrl);
+      setNativeSvg(result.svg);
     }).catch(() => { if (!disposed) setViewMode("compat"); });
-    return () => { disposed = true; if (objectUrl) URL.revokeObjectURL(objectUrl); };
+    return () => { disposed = true; };
   }, [filePath]);
 
+  // Keep the loading and error overlays scoped to compat mode. Native mode owns
+  // its own state (CadSvgCanvas renders directly), so showing stale compat errors
+  // there just blanks the canvas — a real footgun once the user starts toggling.
   useEffect(() => {
+    setError(null);
+    setLoading(false);
+  }, [viewMode]);
+
+  // Belt-and-suspenders: as soon as the native render succeeds, clear any
+  // compat-mode error/loading that might still be lingering from a previous
+  // failed attempt or HMR-preserved state. This guarantees the canvas shows
+  // up the moment ACadSharp returns SVG text.
+  useEffect(() => {
+    if (nativeSvg) {
+      setError(null);
+      setLoading(false);
+    }
+  }, [nativeSvg]);
+
+  useEffect(() => {
+    // LibreDWG WASM is expensive to spin up and parses the whole drawing on
+    // the main thread. Only initialise it when the user actually opens the
+    // fallback canvas, so opening in 工程预览 mode is a single parse instead
+    // of two, and big drawings don't pay the fallback cost upfront.
+    if (viewMode !== "compat") return;
     let cancelled = false;
     let currentManager: AcApDocManager | undefined;
 
@@ -215,7 +154,7 @@ export default function DwgViewer({ filePath, fileName }: Props) {
         });
         if (!currentManager) throw new Error(t("dwgInitFailed"));
         const response = await window.electronAPI.readBinary(filePath, 100 * 1024 * 1024);
-                if (!response.success || !response.data) throw new Error(isIpcFailure(response) ? describeIpcError(t, response) : response.message ?? t("dwgReadFailed"));
+        if (!response.success || !response.data) throw new Error(isIpcFailure(response) ? describeIpcError(t, response) : response.message ?? t("dwgReadFailed"));
         const opened = await currentManager.openDocument(fileName, decodeBase64(response.data), {
           mode: AcEdOpenMode.Write,
           progressiveRendering: true,
@@ -235,7 +174,7 @@ export default function DwgViewer({ filePath, fileName }: Props) {
       setManager(null);
       currentManager?.destroy().catch(console.error);
     };
-  }, [filePath, fileName, t]);
+  }, [filePath, fileName, viewMode, t]);
 
   const run = (command: string) => {
     try { manager?.sendStringToExecute(command); }
@@ -247,29 +186,20 @@ export default function DwgViewer({ filePath, fileName }: Props) {
       <div className="dwg-toolbar" role="toolbar" aria-label={t("dwgToolbarAria")}>
         <span className="dwg-file-label" title={filePath}><i aria-hidden="true" />{fileName}<em className={fallbackEngine ? "is-fallback" : ""}>{engineName}{cadSummary ? ` · ${cadSummary}` : ""}</em></span>
         <div className="dwg-toolbar-group">
-          {nativeSvgUrl && <button type="button" className="dwg-engine-switch" onClick={() => setViewMode(viewMode === "native" ? "compat" : "native")}>{viewMode === "native" ? t("dwgCompatCanvas") : t("dwgEngineeringPreview")}</button>}
-          {/* Native SVG controls — pan/zoom/fit work on the static SVG image. */}
-          {viewMode === "native" && nativeSvgUrl ? (
+          {nativeSvg && <button type="button" className="dwg-engine-switch" onClick={() => setViewMode(viewMode === "native" ? "compat" : "native")}>{viewMode === "native" ? t("dwgCompatCanvas") : t("dwgEngineeringPreview")}</button>}
+          {/* Compat-mode LibreDWG canvas — buttons dispatch to the engine. Pan /
+              zoom / fit for the native preview live inside CadSvgCanvas, next to
+              the sheet it applies to, so they are not repeated here. */}
+          {viewMode === "compat" && (
             <>
-              <button type="button" onClick={fitToWindow} aria-label={t("dwgFitSvgAria")}>{t("dwgFitWindow")}</button>
-              <button type="button" onClick={() => zoomByStep(-1)} aria-label={t("dwgZoomOutAria")}>−</button>
-              <button type="button" onClick={() => zoomByStep(1)} aria-label={t("dwgZoomInAria")}>+</button>
-              <button type="button" onClick={() => { setViewZoom(1); setViewPan({ x: 0, y: 0 }); }} aria-label={t("dwgResetViewAria")}>{Math.round(viewZoom * 100)}%</button>
+              <button type="button" disabled={!manager} onClick={() => run("zoom\ne")}>{t("dwgFitWindow")}</button>
+              <button type="button" disabled={!manager} onClick={() => run("pan")}>{t("dwgPan")}</button>
+              <button type="button" disabled={!manager} onClick={() => run("select")}>{t("dwgSelect")}</button>
+              <span className="dwg-tool-separator" aria-hidden="true" />
+              <button type="button" disabled={!manager} onClick={() => run("undo")}>{t("dwgUndo")}</button>
+              <button type="button" disabled={!manager} onClick={() => run("redo")}>{t("dwgRedo")}</button>
             </>
-          ) : null}
-                    {/* Compat-mode LibreDWG canvas — buttons dispatch to the engine.
-                        Shown whenever the native SVG preview is unavailable so users
-                        see a consistent toolbar shape while the engine boots. */}
-                    {viewMode !== "native" || !nativeSvgUrl ? (
-                      <>
-                        <button type="button" disabled={!manager} onClick={() => run("zoom\ne")}>{t("dwgFitWindow")}</button>
-                        <button type="button" disabled={!manager} onClick={() => run("pan")}>{t("dwgPan")}</button>
-                        <button type="button" disabled={!manager} onClick={() => run("select")}>{t("dwgSelect")}</button>
-                        <span className="dwg-tool-separator" aria-hidden="true" />
-                        <button type="button" disabled={!manager} onClick={() => run("undo")}>{t("dwgUndo")}</button>
-                        <button type="button" disabled={!manager} onClick={() => run("redo")}>{t("dwgRedo")}</button>
-                      </>
-                    ) : null}
+          )}
         </div>
       </div>
       <div
@@ -279,36 +209,18 @@ export default function DwgViewer({ filePath, fileName }: Props) {
         aria-label={t("dwgCanvasAria")}
         aria-busy={loading && viewMode !== "native"}
       />
-      {viewMode === "native" && nativeSvgUrl ? (
-        <div
-          ref={nativeCanvasRef}
-          className={`dwg-native-canvas${isPanning ? " is-panning" : ""}`}
-          aria-label={t("dwgNativeCanvasAria")}
-          role="application"
-          tabIndex={0}
-          onPointerDown={(e) => {
-            if (e.button !== 0) return;
-            beginSvgPan(e.clientX, e.clientY);
-          }}
-          onWheel={(e) => {
-            // Wheel zoom: ctrl/cmd = fine; otherwise 1.1 step. We preventDefault
-            // to suppress page scroll on mouse-wheel over the canvas.
-            e.preventDefault();
-            const direction = e.deltaY < 0 ? 1 : -1;
-            const factor = e.ctrlKey || e.metaKey ? 1.05 : 1.1;
-            setZoomClamped(viewZoom * (direction > 0 ? factor : 1 / factor));
-          }}
-        >
-          <img
-            src={nativeSvgUrl}
-            alt={tf("dwgAcadSharpAlt", { name: fileName })}
-            style={{ transform: `translate(${viewPan.x}px, ${viewPan.y}px) scale(${viewZoom})`, transformOrigin: "0 0" }}
-            draggable={false}
-          />
-        </div>
-      ) : null}
+      {viewMode === "native" && nativeSvg && (
+        <CadSvgCanvas
+          svgText={nativeSvg}
+          fileName={fileName}
+          cadSummary={cadSummary}
+          engineLabel={engineName}
+          isFallback={fallbackEngine}
+          onOpenInSystem={() => window.electronAPI.openInSystem(filePath)}
+        />
+      )}
       {loading && viewMode === "compat" && <div className="dwg-overlay" role="status" aria-live="polite" aria-label={t("dwgParsingOverlayAria")}><span className="dwg-loader" /><strong>{t("dwgParsingTitle")}</strong><small>{t("dwgParsingHint")}</small></div>}
-      {error && <ViewerError title={t("dwgErrorTitle")} message={error} action={{ label: t("dwgOpenInSystem"), onClick: () => window.electronAPI.openInSystem(filePath) }} />}
+      {error && viewMode === "compat" && <ViewerError title={t("dwgErrorTitle")} message={error} action={{ label: t("dwgOpenInSystem"), onClick: () => window.electronAPI.openInSystem(filePath) }} />}
     </div>
   );
 }

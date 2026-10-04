@@ -92,7 +92,9 @@ export const FILE_FORMATS: FileFormatDefinition[] = [
   { extension: ".rm", name: "RealMedia", category: "video", capabilities: [...routeCapabilities], supportLevel: "D", boundary: "External open route only." },
   { extension: ".rmvb", name: "RealMedia Variable Bitrate", category: "video", capabilities: [...routeCapabilities], supportLevel: "D", boundary: "External open route only." },
   { extension: ".wmv", name: "Windows Media Video", category: "video", capabilities: [...routeCapabilities], supportLevel: "D", boundary: "Recognized; playback is not guaranteed." },
-  { extension: ".ts", name: "MPEG Transport Stream", category: "video", capabilities: [...routeCapabilities], supportLevel: "D", boundary: "Recognized; playback is not guaranteed." },
+  // NOTE: `.ts` is intentionally NOT registered as MPEG Transport Stream here. In a general
+  // file workspace `.ts` overwhelmingly means TypeScript, so the code entry below owns it.
+  // Camcorder/DVB transport streams are covered by `.m2ts` and `.mts` in expanded-formats.ts.
   { extension: ".m4v", name: "M4V Video", category: "video", capabilities: ["detect", "preview", "metadata", "external-open"], supportLevel: "C", boundary: "Playback depends on codec support." },
   { extension: ".3gp", name: "3GP Video", category: "video", capabilities: [...routeCapabilities], supportLevel: "D", boundary: "Recognized; playback is not guaranteed." },
   { extension: ".prproj", name: "Premiere Pro Project", category: "design", capabilities: [...routeCapabilities], supportLevel: "D", boundary: "Recognized media project; source application fidelity is not supported." },
@@ -198,8 +200,15 @@ export const FILE_FORMATS: FileFormatDefinition[] = [
   { extension: ".igs", name: "IGES", category: "cad", capabilities: ["detect", "preview", "metadata", "external-open"], supportLevel: "C", boundary: "Industrial CAD preview is approximate." },
   { extension: ".step", name: "STEP", category: "cad", capabilities: ["detect", "preview", "metadata", "external-open"], supportLevel: "C", boundary: "Industrial CAD preview is approximate; no manufacturing guarantee." },
   { extension: ".stp", name: "STEP", category: "cad", capabilities: ["detect", "preview", "metadata", "external-open"], supportLevel: "C", boundary: "Industrial CAD preview is approximate; no manufacturing guarantee." },
-  { extension: ".dwg", name: "AutoCAD DWG", category: "dwg", capabilities: ["detect", "metadata", "ai-summary", "external-open"], supportLevel: "D", boundary: "Semantic inspection and compatible preview only; not AutoCAD fidelity." },
-  { extension: ".dxf", name: "AutoCAD DXF", category: "dwg", capabilities: ["detect", "metadata", "ai-summary", "external-open"], supportLevel: "D", boundary: "Semantic inspection and compatible preview only; not AutoCAD fidelity." },
+  // NOTE: `preview` is deliberately NOT claimed here even though DwgViewer now renders an
+  // inline sanitised ACadSharp SVG (see src/cad/normalizeCadSvg.ts). canPreview in
+  // src/viewer-registry/registry.ts is `routeMode === "builtin" && capabilities.has("preview")`,
+  // and cad-viewer's routeModes are ["semantic", "safe-card"] — so a `preview` flag on these
+  // entries is inert today. Wiring the CAD route to "builtin" is a routing change with real
+  // blast radius (it would also capture .dgn/.skp/.rvt, which have no viewer), so it is left
+  // for a dedicated PR rather than smuggled in here. See docs/DWG-WRITEBACK-PLAN.md §4.4.
+  { extension: ".dwg", name: "AutoCAD DWG", category: "dwg", capabilities: ["detect", "metadata", "ai-summary", "external-open"], supportLevel: "D", boundary: "Engineering preview only; not AutoCAD fidelity. Complex proxy objects, SHX glyphs, layouts and CAXA/GstarCAD extension objects may be incomplete." },
+  { extension: ".dxf", name: "AutoCAD DXF", category: "dwg", capabilities: ["detect", "metadata", "ai-summary", "external-open"], supportLevel: "D", boundary: "Engineering preview only; not AutoCAD fidelity. Complex proxy objects, SHX glyphs, layouts and CAXA/GstarCAD extension objects may be incomplete." },
   { extension: ".dgn", name: "MicroStation DGN", category: "dwg", capabilities: [...routeCapabilities], supportLevel: "D", boundary: "Recognized engineering drawing; native parsing is not implemented." },
   { extension: ".skp", name: "SketchUp", category: "cad", capabilities: [...routeCapabilities], supportLevel: "D", boundary: "Recognized 3D design file; native parsing is not implemented." },
   { extension: ".rvt", name: "Revit Project", category: "cad", capabilities: [...routeCapabilities], supportLevel: "D", boundary: "Recognized BIM source; native parsing is not implemented." },

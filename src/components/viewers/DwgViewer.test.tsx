@@ -62,12 +62,32 @@ describe("DwgViewer polish", () => {
     expect(canvas).toBeTruthy();
   });
 
-  it("renders toolbar buttons labelled with locale strings", () => {
+  it("renders toolbar buttons labelled with locale strings", async () => {
     renderDwg({ filePath: "/tmp/plan.dwg", fileName: "plan.dwg" });
-    expect(screen.getByRole("button", { name: "Fit window" })).toBeTruthy();
+    // renderCadDocument resolves { success: false } above, so the viewer has to
+    // fall back to the compat canvas before the LibreDWG command buttons mean
+    // anything. The buttons are gated on viewMode === "compat" precisely so we
+    // never show commands for an engine we have not loaded.
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Fit window" })).toBeTruthy();
+    });
     expect(screen.getByRole("button", { name: "Pan" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Select" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Undo" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Redo" })).toBeTruthy();
+  });
+
+  it("hands the drawing to CadSvgCanvas and hides the compat commands in native mode", async () => {
+    (window as any).electronAPI.renderCadDocument = vi.fn().mockResolvedValue({
+      success: true,
+      svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="10" y="20">A1</text></svg>',
+    });
+    renderDwg({ filePath: "/tmp/plan.dwg", fileName: "plan.dwg" });
+    // The switch only appears once ACadSharp actually produced markup.
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Compat canvas" })).toBeTruthy();
+    });
+    expect(screen.queryByRole("button", { name: "Fit window" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
   });
 });

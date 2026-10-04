@@ -20,6 +20,12 @@ function setupLogging() {
   log.transports.console.level = process.env.OPENME_LOG_LEVEL || "info";
   log.transports.file.fileName = "openme-main.log";
   log.transports.file.maxSize = 5 * 1024 * 1024;
+  // `preload: false` is load-bearing, not decorative: electron-log's initialize()
+  // otherwise injects its own preload script into every BrowserWindow, and this
+  // app ships its own preload plus a strict CSP. Restored verbatim from main after
+  // a merge mistakenly dropped it on the belief that the default logger's
+  // initializeFn is undefined — it is not; src/main/index.js passes it through
+  // createDefaultLogger, and Logger.initialize() calls it unconditionally.
   log.initialize({ preload: false });
   log.info("OpenMe Qiwu main process starting", { version: app.getVersion(), platform: process.platform, arch: process.arch });
 }
@@ -202,7 +208,10 @@ let uiStrings = {
 };
 
 const isDev = !app.isPackaged && process.env.OPENME_USE_DIST !== "1";
-const DEV_ORIGIN = "http://localhost:1420";
+// Overridable so a second checkout (or a git worktree) can run its own Vite on a
+// different port without stealing the default one. Example:
+//   OPENME_DEV_ORIGIN=http://localhost:1421 electron .
+const DEV_ORIGIN = process.env.OPENME_DEV_ORIGIN || "http://localhost:1420";
 
 function buildContentSecurityPolicy() {
   // Dev allowance: Vite HMR / react-refresh inject inline scripts and rely on
@@ -210,11 +219,15 @@ function buildContentSecurityPolicy() {
   // 'unsafe-eval' to script-src. We *narrow* it with a host allow-list so a
   // future injection of remote scripts would still be blocked. Production
   // CSP keeps 'self' only — see electron-builder release config.
+  // The dev origin comes from DEV_ORIGIN (override via OPENME_DEV_ORIGIN) so a
+  // second checkout / git worktree running Vite on another port is not blocked
+  // by a CSP pinned to localhost:1420.
+  const devWs = isDev ? `ws://${new URL(DEV_ORIGIN).host}` : "";
   const scriptSrc = isDev
-    ? "'self' 'unsafe-inline' 'unsafe-eval' http://localhost:1420"
+    ? `'self' 'unsafe-inline' 'unsafe-eval' ${DEV_ORIGIN}`
     : "'self'";
   const connectSrc = isDev
-    ? "'self' http://localhost:1420 ws://localhost:1420 openme-media:"
+    ? `'self' ${DEV_ORIGIN} ${devWs} openme-media:`
     : "'self' openme-media:";
   // stylesheet links from googleapis + woff2 binaries from gstatic.
   // Pulled from src/index.css which @imports the Catamaran + JetBrains Mono
@@ -312,22 +325,11 @@ function getRecentFilesPath() {
   return path.join(appDir, "recent-files.json");
 }
 
-function detectFileType(extension) {
-  const ext = extension.toLowerCase();
-  const map = {
-    ".pdf": "pdf",
-    ".png": "image", ".jpg": "image", ".jpeg": "image", ".gif": "image", ".bmp": "image", ".webp": "image", ".svg": "image",
-    ".txt": "text", ".md": "text", ".json": "text", ".csv": "text", ".xml": "text", ".yml": "text", ".yaml": "text", ".ini": "text", ".log": "text",
-    ".js": "code", ".ts": "code", ".jsx": "code", ".tsx": "code", ".py": "code", ".rs": "code", ".go": "code", ".java": "code", ".c": "code", ".cpp": "code", ".h": "code", ".css": "code", ".html": "code",
-    ".doc": "document", ".docx": "document", ".xls": "document", ".xlsx": "document", ".ppt": "document", ".pptx": "document",
-    ".zip": "archive",
-    ".epub": "epub",
-    ".mp3": "audio", ".wav": "audio", ".ogg": "audio", ".m4a": "audio", ".aac": "audio", ".flac": "audio",
-    ".mp4": "video", ".webm": "video", ".ogv": "video", ".m4v": "video",
-    ".ttf": "font", ".otf": "font", ".woff": "font", ".woff2": "font",
-  };
-  return map[ext] || "other";
-}
+// NOTE: the File Registry in the renderer (`src/file-registry`) is the single source of
+// truth for file categorisation. A second extension map used to live here and drifted out
+// of sync with it; the renderer overwrites `file_type` with the registry-derived category,
+// so the main process only supplies a neutral placeholder.
+const NEUTRAL_FILE_TYPE = "other";
 
 function getMimeType(ext) {
   const map = {
@@ -336,6 +338,28 @@ function getMimeType(ext) {
     ".svg": "image/svg+xml", ".pdf": "application/pdf",
   };
   return map[ext] || "application/octet-stream";
+}
+
+// The openme-media:// scheme is only used by the media viewer to stream a local audio/video
+// file. Restrict it to a media allowlist so the custom scheme cannot be abused to read
+// arbitrary files from disk. Note: `.ts` is deliberately excluded here because the registry
+// treats `.ts` as TypeScript; transport streams use `.m2ts`/`.mts`.
+const MEDIA_EXTENSIONS = new Set([
+  ".mp3", ".wav", ".flac", ".ape", ".aac", ".ogg", ".opus", ".m4a", ".wma", ".aiff", ".aif",
+  ".amr", ".oga", ".weba", ".alac", ".mid", ".midi", ".dsf", ".dff",
+  ".mp4", ".mov", ".avi", ".mkv", ".webm", ".flv", ".f4v", ".rm", ".rmvb", ".wmv",
+  ".m4v", ".3gp", ".mpeg", ".mpg", ".m2ts", ".mts", ".mxf",
+]);
+
+function isServableMediaPath(filePath) {
+  try {
+    const resolved = path.resolve(String(filePath));
+    if (!MEDIA_EXTENSIONS.has(path.extname(resolved).toLowerCase())) return null;
+    if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) return null;
+    return resolved;
+  } catch {
+    return null;
+  }
 }
 
 function getCadHostPath() {
@@ -369,7 +393,18 @@ function renderCadDocument(filePath) {
         catch { return new TextDecoder("gbk").decode(value); }
       };
       if (error) return resolve(ipcError("CADHOST_RENDER_FAILED", { message: decode(stderr).trim() || error.message }));
-      resolve({ success: true, svg: decode(stdout) });
+      const svg = decode(stdout);
+      if (!svg.trim()) {
+        // CadHost exits 0 with empty stdout when the DLL it loaded cannot render.
+        // The classic cause is a stale cad-host/publish/CadHost.dll that is older
+        // than bin/Release/net8.0/win-x64/CadHost.dll. Without this check the empty
+        // result looks like a success, the viewer falls back to the WebGL canvas,
+        // and the user sees a misleading "Error creating WebGL context".
+        return resolve(ipcError("CADHOST_RENDER_FAILED", {
+          message: "CadHost 未返回 SVG（空输出）。请确认 cad-host/publish/CadHost.dll 与 bin/Release/net8.0/win-x64/CadHost.dll 为同一版本；本机无 .NET SDK 时需手动复制后者覆盖前者。",
+        }));
+      }
+      resolve({ success: true, svg });
     });
   });
 }
@@ -764,8 +799,13 @@ function findCadEngine() {
 app.whenReady().then(() => {
   protocol.handle("openme-media", (request) => {
     const mediaPath = new URL(request.url).searchParams.get("path");
-    if (!mediaPath || !fs.existsSync(mediaPath) || !fs.statSync(mediaPath).isFile()) return new Response("Not found", { status: 404 });
-    return net.fetch(pathToFileURL(mediaPath).toString());
+    // The scheme is the actual read primitive: anything that can get an
+    // openme-media:// URL into the renderer would otherwise be able to read any
+    // file on disk. Gate it on the same media allowlist the get-media-url IPC
+    // uses, so a path only ever resolves to a real audio/video file.
+    const resolved = isServableMediaPath(mediaPath);
+    if (!resolved) return new Response("Not found", { status: 404 });
+    return net.fetch(pathToFileURL(resolved).toString());
   });
   // Spawn the splash FIRST so the user has immediate visual feedback
   // before the main window's renderer even starts loading the bundle.
@@ -829,7 +869,7 @@ ipcMain.handle("get-file-info", async (_, filePath) => {
       extension: parsed.ext,
       size: stats.size,
       modified_at: stats.mtime.toISOString(),
-      file_type: detectFileType(parsed.ext),
+      file_type: NEUTRAL_FILE_TYPE,
       opened_at: now,
     };
   } catch (e) {
@@ -1147,8 +1187,8 @@ ipcMain.handle("inspect-cad-document", (_, filePath) => inspectCadDocument(fileP
 ipcMain.handle("render-cad-document", (_, filePath) => renderCadDocument(filePath));
 
 ipcMain.handle("get-media-url", async (_, filePath) => {
-  const resolved = path.resolve(filePath);
-  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) return ipcError("MEDIA_NOT_FOUND");
+  const resolved = isServableMediaPath(filePath);
+  if (!resolved) return ipcError("MEDIA_NOT_FOUND");
   return `openme-media://local/?path=${encodeURIComponent(resolved)}`;
 });
 

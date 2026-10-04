@@ -12,6 +12,11 @@ export const FILE_FORMATS: FileFormatDefinition[] = dedupeByExtension([...BASE_F
 
 const extensionMap = new Map(FILE_FORMATS.map((format) => [format.extension.toLowerCase(), format]));
 
+// Precomputed once: extensions sorted longest-first so compound extensions such as
+// ".tar.gz" or ".nii.gz" win over their shorter suffixes. Previously this array was
+// rebuilt and re-sorted on every getFileFormatByPath call (every render/pipeline run).
+const sortedExtensions = [...extensionMap.keys()].sort((a, b) => b.length - a.length);
+
 export function normalizeExtension(extension: string): string {
   const value = extension.trim().toLowerCase();
   if (!value) return "";
@@ -33,7 +38,6 @@ export function getFileFormatByPath(filePath: string): FileFormatDefinition | un
   if (base === "podfile") return syntheticCodeFormat("Podfile", "podfile");
   if (base === "justfile") return syntheticCodeFormat("Justfile", "justfile");
 
-  const sortedExtensions = [...extensionMap.keys()].sort((a, b) => b.length - a.length);
   const matched = sortedExtensions.find((extension) => lower.endsWith(extension));
   return matched ? extensionMap.get(matched) : undefined;
 }
@@ -51,16 +55,32 @@ export function getFileRegistryStats(): FileRegistryStats {
   return { total: FILE_FORMATS.length, byCategory, bySupportLevel };
 }
 
-function dedupeByExtension(formats: FileFormatDefinition[]): FileFormatDefinition[] {
-  const seen = new Set<string>();
-  const result: FileFormatDefinition[] = [];
+/**
+ * Resolves duplicate extension claims. `.ts` is the canonical example: it is both
+ * TypeScript and an MPEG transport stream. In a general file workspace the text/code
+ * reading is the safer, more common default, so text-like categories win over
+ * binary/media ones on conflict.
+ *
+ * Declared inside the function on purpose: `dedupeByExtension` runs while `FILE_FORMATS`
+ * is being initialised, so a module-level `const` referenced here would still be in the
+ * temporal dead zone and would throw the moment a real conflict appears.
+ */
+export function dedupeByExtension(formats: FileFormatDefinition[]): FileFormatDefinition[] {
+  const textPreferredCategories = new Set<string>(["code", "markdown", "json", "csv", "svg"]);
+  const byExtension = new Map<string, FileFormatDefinition>();
   for (const format of formats) {
     const key = format.extension.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    result.push(format);
+    const existing = byExtension.get(key);
+    if (!existing) {
+      byExtension.set(key, format);
+      continue;
+    }
+    // Deterministic conflict resolution: keep the text-like interpretation.
+    if (!textPreferredCategories.has(existing.category) && textPreferredCategories.has(format.category)) {
+      byExtension.set(key, format);
+    }
   }
-  return result;
+  return [...byExtension.values()];
 }
 
 function syntheticCodeFormat(name: string, extension: string): FileFormatDefinition {
