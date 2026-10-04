@@ -989,6 +989,49 @@ ipcMain.handle("read-binary", async (_, filePath, maxSize = 10 * 1024 * 1024) =>
   }
 });
 
+// Cheap header read, used by the DWG preflight. The six-byte signature is the
+// only trustworthy source for a drawing's version — the file extension is a
+// claim by whoever named the file, and `CadHost --inspect` reports `version`
+// as null in practice. Reading only the head keeps this usable on a 200 MB
+// drawing, which `read-binary` (whole file, base64) is not.
+ipcMain.handle("read-file-header", async (_, filePath, headerBytes = 16) => {
+  try {
+    const requested = Number(headerBytes);
+    const limit = Math.max(1, Math.min(Number.isFinite(requested) ? requested : 16, 4096));
+    const stats = fs.statSync(filePath);
+    if (!stats.isFile()) return ipcError("FILE_NOT_A_FILE", { path: String(filePath) });
+    const fd = fs.openSync(filePath, "r");
+    try {
+      const buffer = Buffer.alloc(limit);
+      const read = fs.readSync(fd, buffer, 0, limit, 0);
+      // A DWG header is printable ASCII, so anything else means the head is not
+      // a DWG header. This is a sanity filter, not validation: a plain text file
+      // still yields its first six characters. Correctness is the renderer's
+      // job — `describeDwgVersion` rejects any code it does not recognise, and
+      // that is where an unknown code becomes a blocked preflight.
+      const head = buffer.subarray(0, read);
+      const signature =
+        read >= 6 && [...head.subarray(0, 6)].every((byte) => byte >= 0x20 && byte <= 0x7e)
+          ? head.subarray(0, 6).toString("ascii")
+          : null;
+      return {
+        success: true,
+        signature,
+        sizeBytes: stats.size,
+        mtimeMs: stats.mtimeMs,
+        // Node maps the platform read-only attribute onto the owner-write bit,
+        // so this reflects FILE_ATTRIBUTE_READONLY on Windows too.
+        readOnly: !(stats.mode & 0o200),
+      };
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch (e) {
+    log.error("read-file-header failed", e);
+    return ipcError("READ_FILE_HEADER_FAILED", { message: e.message });
+  }
+});
+
 ipcMain.handle("save-file", async (_, filePath, content) => {
   try {
     fs.writeFileSync(filePath, content, "utf-8");

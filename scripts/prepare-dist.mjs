@@ -24,8 +24,10 @@ import { existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
+import { checkCadHostParity, STATUS as PARITY_STATUS } from "./cad-host-parity.mjs";
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1")), "..");
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ffmpegStaticExe = path.join(root, "node_modules", "ffmpeg-static", "ffmpeg.exe");
 const cadHostExe = path.join(root, "cad-host", "publish", "CadHost.exe");
 
@@ -67,8 +69,25 @@ if (process.platform === "win32" && !existsSync(cadHostExe)) {
       { cwd: root, stdio: "inherit" }
     );
   } catch (err) {
-    issues.push("cad-host publish failed. Run `scripts\\windows\\install-cad-engine.cmd` to repair the local dotnet SDK.");
+    issues.push(
+      "cad-host publish failed. Run `scripts\\build-cad-host.cmd` to build the sidecar " +
+        "reproducibly and see the actual error."
+    );
   }
+}
+
+// Parity runs even when CadHost.exe already exists, because the stale case is
+// precisely the case where the exe is present and merely old. Gating this on
+// existence would make it useless.
+const parity = checkCadHostParity();
+if (parity.status === PARITY_STATUS.MISMATCH) {
+  // A release must not ship a sidecar that is not the build we just made.
+  issues.push("cad-host sidecar is stale. " + parity.detail);
+} else if (parity.status === PARITY_STATUS.NO_REFERENCE) {
+  // Nothing to compare against. Worth saying out loud, not worth failing a
+  // release over — this is the normal state of a machine that only ever
+  // installed a prebuilt sidecar.
+  console.warn("[prepare-dist] " + parity.detail);
 }
 
 if (issues.length > 0) {

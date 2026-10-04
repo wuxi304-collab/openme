@@ -3,16 +3,25 @@
 // scaffolding but never actually translated. PR #45 fixed 17 of them in the
 // FileSummaryPanel section; this script catches any future regression.
 //
-// Usage: node scripts/audit-i18n.mjs
+// Usage: node scripts/audit-i18n.mjs [path/to/i18n.tsx]
 // Exit 0 = clean. Exit 1 = at least one untranslated zh entry found.
+//
+// The optional path argument exists so the negative case in
+// scripts/audit-i18n.test.ts can actually test something. It used to pass a
+// temp root as the child's `cwd`, but this script resolves I18N_PATH from its
+// own __dirname and ignores cwd entirely — so the fixture was never read, the
+// audit silently passed, and the one test guarding this gate could not fail.
 
 import fs from "node:fs";
 import path from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const I18N_PATH = path.join(__dirname, "..", "src", "i18n.tsx");
+const I18N_PATH = process.argv[2]
+  ? path.resolve(process.argv[2])
+  : path.join(__dirname, "..", "src", "i18n.tsx");
 
 const source = fs.readFileSync(I18N_PATH, "utf8");
 
